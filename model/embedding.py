@@ -9,7 +9,7 @@ class CatEmbedding(nn.Module):
                  features_vocab_size: List[int],
                  embed_dim: int,
                  padding_idx: int,
-                 dropout: float,
+                 # dropout: float,
                  bias: bool = False) -> None:
         super().__init__()
         self.weight = nn.Parameter(
@@ -20,7 +20,13 @@ class CatEmbedding(nn.Module):
         ) if bias else False
         self.padding_idx = padding_idx
         self.offsets = torch.tensor(features_vocab_size)
-        self.dropout = nn.Dropout(dropout)
+        # self.dropout = nn.Dropout(dropout)
+
+    def reset_parameters(self, init: str, init_args: dict) -> None:
+        getattr(nn, init)(self.weight, **init_args)
+        if self.padding_idx is not None:
+            with torch.no_grad():
+                self.weight[self.padding_idx].fill_(0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -38,14 +44,14 @@ class CatEmbedding(nn.Module):
         x = F.embedding(x, self.weight, self.padding_idx)
         if self.bias:
             x = x + self.bias
-        return self.dropout(x)
+        return x
 
 
 class NumEmbedding(nn.Module):
     def __init__(self,
                  num_features: int,
                  embed_dim: int,
-                 dropout: float,
+                 # dropout: float,
                  bias: bool = False) -> None:
         super().__init__()
         self.weight = nn.Parameter(
@@ -54,7 +60,10 @@ class NumEmbedding(nn.Module):
         self.bias = nn.Parameter(
             torch.empty(num_features, embed_dim)
         ) if bias else None
-        self.dropout = nn.Dropout(dropout)
+        # self.dropout = nn.Dropout(dropout)
+
+    def reset_parameters(self, init: str, init_args: dict) -> None:
+        getattr(nn, init)(self.weight, **init_args)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -68,13 +77,13 @@ class NumEmbedding(nn.Module):
         x = x @ self.weight
         if self.bias:
             x = x + self.bias
-        return self.dropout(x)
+        return x
 
 
 class HybridEmbedding(nn.Module):
     def __init__(self,
                  cat_features_vocab_size: List[int],
-                 num_num_features: int,
+                 number_num_features: int,
                  embed_dim: int,
                  cat_features_padding_idx: int,
                  dropout: float,
@@ -82,8 +91,12 @@ class HybridEmbedding(nn.Module):
         super().__init__()
         self.cat_embed = CatEmbedding(cat_features_vocab_size, embed_dim,
                                       cat_features_padding_idx, dropout, bias)
-        self.num_embed = NumEmbedding(num_num_features, embed_dim,
-                                      dropout, bias)
+        self.num_embed = NumEmbedding(number_num_features,
+                                      embed_dim, dropout, bias)
+
+    def reset_parameters(self, init: str, init_args: dict) -> None:
+        self.cat_embed.reset_parameters(init, init_args)
+        self.num_embed.reset_parameters(init, init_args)
 
     def forward(self, cat_x: torch.Tensor, num_x: torch.Tensor) -> torch.Tensor:
         """
@@ -98,6 +111,42 @@ class HybridEmbedding(nn.Module):
         num_x = self.num_embed(num_x)
         x = torch.cat([cat_x, num_x], dim=2)
         return x
+
+
+class SinPosEmbedding(nn.Module):
+    def __init__(self, embed_dim: int, seq_len: int):
+        super().__init__()
+        pe = torch.zeros(seq_len, embed_dim)
+        position = torch.arange(0, seq_len).float().unsqueeze(1)
+
+        # Вычисляем делитель для частот
+        div_term = torch.exp(
+            torch.arange(0, embed_dim, 2).float() *
+            (-torch.tensor(10000.0).log() / embed_dim)
+        )
+
+        # Применяем синус к четным позициям, косинус к нечетным
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+
+        # Регистрируем как буфер (не обучаемый параметр)
+        self.register_buffer('pe', pe.unsqueeze(0))  # [1, max_len, d_model]
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.pe[:, :x.size(1)]
+
+
+class TrainPosEmbedding(nn.Module):
+    def __init__(self, embed_dim: int, seq_len: int):
+        super().__init__()
+        self.weight = nn.Parameter(torch.empty(seq_len, embed_dim))
+
+    def reset_parameters(self, init: str, init_args: dict) -> None:
+        getattr(nn, init)(self.weight, **init_args)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.weight[:, :x.size(1)]
+
 
 
 if __name__ == '__main__':
