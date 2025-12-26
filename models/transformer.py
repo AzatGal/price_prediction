@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from collections import OrderedDict
-from embedding import HybridEmbedding
+from embedding import HybridEmbedding, CatEmbedding
 
 
 class Block(nn.Module):
@@ -69,34 +69,56 @@ class Transformer(nn.Module):
                  num_blocks: int,
                  num_heads: int,
                  hidden_act: str,
-                 cat_features_vocab_sizes: List[int],
-                 number_num_features: int,
+                 num_embeds_features: List[int],
+                 # cat_features_num_embeds: List[int],
+                 # number_num_features: int,
                  embed_dropout: float,
                  hidden_dropout: float,
                  dropout: float,
                  init: str,
                  init_args: dict,
-                 cat_features_padding_idx: int = 0) -> None:
+                 padding_idx: int = 0,
+                 mask_token: bool = True
+                 ) -> None:
         super().__init__()
-        self.embed = HybridEmbedding(cat_features_vocab_sizes,
-                                     number_num_features,
-                                     embed_dim,
-                                     embed_dropout,
-                                     cat_features_padding_idx)
+        # self.embed = HybridEmbedding(cat_features_num_embeds, number_num_features,
+        #                              embed_dim, padding_idx)
+        self.embed = CatEmbedding(num_embeds_features, embed_dim,
+                                  embed_dropout, padding_idx, mask_token)
+        self.norm = nn.RMSNorm(embed_dim)
+        # self.embed_drop = nn.Dropout(embed_dropout)
+        # self.embed_norm = nn.RMSNorm(embed_dim)
         self.blocks = nn.Sequential(*[
             Block(embed_dim, num_heads, hidden_dropout, dropout, hidden_act)
             for _ in range(num_blocks)
         ])
-        self.reset_parameters(init, init_args)
-        self.embed.reset_parameters(init, init_args)
+        self.decay_params, self.no_decay_params = self.reset_parameters(init, init_args)
+        self.embed.fill_padding_idx_with_zero()
 
     def reset_parameters(self,
                          init: str,
-                         init_args: dict) -> None:
+                         init_args: dict) -> (list, list):
         init = getattr(nn, init)
-        for p in self.parameters():
-            init(p, **init_args)
+        decay = set()
+        no_decay = set()
+        params = {n: p for n, p in self.named_parameters()}
+        for n, p in params.items():
+            if 'norm' not in n:
+                init(p, **init_args)
+            if any(t in n for t in ('embed', 'norm', 'bias')):
+                no_decay.add(n)
+            else:
+                decay.add(n)
+        assert len(decay & no_decay) == 0
+        assert len(params.keys() - decay | no_decay) == 0
+        decay = [params[n] for n in list(decay)]
+        no_decay = [params[n] for n in list(no_decay)]
+        return decay, no_decay
 
+    def _forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.embed(x)
+        x = self.blocks(x)
+        return self.norm(x)
 
 
 if __name__ == '__main__':
