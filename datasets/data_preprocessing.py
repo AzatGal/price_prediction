@@ -1,6 +1,6 @@
 import pandas as pd
 
-from sklearn.compose import ColumnTransformer, make_column_transformer
+from sklearn.compose import ColumnTransformer  # , make_column_transformer
 import sklearn.preprocessing as preprocessors
 
 
@@ -34,16 +34,18 @@ columns = [
 
 
 def get_data_transformer(
-        cat_processor: str,
-        cat_processor_args: dict,
-        num_processor: str,
-        num_processor_args: dict,
-        cat_columns: list,
-        num_columns: list,
+        con_features_cfg: dict[str, any],
+        cat_features_cfg: dict[str, any],
 ) -> ColumnTransformer:
     transformers = [
-        (getattr(preprocessors, cat_processor)(**cat_processor_args), cat_columns),
-        (getattr(preprocessors, num_processor)(**num_processor_args), num_columns)
+        (
+            getattr(preprocessors, con_features_cfg['processor'])(**con_features_cfg['args']),
+            con_features_cfg['columns']
+        ),
+        (
+            getattr(preprocessors, cat_features_cfg['processor'])(**cat_features_cfg['args']),
+            cat_features_cfg['columns']
+        )
     ]
     return ColumnTransformer(transformers, verbose=True, n_jobs=4)
 

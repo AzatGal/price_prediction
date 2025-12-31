@@ -1,5 +1,3 @@
-from typing import Optional, List, Tuple
-
 import torch
 import torch.nn as nn
 
@@ -12,37 +10,87 @@ class MaskTableModeling(Transformer):
                  num_blocks: int,
                  num_heads: int,
                  hidden_act: str,
-                 num_embeds_features: List[int],
-                 # cat_features_num_embeds: List[int],
-                 # number_num_features: int,
+                 num_embeds_features: list[int],
                  embed_dropout: float,
                  hidden_dropout: float,
                  dropout: float,
                  init: str,
-                 init_args: dict,
-                 padding_idx: int = 0,
-                 mask_token: bool = True
+                 init_args: dict
                  ) -> None:
-        self.tm_head = nn.Linear(embed_dim, sum(num_embeds_features) + int(mask_token))
-
+        self.norm = nn.RMSNorm(embed_dim)
+        self.tm_head = nn.Linear(embed_dim, sum(num_embeds_features))
+        self.mask_token = nn.Parameter(torch.empty(embed_dim))
         super().__init__(embed_dim,
                          num_blocks,
                          num_heads,
                          hidden_act,
                          num_embeds_features,
-                         # cat_features_num_embeds,
-                         # number_num_features,
                          embed_dropout,
                          hidden_dropout,
                          dropout,
                          init,
-                         init_args,
-                         padding_idx,
-                         mask_token)
+                         init_args)
+
+    def _embed(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        x = self.embed(x)
+        x[mask] = self.mask_token
+        x = x + self.pos_embed
+        x = self.embed_norm(x)
+        x = self.embed_drop(x)
+        return x
+
+    def _head(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        x = x[mask]
+        x = self.norm(x)
+        x = self.tm_head(x)
+        return x
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        x = super()._forward(x)
-        x = self.tm_head(x[mask])
+        x = self._embed(x, mask)
+        x = self.blocks(x)
+        x = self._head(x, mask)
+        return x
+
+
+class PricePredictor(Transformer):
+    def __init__(self,
+                 embed_dim: int,
+                 num_blocks: int,
+                 num_heads: int,
+                 hidden_act: str,
+                 num_embeds_features: list[int],
+                 embed_dropout: float,
+                 hidden_dropout: float,
+                 dropout: float,
+                 init: str,
+                 init_args: dict,
+                 pool_type: str
+                 ) -> None:
+        self.norm = nn.RMSNorm(embed_dim)
+        self.head = nn.Linear(embed_dim, sum(num_embeds_features))
+        super().__init__(embed_dim,
+                         num_blocks,
+                         num_heads,
+                         hidden_act,
+                         num_embeds_features,
+                         embed_dropout,
+                         hidden_dropout,
+                         dropout,
+                         init,
+                         init_args)
+
+    def _embed(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.embed(x)
+        x = x + self.pos_embed
+        x = self.embed_norm(x)
+        x = self.embed_drop(x)
+        return x
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self._embed(x)
+        x = self.blocks(x)[:, 0]
+        x = self.norm(x)
+        x = self.head(x)
         return x
 
 
