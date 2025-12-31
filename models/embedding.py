@@ -6,16 +6,18 @@ class CatEmbedding(nn.Module):
     def __init__(self,
                  num_embeds_features: list[int],
                  embed_dim: int,
+                 # padding_idx: int = 0
                  ) -> None:
         super().__init__()
+        self.num_embeds_features = num_embeds_features
         self.num_embeds = sum(num_embeds_features)
         self.embed = nn.Embedding(sum(num_embeds_features) + 1,
                                   embed_dim)
         self.offsets = torch.tensor([0] + num_embeds_features[1:]).cumsum(0)
 
-    # def fill_padding_idx_with_zero(self) -> None:
-    #     with torch.no_grad():
-    #         self.embed.weight[self.offsets] = 0
+    def fill_padding_idx_with_zero(self) -> None:
+        with torch.no_grad():
+            self.embed.weight[self.offsets] = 0
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         # эта строка нужна поскольку для разный фичей используются разные диапазоны эмбеддингов в таблице

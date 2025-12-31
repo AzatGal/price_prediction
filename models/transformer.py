@@ -129,7 +129,7 @@ class Transformer(nn.Module):
             for _ in range(num_blocks)
         ])
         self.decay_params, self.no_decay_params = self.reset_parameters(init, init_args)
-        # self.embed.fill_padding_idx_with_zero()
+        self.embed.fill_padding_idx_with_zero()
 
     def reset_parameters(self,
                          init: str,
