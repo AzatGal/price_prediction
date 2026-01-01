@@ -6,27 +6,35 @@ class CatEmbedding(nn.Module):
     def __init__(self,
                  num_embeds_features: list[int],
                  embed_dim: int,
+                 dropout: float
                  # padding_idx: int = 0
                  ) -> None:
         super().__init__()
-        self.num_embeds_features = num_embeds_features
+        # self.num_embeds_features = num_embeds_features
         self.num_embeds = sum(num_embeds_features)
         self.embed = nn.Embedding(sum(num_embeds_features) + 1,
                                   embed_dim)
-        self.offsets = torch.tensor([0] + num_embeds_features[1:]).cumsum(0)
+        self.pos_embed = nn.Parameter(torch.empty(sum(num_embeds_features), embed_dim))
+        self.dropout = nn.Dropout(dropout)
+        self.norm = nn.RMSNorm(embed_dim)
+        self.register_buffer('offsets',
+                             torch.tensor(num_embeds_features[1:]).cumsum(0))
 
-    def fill_padding_idx_with_zero(self) -> None:
+    def zero_offsets(self) -> None:
         with torch.no_grad():
             self.embed.weight[self.offsets] = 0
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        # x[:, 0] - target для классификации
         # эта строка нужна поскольку для разный фичей используются разные диапазоны эмбеддингов в таблице
         # и у нас есть padding_idx когда для фича содержит значение null
         # но сопостовление индексов для категриальных фичей не принимает это во внимание
         # реализация с одним параметром для таблицы эмбеддингок быстрее чем для каждой фичи своя таблица параметрв
-        x = x + self.offsets
+        x[:, 1:] += self.offsets
         x[mask] = self.num_embeds
         x = self.embed(x)
+        x = self.norm(x)
+        x = self.dropout(x)
         return x
 
 
@@ -100,9 +108,9 @@ class CatEmbedding(nn.Module):
 
 if __name__ == '__main__':
     # pass
-    x = (torch.rand(2, 2) * 10).int()
-    m = CatEmbedding([10, 10], 2)
-    print(m(x).shape)
+    x = (torch.rand(2, 3) * 10).int()
+    m = CatEmbedding([10, 10, 10], 2)
+    print(m(x, x > 2).shape)
     print(m.embed.weight)
     m.fill_padding_idx_with_zero()
     print(m.embed.weight)

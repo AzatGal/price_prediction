@@ -1,46 +1,39 @@
+import os
+
 import dill
 import numpy as np
 import pandas as pd
 import torch
+from easydict import EasyDict
 from torch.utils.data import Dataset
 
 
 class ApartmentDataset(Dataset):
     def __init__(self,
-                 data_path: str,
-                 ct_path: str,
-                 target_path: str = None,
-                 num_mask_features: int = None
+                 path,
+                 dataset_type,
+                 data_transformer,
+                 target_transformer
                  ) -> None:
+        df = pd.read_csv(os.path.join(path, f"{dataset_type}_data.csv"))
+        self.data_transformer = data_transformer
+        self.target_transformer = target_transformer
+        # self.features = data_transformer.transform(df)
+        # self.target = target_transformer.transform(df[['Стоимость']])
+        self.label = df[['Стоимость']].values
+        self.mask = torch.zeros(dtype=torch.bool)
+        self.mask[0] = True
 
-        df = pd.read_csv(data_path)
-        self.size = len(df)
-
-        with open(ct_path, 'rb') as f:
-            ct = dill.load(f)
-
-        self.data = ct.transform(df)
-        self.num_mask_features = num_mask_features
-
-        if target_path is not None:
-            self.mask = torch.tensor([True] + [False]*(self.size - 1))
-            with open(target_path, 'rb') as f:
-                tt = dill.load(f)
-            target = tt.transform(df[['Стоимость']])
-            self.data = np.concat([target, self.data[:, 1:]], axis=1)
-
-    def get_mask(self):
-        noise = torch.rand(self.size)
-        ids = noise.argsort()
-        mask = torch.concat([torch.ones(self.num_mask_features),
-                             torch.zeros(self.size - self.num_mask_features)])
-        return mask.gather(0, ids)
+    def get_features(self, df):
+        data
 
     def __len__(self):
-        return self.size
+        return len(self.features)
 
-    def __getitem__(self, idx: int) -> (torch.Tensor, torch.Tensor):
-        if self.num_mask_features is None:
-            return torch.tensor(self.data[idx]), self.mask
-        else:
-            return torch.tensor(self.data[idx]), self.get_mask()
+    def __getitem__(self, idx):
+        return {
+            'features': torch.as_tensor(self.features[idx]),
+            'mask': self.mask,
+            'target': torch.as_tensor(self.target[idx]),
+            # 'label': torch.as_tensor(self.label[idx])
+        }

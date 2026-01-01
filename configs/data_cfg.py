@@ -24,3 +24,14 @@ data_cfg.columns = [
     'Регион Циан'
 ]
 data_cfg.
+
+
+
+(make_pipeline(
+         SimpleImputer(fill_value=-1, strategy="constant"),
+         KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans')
+     ), make_column_selector(dtype_include=np.number)(train)),
+    (make_pipeline(
+         SimpleImputer(fill_value='-1', strategy="constant"),
+         OrdinalEncoder(min_frequency=26, handle_unknown='use_encoded_value', unknown_value=-1)
+     ), make_column_selector(dtype_include=object)(train))
