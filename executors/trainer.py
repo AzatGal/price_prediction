@@ -43,7 +43,9 @@ class Trainer:
         self.model = Transformer(**model_cfg)
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay)
-        self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch)
+        self.scheduler = get_scheduler(self.optimizer,
+                                       len(self.train_dataloader) * self.cfg.num_epoch,
+                                       self.cfg.decay)
 
     def metric(self, pred, label):
         if pred.shape[-1] > 1:

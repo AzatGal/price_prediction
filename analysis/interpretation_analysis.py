@@ -17,15 +17,15 @@ def main():
     trainer.load_model()
 
     def kv_weights(block):
-        k = block.attn.k_compressor.weight.norm(dim=0)  # abs().sum(dim=0)
-        v = block.attn.v_compressor.weight.norm(dim=0)  # abs().sum(dim=0)
+        k = block.attn.k_compressor.weight.abs().sum(dim=0)
+        v = block.attn.v_compressor.weight.abs().sum(dim=0)
         return k + v
 
     w = [kv_weights(block) for block in trainer.model.blocks]
     ids = w[0]
     for i in range(1, len(w)):
         ids = ids + w[i]
-    print(ids)
+    # print(ids)
     ids = torch.argsort(ids).numpy()[::-1]
     print(np.array(cfg.data_cfg.features)[ids])
 

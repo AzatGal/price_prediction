@@ -8,7 +8,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 cfg = EasyDict()
 cfg.target = 'num'  # cat num
-cfg.smooth = False
+cfg.smooth = False  # True False
 cfg.path = os.path.join(ROOT, 'data', 'datasets')
 cfg.data_transformer = DataTransformer(
     num_cfg={'processor': KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),

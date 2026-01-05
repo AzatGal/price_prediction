@@ -14,25 +14,34 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 
-def get_scheduler(optimizer, num_steps):
+def get_scheduler(optimizer, num_steps, decay):
     wu_iters = int(0.05 * num_steps)
     d_iters = num_steps - wu_iters
-    min_lr = 1e-8
-    return torch.optim.lr_scheduler.SequentialLR(
-        optimizer,
-        schedulers=[
-            torch.optim.lr_scheduler.LinearLR(optimizer,
-                                              total_iters=wu_iters,
-                                              start_factor=min_lr,
-                                              end_factor=1.0),
+    min_lr = 1e-6
+    schedulers = [
+        torch.optim.lr_scheduler.LinearLR(optimizer,
+                                          total_iters=wu_iters,
+                                          start_factor=min_lr,
+                                          end_factor=1.0)
+    ]
+    if decay == 'linear':
+        schedulers.append(
             torch.optim.lr_scheduler.LinearLR(optimizer,
                                               total_iters=d_iters,
                                               start_factor=1.0,
                                               end_factor=min_lr)
-            # torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-            #                                            T_max=d_iters,
-            #                                            eta_min=min_lr)
-        ],
+        )
+    elif decay == 'cosine':
+        schedulers.append(
+            torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                       T_max=d_iters,
+                                                       eta_min=min_lr)
+        )
+    else:
+        raise NotImplementedError()
+    return torch.optim.lr_scheduler.SequentialLR(
+        optimizer,
+        schedulers=schedulers,
         milestones=[wu_iters],
     )
 

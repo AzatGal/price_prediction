@@ -21,14 +21,14 @@ class Transformer(nn.Module):
                  mlp: str,
                  norm: str,
                  pred_dim: int,
-                 out_log: bool = False,
+                 log_softmax: bool = False,
                  compression_factor: float = None,
                  compression: str = None,
                  ) -> None:
         super().__init__()
-        self.embed = FeatureEmbedding(num_embed_features, embed_dim)
+        self.embed = FeatureEmbedding(num_embed_features, embed_dim, norm, dropout)
 
-        self.out_log = out_log
+        self.log_softmax = log_softmax
         self.seq_len = len(num_embed_features)
         self.compression_factor = compression_factor
         if compression is None:
@@ -42,7 +42,8 @@ class Transformer(nn.Module):
         else:
             raise NotImplementedError()
 
-        self.get_pool = lambda i: i == (num_blocks - 1)
+        self.first = lambda i: i == 0
+        self.last = lambda i: i == (num_blocks - 1)
 
         self.blocks = nn.ModuleList([
             Block(embed_dim, num_heads, attn_dropout, mlp_dropout, dropout,
@@ -51,8 +52,17 @@ class Transformer(nn.Module):
         ])
 
         self.norm = getattr(nn, norm)(embed_dim)
-        self.act = getattr(nn, act)()
         self.head = nn.Linear(embed_dim, pred_dim)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        x = self.embed(x, mask)
+        for i, block in enumerate(self.blocks):
+            x = block(x, self.first(i), self.last(i))
+        x = self.norm(x)
+        x = self.head(x)
+        if self.log_softmax:
+            x = F.log_softmax(x, -1)
+        return x.squeeze(2)
 
     def _get_compressors(self, same: bool = True) -> (nn.Linear, nn.Linear):
         c = nn.Linear(self.seq_len, int(self.compression_factor * self.seq_len), False)
@@ -64,7 +74,7 @@ class Transformer(nn.Module):
     def configure_optimizer(self,
                             lr: float,
                             weight_decay: float
-                            ) -> (torch.optim.Optimizer, torch.optim.Optimizer):
+                            ) -> torch.optim.Optimizer:
         # decay = set()
         # no_decay = set()
 
@@ -83,7 +93,6 @@ class Transformer(nn.Module):
 
         params = {pn: p for pn, p in self.named_parameters()}
         for pn, p in params.items():
-            # print(pn)
             if 'norm' not in pn:
                 if 'bias' in pn:
                     nn.init.zeros_(p)
@@ -151,17 +160,6 @@ class Transformer(nn.Module):
 
         optimizer = torch.optim.AdamW(optim_groups)
         return optimizer
-
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        x = self.embed(x, mask)
-        for i, block in enumerate(self.blocks):
-            x = block(x, self.get_pool(i))
-        x = self.norm(x)
-        x = self.act(x)
-        x = self.head(x)
-        if self.out_log:
-            x = F.log_softmax(x, -1)
-        return x
 
 
 if __name__ == '__main__':

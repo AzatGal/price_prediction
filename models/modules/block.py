@@ -241,23 +241,29 @@ class Block(nn.Module):
         else:
             raise NotImplementedError()
 
-    def _attn_block(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.attn_norm(x)
-        x = self.attn(x)
-        x = self.attn_drop(x)
-        return x
+    def _attn_block(self, x: torch.Tensor, first, last) -> torch.Tensor:
+        if first:
+            y = x
+        else:
+            y = self.attn_norm(x)
+        y = self.attn(y, last)
+        y = self.attn_drop(y)
+        if last:
+            y = y[:, :1] + x[:, :1]
+        else:
+            y = y + x
+        return y
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.mlp_norm(x)
-        x = self.mlp(x)
-        x = self.mlp_drop(x)
-        return x
+        y = self.mlp_norm(x)
+        y = self.mlp(y)
+        y = self.mlp_drop(y)
+        y = y + x
+        return y
 
-    def forward(self, x: torch.Tensor, pool: bool = False) -> torch.Tensor:
-        x = x + self._attn_block(x)
-        if pool:
-            x = x[:, 0]
-        x = x + self._mlp_block(x)
+    def forward(self, x: torch.Tensor, first: bool = False, last: bool = False) -> torch.Tensor:
+        x = self._attn_block(x, first, last)
+        x = self._mlp_block(x)
         return x
 
 

@@ -85,16 +85,23 @@ class Attention(nn.Module):
         self.k_compressor = k_compressor
         self.v_compressor = v_compressor
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, last: bool = False) -> torch.Tensor:
         B, T, C = x.shape
         q, k, v = (self.qkv_proj(x)
                    .reshape(B, T, self.num_heads, 3, -1)
                    .transpose(1, 2)
                    .unbind(3))
+        if last:
+            q = q[:, :, :1]
+            T = 1
         if self.k_compressor is not None:
-            k = self.k_compressor(k.transpose(2, 3)).transpose(2, 3)
+            k = self.k_compressor(
+                k.transpose(2, 3)
+            ).transpose(2, 3)
         if self.v_compressor is not None:
-            v = self.v_compressor(v.transpose(2, 3)).transpose(2, 3)
+            v = self.v_compressor(
+                v.transpose(2, 3)
+            ).transpose(2, 3)
         a = F.scaled_dot_product_attention(
             q, k, v,
             dropout_p=self.dropout if self.training else 0.0
@@ -139,9 +146,13 @@ class LinearAttention(nn.Module):
         k = self.act(k).add_(1.0)
         v = self.act(v).add_(1.0)
         if self.k_compressor is not None:
-            k = self.k_compressor(k.transpose(2, 3)).transpose(2, 3)
+            k = self.k_compressor(
+                k.transpose(2, 3)
+            ).transpose(2, 3)
         if self.v_compressor is not None:
-            v = self.v_compressor(v.transpose(2, 3)).transpose(2, 3)
+            v = self.v_compressor(
+                v.transpose(2, 3)
+            ).transpose(2, 3)
         kv = k.transpose(2, 3) @ v
         k_sum = (k
                  .sum(dim=2)

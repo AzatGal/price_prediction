@@ -38,8 +38,8 @@ def fit_catboost(train_dataset, val_dataset):
 
     model = CatBoostRegressor(
         iterations=20_000,
-        learning_rate=0.1,
-        depth=12,
+        learning_rate=0.05,
+        depth=10,
         loss_function='MAE',
         # eval_metric='MAPE',  # можно заменить на нужную метрику или оставить только loss
         verbose=1000,
