@@ -1,37 +1,48 @@
+import os
 from easydict import EasyDict
+from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer
 
-data_cfg = EasyDict()
-data_cfg.columns = [
-    'Стоимость',  # 1111!!!!!!!!
-    'Тип продажи',
-    'Объект продажи',
-    'Общая площадь',
-    'Жилая площадь',
-    'Площадь кухни',
-    'Этаж',
-    'Этажей в доме',
-    'Лифт пассажирский (кол-во)',
-    'Лифт грузовой (кол-во)',
-    'Мусоропровод',
-    'Парковка',
-    'Количество комнат',
-    'Тип дома',
-    'Высота потолков',
-    'Кол-во раздельных санузлов',
-    'Вид из окон',
-    'Расстояние до метро',
-    'Адрес',
-    'Регион Циан'
-]
-data_cfg.
+from data.data_preprocessing import DataTransformer
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+cfg = EasyDict()
+cfg.target = 'num'  # cat num
+cfg.smooth = False
+cfg.path = os.path.join(ROOT, 'data', 'datasets')
+cfg.data_transformer = DataTransformer(
+    num_cfg={'processor': KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),
+             'columns': ['Стоимость',
+                         'Общая площадь',
+                         'Жилая площадь',
+                         'Площадь кухни',
+                         'Этаж',
+                         'Этажей в доме',
+                         'Лифт пассажирский (кол-во)',
+                         'Лифт грузовой (кол-во)',
+                         'Количество комнат',
+                         'Высота потолков',
+                         'Кол-во раздельных санузлов'],
+             'path': os.path.join(ROOT, 'data', 'data_transformers', 'num_processor.pkl')},
+    cat_cfg={'processor': OrdinalEncoder(encoded_missing_value=-1, handle_unknown='use_encoded_value',
+                                         min_frequency=26, unknown_value=-1),
+             'columns': ['Тип продажи',
+                         'Объект продажи',
+                         'Мусоропровод',
+                         'Парковка',
+                         'Тип дома',
+                         'Вид из окон',
+                         'Расстояние до метро',
+                         'Округ',
+                         'Район'],
+             'path': os.path.join(ROOT, 'data', 'data_transformers', 'cat_processor.pkl')},
+    target_cfg={'processor': PowerTransformer(),
+                'columns': ['Стоимость'],
+                'path': os.path.join(ROOT, 'data', 'data_transformers', 'target_processor.pkl')},
+    target=cfg.target
+)
+cfg.features = cfg.data_transformer.num_cols + cfg.data_transformer.cat_cols
 
 
-
-(make_pipeline(
-         SimpleImputer(fill_value=-1, strategy="constant"),
-         KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans')
-     ), make_column_selector(dtype_include=np.number)(train)),
-    (make_pipeline(
-         SimpleImputer(fill_value='-1', strategy="constant"),
-         OrdinalEncoder(min_frequency=26, handle_unknown='use_encoded_value', unknown_value=-1)
-     ), make_column_selector(dtype_include=object)(train))
+if __name__ == '__main__':
+    print(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

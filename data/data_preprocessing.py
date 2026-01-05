@@ -1,10 +1,7 @@
 import os
 import dill
-import pandas as pd
 import numpy as np
-
-from sklearn.compose import ColumnTransformer  # , make_column_transformer
-import sklearn.preprocessing as preprocessors
+import pandas as pd
 
 
 class DataTransformer:
@@ -12,10 +9,12 @@ class DataTransformer:
                  num_cfg,
                  cat_cfg,
                  target_cfg,
+                 target
                  ) -> None:
-        self._num_cfg = num_cfg
-        self._cat_cfg = cat_cfg
-        self._target_cfg = target_cfg
+        self.target = target
+        self.num_path = num_cfg['path']
+        self.cat_path = cat_cfg['path']
+        self.target_path = target_cfg['path']
 
         self.num_processor = num_cfg['processor']
         self.cat_processor = cat_cfg['processor']
@@ -31,20 +30,20 @@ class DataTransformer:
         if os.path.exists(num_cfg['path']):
             with open(cat_cfg['path'], 'rb') as f:
                 self.cat_processor = dill.load(f)
-                self._set_cat_params()
         if os.path.exists(target_cfg['path']):
             with open(target_cfg['path'], 'rb') as f:
                 self.target_processor = dill.load(f)
+        self._set_params()
 
     def save(self):
-        with open(self._num_cfg['path'], 'wb') as f:
+        with open(self.num_path, 'wb') as f:
             dill.dump(self.num_processor, f)
-        with open(self._cat_cfg['path'], 'wb') as f:
+        with open(self.cat_path, 'wb') as f:
             dill.dump(self.cat_processor, f)
-        with open(self._target_cfg['path'], 'wb') as f:
+        with open(self.target_path, 'wb') as f:
             dill.dump(self.target_processor, f)
 
-    def _set_cat_params(self):
+    def _set_params(self):
         cats = [
             len(i) for i in self.cat_processor.categories_
         ]
@@ -53,41 +52,58 @@ class DataTransformer:
             for i in self.cat_processor.infrequent_categories_
         ]
         self.num_categories = [i - j for i, j in zip(cats, inf_cats)]
+        self.num_bins = self.num_processor.n_bins_.tolist()
 
     def fit(self, data):
-        # data = data.fillna('-1')
-        # print(data['Тип продажи'].unique())
         self.num_processor.fit(data[self.num_cols].fillna(-1.0))
-        print(1)
         self.cat_processor.fit(data[self.cat_cols])
-        #  .fillna('Пропущено значение'))
-        print(2)
         self.target_processor.fit(data[self.target_cols])
-        print(3)
-        self._set_cat_params()
+        self._set_params()
 
-    def transform(self, data, is_target=False):
-        # data = data.fillna('-1')
-        if is_target:
+    def transform(self, data, target=False):
+        if target:
             return self.target_processor.transform(data)
         else:
             num = self.num_processor.transform(data[self.num_cols].fillna(-1.0))
             cat = self.cat_processor.transform(data[self.cat_cols])
-            #  .fillna('Пропущено значение'))
             for i, c in enumerate(self.num_categories):
                 cat[cat[:, i] == -1, i] = c - 1
-            return np.concat([num, cat], axis=1)
+            return np.concat([num, cat], axis=1).astype(int)
 
-    def inverse_transform(self, data, is_target=False):
-        if is_target:
-            return self.target_processor.inverse_transform(data)
+    def inverse_transform(self, data, target=False, numpy=True):
+        if target:
+            if self.target == 'num':
+                if not isinstance(data, pd.DataFrame):
+                    data = pd.DataFrame(data, columns=self.target_cols)
+                data = self.target_processor.inverse_transform(data)
+            elif self.target == 'cat':
+                data = np.hstack(
+                    [
+                        data.reshape(-1, 1),
+                        np.zeros([len(data), len(self.num_cols) - 1])
+                    ],
+                    # axis=1
+                )
+                if not isinstance(data, pd.DataFrame):
+                    data = pd.DataFrame(data, columns=self.num_cols)
+                data = self.num_processor.inverse_transform(data)
+                data = np.expand_dims(data[:, 0], axis=1)
+            else:
+                raise NotImplementedError()
+            if numpy:
+                return data
+            else:
+                return pd.DataFrame(data, columns=self.target_cols)
         else:
-            num = self.num_processor.inverse_transform(data[self.num_cols])
-            cat = self.cat_processor.inverse_transform(data[self.cat_cols])
-            # for i, c in enumerate(self.amount_cats):
-            #   cat[cat[:, i] == -1, i] = c
-            # return np.concat([num, cat], axis=1)
-
+            i = len(self.num_cols)
+            num = self.num_processor.inverse_transform(data[:, :i])
+            num[num < 0] = np.nan
+            cat = self.cat_processor.inverse_transform(data[:, i:])
+            data = np.concat([num, cat], axis=1)
+            if numpy:
+                return data
+            else:
+                return pd.DataFrame(data, columns=self.num_cols + self.cat_cols)
 
 
 columns = [
@@ -119,22 +135,14 @@ columns = [
 ]
 
 
-def get_data_transformer(
-        con_features_cfg: dict[str, any],
-        cat_features_cfg: dict[str, any],
-) -> ColumnTransformer:
-    transformers = [
-        (
-            getattr(preprocessors, con_features_cfg['processor'])(**con_features_cfg['args']),
-            con_features_cfg['columns']
-        ),
-        (
-            getattr(preprocessors, cat_features_cfg['processor'])(**cat_features_cfg['args']),
-            cat_features_cfg['columns']
+if __name__ == '__main__':
+    import pandas as pd
+    from configs.data_cfg import cfg
+    dt = cfg.data_transformer
+    df = pd.read_csv(
+        '/data/datasets/test.csv'
         )
-    ]
-    return ColumnTransformer(transformers, verbose=True, n_jobs=4)
-
-
-def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
-    pass
+    print(df)
+    print(dt.transform(
+        df
+    ))
