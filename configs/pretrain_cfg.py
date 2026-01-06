@@ -9,26 +9,24 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cfg = EasyDict()
 cfg.seed = 0
 
-cfg.batch_size = 16  # 16
-cfg.lr = 1e-3  # 1 3 5
+cfg.batch_size = 64  # 128
+cfg.lr = 3e-3  # 1 3 5
 cfg.min_lr = 1e-3
 cfg.weight_decay = 1e-5
-cfg.target = 'num'
-# cfg.num_masks = 1
+cfg.target = 'mask'
+cfg.num_masks = int(0.75 * len(data_cfg.features))
 
-
-cfg.loss = 'L1Loss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
+cfg.loss = 'CrossEntropyLoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
 cfg.decay = 'linear'
 
 cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}
 
-model_cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
+model_cfg.pred_dim = sum(model_cfg.num_embed_features)  # 1  #
 cfg.model_cfg = model_cfg
 cfg.data_cfg = data_cfg
 
-cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir', 'train')
-# cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'pretrain', "transformer.pt")
-
+cfg.exp_dir = os.path.join(ROOT_DIR, 'pretrain', 'exp_dir')
 cfg.num_epoch = 256
-cfg.task = 'price_prediction'
+cfg.task = 'masked_table_modeling'
+

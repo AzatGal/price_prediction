@@ -85,15 +85,15 @@ class Attention(nn.Module):
         self.k_compressor = k_compressor
         self.v_compressor = v_compressor
 
-    def forward(self, x: torch.Tensor, last: bool = False) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         B, T, C = x.shape
         q, k, v = (self.qkv_proj(x)
                    .reshape(B, T, self.num_heads, 3, -1)
                    .transpose(1, 2)
                    .unbind(3))
-        if last:
-            q = q[:, :, :1]
-            T = 1
+        if mask is not None:
+            q = (q[mask.unsqueeze(1).expand(-1, self.num_heads, -1)]
+                 .reshape(B, self.num_heads, -1, q.size(3)))
         if self.k_compressor is not None:
             k = self.k_compressor(
                 k.transpose(2, 3)
@@ -109,7 +109,7 @@ class Attention(nn.Module):
         a = self.out_proj(
             a
             .transpose(1, 2)
-            .reshape(B, T, C)
+            .reshape(B, -1, C)
         )
         return a
 

@@ -9,9 +9,7 @@ class DataTransformer:
                  num_cfg,
                  cat_cfg,
                  target_cfg,
-                 target
                  ) -> None:
-        self.target = target
         self.num_path = num_cfg['path']
         self.cat_path = cat_cfg['path']
         self.target_path = target_cfg['path']
@@ -27,7 +25,7 @@ class DataTransformer:
         if os.path.exists(num_cfg['path']):
             with open(num_cfg['path'], 'rb') as f:
                 self.num_processor = dill.load(f)
-        if os.path.exists(num_cfg['path']):
+        if os.path.exists(cat_cfg['path']):
             with open(cat_cfg['path'], 'rb') as f:
                 self.cat_processor = dill.load(f)
         if os.path.exists(target_cfg['path']):
@@ -45,14 +43,16 @@ class DataTransformer:
 
     def _set_params(self):
         cats = [
-            len(i) for i in self.cat_processor.categories_
+            len(c) for c in self.cat_processor.categories_
         ]
         inf_cats = [
-            0 if i is None else len(i)
-            for i in self.cat_processor.infrequent_categories_
+            0 if c is None else len(c) - 1
+            for c in self.cat_processor.infrequent_categories_
         ]
-        self.num_categories = [i - j for i, j in zip(cats, inf_cats)]
+        self.num_cats = [i - j for i, j in zip(cats, inf_cats)]
         self.num_bins = self.num_processor.n_bins_.tolist()
+        num_classes = self.num_bins + self.num_cats
+        self.offsets = np.cumsum([0] + num_classes[:-1])
 
     def fit(self, data):
         self.num_processor.fit(data[self.num_cols].fillna(-1.0))
@@ -66,24 +66,34 @@ class DataTransformer:
         else:
             num = self.num_processor.transform(data[self.num_cols].fillna(-1.0))
             cat = self.cat_processor.transform(data[self.cat_cols])
-            for i, c in enumerate(self.num_categories):
+            for i, c in enumerate(self.num_cats):
                 cat[cat[:, i] == -1, i] = c - 1
-            return np.concat([num, cat], axis=1).astype(int)
+            data = np.hstack([num, cat])
+            data = data + self.offsets
+            return data.astype(int)
 
-    def inverse_transform(self, data, target=False, numpy=True):
-        if target:
-            if self.target == 'num':
+    def inverse_transform(self, data, target=None, numpy=True):
+        if target is None:
+            if data.ndim < 2:
+                data = np.reshape(data, [1, -1])
+            data = data - self.offsets
+            i = len(self.num_cols)
+            num = self.num_processor.inverse_transform(data[:, :i])
+            num[num < 0] = np.nan
+            cat = self.cat_processor.inverse_transform(data[:, i:])
+            data = np.hstack([num, cat])
+            if numpy:
+                return data
+            else:
+                return pd.DataFrame(data, columns=self.num_cols + self.cat_cols)
+        else:
+            if target == 'num':
                 if not isinstance(data, pd.DataFrame):
                     data = pd.DataFrame(data, columns=self.target_cols)
                 data = self.target_processor.inverse_transform(data)
-            elif self.target == 'cat':
-                data = np.hstack(
-                    [
-                        data.reshape(-1, 1),
-                        np.zeros([len(data), len(self.num_cols) - 1])
-                    ],
-                    # axis=1
-                )
+            elif target == 'cat':
+                data = np.hstack([data.argmax(-1).reshape(-1, 1),
+                                  np.zeros([len(data), len(self.num_cols) - 1])])
                 if not isinstance(data, pd.DataFrame):
                     data = pd.DataFrame(data, columns=self.num_cols)
                 data = self.num_processor.inverse_transform(data)
@@ -94,16 +104,7 @@ class DataTransformer:
                 return data
             else:
                 return pd.DataFrame(data, columns=self.target_cols)
-        else:
-            i = len(self.num_cols)
-            num = self.num_processor.inverse_transform(data[:, :i])
-            num[num < 0] = np.nan
-            cat = self.cat_processor.inverse_transform(data[:, i:])
-            data = np.concat([num, cat], axis=1)
-            if numpy:
-                return data
-            else:
-                return pd.DataFrame(data, columns=self.num_cols + self.cat_cols)
+
 
 
 columns = [
@@ -139,10 +140,12 @@ if __name__ == '__main__':
     import pandas as pd
     from configs.data_cfg import cfg
     dt = cfg.data_transformer
-    df = pd.read_csv(
-        '/data/datasets/test.csv'
-        )
-    print(df)
-    print(dt.transform(
-        df
-    ))
+    # [7, 2, 2, 4, 5, 4, 50, 46, 153]
+    print(sum(dt.num_bins + dt.num_cats))
+    # df = pd.read_csv(
+    #     '/data/datasets/test.csv'
+    #     )
+    # print(df)
+    # print(dt.transform(
+    #     df
+    # ))

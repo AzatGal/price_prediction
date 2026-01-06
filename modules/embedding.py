@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class FeatureEmbedding(nn.Module):
@@ -10,20 +11,23 @@ class FeatureEmbedding(nn.Module):
                  dropout: float
                  ) -> None:
         super().__init__()
+        # self.num_embed_features = torch.tensor(num_embed_features)
         self.num_embeds = sum(num_embed_features)
-        self.embed = nn.Embedding(sum(num_embed_features) + 1, embed_dim)
+        # self.mask_token = nn.Parameter(torch)
+        self.weight = nn.Parameter(torch.empty(sum(num_embed_features) + 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.empty(len(num_embed_features), embed_dim))
-        self.register_buffer(
-            'offsets',
-            torch.tensor([[0] + num_embed_features[:-1]]).cumsum(0)
-        )
+        # self.register_buffer(
+        #     'offsets',
+        #     torch.tensor([[0] + num_embed_features[:-1]]).cumsum(0)
+        # )
         self.norm = getattr(nn, norm)(embed_dim)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        x = x + self.offsets
+        # assert torch.all(x < self.num_embed_features)
+        # x = x + self.offsets
         x = x.masked_fill(mask, self.num_embeds)
-        x = self.embed(x)
+        x = F.embedding(x, self.weight)
         x = x + self.pos_embed
         x = self.norm(x)
         x = self.dropout(x)

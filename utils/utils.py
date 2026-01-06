@@ -14,27 +14,26 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 
-def get_scheduler(optimizer, num_steps, decay):
-    wu_iters = int(0.05 * num_steps)
-    d_iters = num_steps - wu_iters
-    min_lr = 1e-6
+def get_scheduler(optimizer, num_steps, decay, min_lr):
+    wu_steps = int(0.05 * num_steps)
+    decay_steps = num_steps - wu_steps
     schedulers = [
         torch.optim.lr_scheduler.LinearLR(optimizer,
-                                          total_iters=wu_iters,
+                                          total_iters=wu_steps,
                                           start_factor=min_lr,
                                           end_factor=1.0)
     ]
     if decay == 'linear':
         schedulers.append(
             torch.optim.lr_scheduler.LinearLR(optimizer,
-                                              total_iters=d_iters,
+                                              total_iters=decay_steps,
                                               start_factor=1.0,
                                               end_factor=min_lr)
         )
     elif decay == 'cosine':
         schedulers.append(
             torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-                                                       T_max=d_iters,
+                                                       T_max=decay_steps,
                                                        eta_min=min_lr)
         )
     else:
@@ -42,16 +41,20 @@ def get_scheduler(optimizer, num_steps, decay):
     return torch.optim.lr_scheduler.SequentialLR(
         optimizer,
         schedulers=schedulers,
-        milestones=[wu_iters],
+        milestones=[wu_steps],
     )
 
 
-def mape_loss(pred, target, epsilon=1e-8):
-    return torch.mean(
-        torch.abs(
-            (target - pred) / (target + epsilon)
-        )
-    )
+def accuracy(pred, label):
+    pred = pred.argmax(1)
+    return torch.sum(pred == label).item()
+
+
+def mape(pred, label, epsilon=1e-8):
+    return torch.abs(
+        (label - pred) / (label + epsilon)
+    ).sum().item()
+
 
 
 # def smape_loss(pred, target, eps=1e-8):

@@ -2,13 +2,14 @@ import os
 from easydict import EasyDict
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer
 
-from data.data_preprocessing import DataTransformer
+from data.data_processing import DataTransformer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 cfg = EasyDict()
-cfg.target = 'num'  # cat num
-cfg.smooth = False  # True False
+# cfg.target = 'num'  # cat num
+# cfg.smooth = False  # True False
+# cfg.mask_ratio = None
 cfg.path = os.path.join(ROOT, 'data', 'datasets')
 cfg.data_transformer = DataTransformer(
     num_cfg={'processor': KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),
@@ -39,7 +40,7 @@ cfg.data_transformer = DataTransformer(
     target_cfg={'processor': PowerTransformer(),
                 'columns': ['Стоимость'],
                 'path': os.path.join(ROOT, 'data', 'data_transformers', 'target_processor.pkl')},
-    target=cfg.target
+    # target=cfg.target
 )
 cfg.features = cfg.data_transformer.num_cols + cfg.data_transformer.cat_cols
 

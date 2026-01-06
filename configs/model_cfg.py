@@ -9,12 +9,12 @@ cfg.embed_dim = 16 * cfg.num_heads
 cfg.num_blocks = 2
 cfg.act = 'SiLU'  # SiLU
 cfg.num_embed_features = (data_cfg.data_transformer.num_bins +
-                          data_cfg.data_transformer.num_categories)
-cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
+                          data_cfg.data_transformer.num_cats)
+# cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
 cfg.attn_dropout = 0.0
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
-cfg.compression_factor = 0.25
+cfg.compression_factor = 0.2  # 5
 cfg.compression = 'Head'  # Head KV Layer
 cfg.mlp_dim_factor = 1  # 5 / 3
 cfg.attn = 'Attn'  # Linear

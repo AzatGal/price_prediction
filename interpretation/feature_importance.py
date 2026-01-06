@@ -6,7 +6,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
 from executors.trainer import Trainer
 from configs.train_cfg import cfg
 
@@ -15,6 +14,7 @@ from configs.train_cfg import cfg
 def main():
     trainer = Trainer(cfg)
     trainer.load_model()
+    print(trainer.model.embed.embed.weight.dtype)
 
     def kv_weights(block):
         k = block.attn.k_compressor.weight.abs().sum(dim=0)
@@ -32,8 +32,8 @@ def main():
 
     # num_bins = np.cumsum(cfg.data_cfg.data_transformer.num_bins)
     # # print(num_bins)
-    # # print(trainer.model.embed.embed.weight)
-    # embed_weight = trainer.model.embed.embed.weight[num_bins[0]: num_bins[1]]
+    # # print(trainer.modules.embed.embed.weight)
+    # embed_weight = trainer.modules.embed.embed.weight[num_bins[0]: num_bins[1]]
     # # for ew in embed_weight:
     # cs = cosine_similarity(embed_weight, embed_weight)
     # # sns.heatmap(cs) # , cmap="viridis")
