@@ -13,7 +13,7 @@ class ApartmentDataset(Dataset):
                  path,
                  data_transformer,
                  target,
-                 num_masks=0,
+                 num_masks,
                  smooth=True
                  ) -> None:
         df = pd.read_csv(os.path.join(path, f"{dataset_type}.csv"))

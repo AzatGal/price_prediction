@@ -69,11 +69,11 @@ class Transformer(nn.Module):
     def configure_optimizer(self,
                             lr: float,
                             weight_decay: float,
-                            lr_decay_by_block: bool = False
+                            lr_decay_by_block: float = None
                             ) -> torch.optim.Optimizer:
-        if lr_decay_by_block:
+        if lr_decay_by_block is not None:
             lrs = [
-                lr * (0.9 ** i)
+                lr * (lr_decay_by_block ** i)
                 for i in reversed(
                     range(len(self.blocks) + 2)
                 )
@@ -98,7 +98,7 @@ class Transformer(nn.Module):
                     # nn.init.kaiming_normal_(p, a=5 ** 0.5)
                     # nn.init.xavier_uniform_(p, gain=1 / (2 ** 0.5))
 
-            if lr_decay_by_block:
+            if lr_decay_by_block is not None:
                 if 'embed' in pn:
                     embed.add(pn)
                 elif 'blocks' in pn:
@@ -118,9 +118,10 @@ class Transformer(nn.Module):
                 else:
                     decay.add(pn)
 
-        if lr_decay_by_block:
-            if self.embed.weight[:-1].shape == self.pred_head.weight.shape:
-                self.embed.weight[:-1] = self.pred_head.weight
+        # if self.embed.weight[:-1].shape == self.pred_head.weight.shape:
+        #     self.embed.weight[:-1] = self.pred_head.weight
+
+        if lr_decay_by_block is not None:
             inter_params = embed & norm_head & head
             for i in range(len(self.blocks)):
                 inter_params = inter_params & norm_blocks[i] & blocks[i]

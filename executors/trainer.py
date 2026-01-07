@@ -28,6 +28,7 @@ class Trainer:
         else:
             raise NotImplementedError()
         self.best_loss = float('inf')
+        self.time_training = 0
 
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
@@ -47,13 +48,14 @@ class Trainer:
             self.model = PricePrediction(**model_cfg)
         else:
             raise NotImplementedError()
-        load_path = self.cfg.get('load_pretrained', False)
-        if load_path:
+        load_path = self.cfg.get('load_pretrained')
+        if load_path is not None:
             self.load_model(load_path)
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay)
+        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
+                                                        self.cfg.get('lr_decay_by_block'))
         self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
-                                       self.cfg.decay, self.cfg.min_lr)
+                                       self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
     def metric(self, pred, label):
         if self.cfg.task == 'masked_table_modeling':
@@ -95,7 +97,7 @@ class Trainer:
         return loss.item(), pred.detach().cpu()
 
     def _print(self, s, l, m, t):
-        print(f'{s} loss: {l:.4f} - metric: {m:.3f} - time: {t:.1f} ')
+        print(f'{s} loss: {l:.4f} - metric: {m:.3f} - time: {self.time_training:.1f} ({t:.1f}) ')
 
     def train_epoch(self):
         self.model.train()
@@ -108,9 +110,12 @@ class Trainer:
             total_loss += loss
             total_metric += self.metric(pred, batch['label'])
 
+        t = time.time() - t
         total_loss /= len(self.train_dataloader)
         total_metric /= len(self.train_data) * self.num_masks
-        self._print('train', total_loss, total_metric, time.time() - t)
+        self.time_training += t
+
+        self._print('train', total_loss, total_metric, t)
 
     @torch.no_grad()
     def evaluate(self, epoch):
@@ -162,8 +167,8 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    # from configs.train_cfg import cfg
-    from configs.pretrain_cfg import cfg
+    from configs.train_cfg import cfg
+    # from configs.pretrain_cfg import cfg
 
     trainer = Trainer(cfg)
     # trainer.overfitting_on_batch()
