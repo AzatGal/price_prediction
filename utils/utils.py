@@ -41,9 +41,10 @@ def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
     else:
         raise NotImplementedError()
     schedulers.append(
-        torch.optim.lr_scheduler.ConstantLR(optimizer,
-                                            factor=lr_decay_factor,
-                                            total_iters=num_steps)
+        torch.optim.lr_scheduler.LinearLR(optimizer,
+                                          total_iters=num_steps,
+                                          start_factor=lr_decay_factor,
+                                          end_factor=lr_decay_factor / 10)
     )
     return torch.optim.lr_scheduler.SequentialLR(
         optimizer,

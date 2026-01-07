@@ -143,6 +143,7 @@ class Trainer:
 
     def fit(self):
         self.accelerator = Accelerator(**self.cfg.accelerator_args)
+        print(self.accelerator.device)
         (
             self.model, self.optimizer, self.train_dataloader,
             self.val_dataloader, self.scheduler

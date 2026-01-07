@@ -31,5 +31,5 @@ cfg.data_cfg = data_cfg
 cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir', 'train')
 cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'pretrain', "transformer.pt")
 
-cfg.num_epoch = 256
+cfg.num_epoch = 125
 cfg.task = 'price_prediction'

@@ -28,6 +28,6 @@ cfg.model_cfg = model_cfg
 cfg.data_cfg = data_cfg
 
 cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir', 'pretrain')
-cfg.num_epoch = 256
+cfg.num_epoch = 125
 cfg.task = 'masked_table_modeling'
 
