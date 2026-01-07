@@ -60,6 +60,8 @@ class Trainer:
                                        self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
     def metric(self, pred, label):
+        pred = pred.cpu()
+        label = label.cpu()
         if self.cfg.task == 'masked_table_modeling':
             return accuracy(pred, label)
         elif self.cfg.task == 'price_prediction':
@@ -98,7 +100,7 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        return loss.item(), pred.detach().cpu()
+        return loss.item(), pred.detach()
 
     def _print(self, s, l, m, t):
         print(f'{s} loss: {l:.4f} - metric: {m:.3f} - time: {self.time_training:.1f} ({t:.1f}) ')
@@ -112,7 +114,7 @@ class Trainer:
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
             total_loss += loss
-            total_metric += self.metric(pred, batch['label'].cpu())
+            total_metric += self.metric(pred, batch['label'])
 
         t = time.time() - t
         total_loss /= len(self.train_dataloader)
