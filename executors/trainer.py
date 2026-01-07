@@ -18,7 +18,9 @@ class Trainer:
         self.cfg = cfg
         self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
-        self.accelerator = None
+        # self.accelerator = None
+        self.accelerator = Accelerator(**self.cfg.accelerator_args)
+        print(self.accelerator.device)
 
         self.best_epoch = 0
         if self.cfg.task == 'masked_table_modeling':
@@ -108,7 +110,7 @@ class Trainer:
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
             total_loss += loss
-            total_metric += self.metric(pred, batch['label'])
+            total_metric += self.metric(pred, batch['label'].cpu())
 
         t = time.time() - t
         total_loss /= len(self.train_dataloader)
@@ -142,8 +144,8 @@ class Trainer:
             self.best_epoch = epoch
 
     def fit(self):
-        self.accelerator = Accelerator(**self.cfg.accelerator_args)
-        print(self.accelerator.device)
+        # self.accelerator = Accelerator(**self.cfg.accelerator_args)
+        # print(self.accelerator.device)
         (
             self.model, self.optimizer, self.train_dataloader,
             self.val_dataloader, self.scheduler
@@ -157,7 +159,7 @@ class Trainer:
             self.train_epoch()
             self.evaluate(epoch)
         print(f"\nbest epoch: {self.best_epoch} - metric: {self.best_metric} - loss: {self.best_loss}")
-        self.accelerator = None
+        # self.accelerator = None
 
     def overfitting_on_batch(self, max_step=1000):
         batch = next(iter(self.train_dataloader))
