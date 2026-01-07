@@ -68,8 +68,8 @@ class Trainer:
             pred = torch.as_tensor(
                 self.data_transformer.inverse_transform(pred, target=self.cfg.target)
             )
-            print('pred', pred.device)
-            print('label', label.device)
+            # print('pred', pred.device)
+            # print('label', label.device)
             return mape(pred, label)
         else:
             raise NotImplementedError()
