@@ -142,7 +142,7 @@ class Trainer:
             self.best_epoch = epoch
 
     def fit(self):
-        self.accelerator = Accelerator(**cfg.accelerator_args)
+        self.accelerator = Accelerator(**self.cfg.accelerator_args)
         (
             self.model, self.optimizer, self.train_dataloader,
             self.val_dataloader, self.scheduler
