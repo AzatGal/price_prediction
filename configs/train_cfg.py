@@ -12,7 +12,7 @@ cfg.seed = 0
 cfg.batch_size = 128  # 16
 cfg.lr = 3e-3  # 1 3 5
 cfg.lr_decay_factor = 1e-3
-cfg.lr_decay_by_block = 0.9
+# cfg.lr_decay_by_block = 0.9
 
 cfg.weight_decay = 1e-5
 cfg.target = 'num'

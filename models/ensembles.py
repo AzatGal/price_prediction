@@ -16,7 +16,7 @@ class LinearEnsemble(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.weight = nn.Parameter(torch.empty(k, in_features, out_features))
-        self.bias = nn.Parameter(torch.empty(k, out_features)) if bias else None
+        self.bias = nn.Parameter(torch.empty(k, 1, out_features)) if bias else None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: [B, k, T, C]
@@ -221,7 +221,7 @@ class PricePredEnsemble(nn.Module):
             for i in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim)
-        self.head = LinearEnsemble(k, embed_dim, pred_dim)
+        self.head = LinearEnsemble(k, embed_dim, pred_dim, True)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.embed(x, mask)
