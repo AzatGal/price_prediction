@@ -17,12 +17,12 @@ def set_seed(seed):
 def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
     wu_steps = int(0.05 * num_steps)
     num_steps -= wu_steps
-    decay_steps = int(0.5 * num_steps)
-    num_steps -= decay_steps
+    # decay_steps = int(0.5 * num_steps)
+    # num_steps -= decay_steps
     schedulers = [
         torch.optim.lr_scheduler.LinearLR(optimizer,
                                           total_iters=wu_steps,
-                                          start_factor=lr * lr_decay_factor,
+                                          start_factor=lr_decay_factor,
                                           end_factor=1.0)
     ]
     if decay == 'linear':
@@ -40,16 +40,16 @@ def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
         )
     else:
         raise NotImplementedError()
-    schedulers.append(
-        torch.optim.lr_scheduler.LinearLR(optimizer,
-                                          total_iters=num_steps,
-                                          start_factor=lr_decay_factor,
-                                          end_factor=lr_decay_factor / 10)
-    )
+    # schedulers.append(
+    #     torch.optim.lr_scheduler.LinearLR(optimizer,
+    #                                       total_iters=num_steps,
+    #                                       start_factor=lr_decay_factor,
+    #                                       end_factor=lr_decay_factor / 10)
+    # )
     return torch.optim.lr_scheduler.SequentialLR(
         optimizer,
         schedulers=schedulers,
-        milestones=[wu_steps, wu_steps + decay_steps],
+        milestones=[wu_steps]  # , wu_steps + decay_steps],
     )
 
 
