@@ -59,7 +59,7 @@ class Trainer:
             self.model = PricePrediction(**model_cfg)
         else:
             raise NotImplementedError()
-
+        # print(self.model)
         load_path = self.cfg.get('load_pretrained')
         if load_path is not None:
             self.load_model(load_path)
@@ -86,12 +86,12 @@ class Trainer:
 
     def save_model(self):
         os.makedirs(self.cfg.exp_dir, exist_ok=True)
-        save_path = os.path.join(self.cfg.exp_dir, "transformer.pt")
+        save_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
         torch.save(self.model.state_dict(), save_path)
 
     def load_model(self, load_path=None):
         if load_path is None:
-            load_path = os.path.join(self.cfg.exp_dir, "transformer.pt")
+            load_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
         self.model.load_state_dict(torch.load(load_path), strict=False)
 
     def make_step(self, batch, update_model=True):
@@ -100,6 +100,8 @@ class Trainer:
             if self.cfg.target == 'mask':
                 pred = pred.transpose(1, 2)
                 batch['target'] = batch['target'].transpose(1, 2)
+            # print('pred', pred.shape)
+            # print('target', batch['target'].shape)
             loss = self.criterion(pred, batch['target'])
 
         if update_model:

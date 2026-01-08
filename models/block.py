@@ -43,17 +43,23 @@ class Block(nn.Module):
         else:
             raise NotImplementedError()
 
-    def _attn_block(self, x: torch.Tensor, mask: torch.Tensor, norm: bool) -> torch.Tensor:
-        if norm:
+    def _attn_block(self,
+                    x: torch.Tensor,
+                    mask: torch.Tensor,
+                    norm_attn: bool,
+                    mask_only_attn: bool
+                    ) -> torch.Tensor:
+        if norm_attn:
             y = self.attn_norm(x)
         else:
             y = x
-        y = self.attn(y, mask)
+        y = self.attn(y, mask, mask_only_attn)
         y = self.attn_drop(y)
-        if mask is None:
-            y = y + x
+        if mask_only_attn:
+            # print(1)
+            y = y + x[mask].reshape(y.shape)
         else:
-            y = y + x[:, :y.size(1)]
+            y = y + x
         return y
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
@@ -63,8 +69,13 @@ class Block(nn.Module):
         y = y + x
         return y
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor = None, norm: bool = True) -> torch.Tensor:
-        x = self._attn_block(x, mask, norm)
+    def forward(self,
+                x: torch.Tensor,
+                mask: torch.Tensor = None,
+                norm_attn: bool = True,
+                mask_only_attn: bool = False,
+                ) -> torch.Tensor:
+        x = self._attn_block(x, mask, norm_attn, mask_only_attn)
         x = self._mlp_block(x)
         return x
 

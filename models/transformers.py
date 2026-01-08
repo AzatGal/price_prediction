@@ -42,8 +42,8 @@ class Transformer(nn.Module):
         else:
             raise NotImplementedError()
 
-        self.apply_norm = lambda i: i > 0
-        self.apply_mask = lambda i: i == (num_blocks - 1)
+        # self.norm_attn = lambda i: i > 0
+        # self.mask_only_attn = lambda i: i == (num_blocks - 1)
 
         self.blocks = nn.ModuleList([
             Block(embed_dim, num_heads, attn_dropout, mlp_dropout, dropout,
@@ -55,7 +55,7 @@ class Transformer(nn.Module):
     def _forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.embed(x, mask)
         for i, block in enumerate(self.blocks):
-            x = block(x, mask if self.apply_mask(i) else None, self.apply_norm(i))
+            x = block(x, mask, i > 0, i + 1 == len(self.blocks))
         x = self.norm(x)
         return x
 
@@ -216,12 +216,23 @@ class MaskedTableAutoencoder(Transformer):
 
         mask_ids = self.ids.expand(B, -1, C)[mask].reshape(B, -1, C)
         mask_x = x.gather(1, mask_ids)
+
+        noise = torch.rand(mask_x.shape[:2], device=x.device)
+        ids_shuffle = noise.argsort(dim=1)
+        ids_restore = ids_shuffle.argsort(1)
+        ids_shuffle = ids_shuffle.unsqueeze(2).expand(-1, -1, C)
+        ids_restore = ids_restore.unsqueeze(2).expand(-1, -1, C)
+
+        mask_x = mask_x.gather(1, ids_shuffle)
+
         unmask_ids = self.ids.expand(B, -1, C)[~mask].reshape(B, -1, C)
         unmask_x = x.gather(1, unmask_ids)
 
         for i, block in enumerate(self.blocks):
-            unmask_x = block(unmask_x, None, self.apply_norm(i))
+            unmask_x = block(unmask_x, ~mask, i > 0)
         unmask_x = self.norm(unmask_x)
+
+        mask_x = mask_x.gather(1, ids_restore)
 
         x = torch.cat(
             [mask_x, unmask_x], dim=1
@@ -234,8 +245,11 @@ class MaskedTableAutoencoder(Transformer):
         x = self.decoder_embed_norm(x)
 
         for i, block in enumerate(self.decoder_blocks):
-            x = block(x, mask if self.apply_mask(i) else None, self.apply_norm(i))
+            # print(2)
+            # print(i + 1 == len(self.decoder_blocks))
+            x = block(x, mask, i > 0, i + 1 == len(self.decoder_blocks))
 
+        # print(x.shape)
         x = self.decoder_norm(x)
         x = self.decoder_head(x)
 

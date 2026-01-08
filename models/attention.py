@@ -77,6 +77,7 @@ class Attention(nn.Module):
 
         self.embed_dim = embed_dim
         self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
         self.dropout = dropout
 
         self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
@@ -84,21 +85,53 @@ class Attention(nn.Module):
 
         self.k_compressor = k_compressor
         self.v_compressor = v_compressor
+        self.seq_len = self.k_compressor.in_features
+        self.ids = torch.arange(self.seq_len).reshape(1, 1, self.seq_len, 1)
+        # .expand(-1, self.num_heads, -1, self.head_dim))
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+    def forward(self,
+                x: torch.Tensor,
+                mask: torch.Tensor = None,
+                mask_only_attn: bool = False
+                ) -> torch.Tensor:
         B, T, C = x.shape
         q, k, v = (self.qkv_proj(x)
-                   .reshape(B, T, self.num_heads, 3, -1)
+                   .reshape(B, T, self.num_heads, 3, self.head_dim)
                    .transpose(1, 2)
                    .unbind(3))
         if mask is not None:
-            q = (q[mask.unsqueeze(1).expand(-1, self.num_heads, -1)]
-                 .reshape(B, self.num_heads, -1, q.size(3)))
+            mask = mask.unsqueeze(1).expand(-1, self.num_heads, -1)
+        if mask_only_attn:
+            q = q[mask].reshape(B, self.num_heads, -1, self.head_dim)
         if self.k_compressor is not None:
+            if T < self.seq_len:
+                t = torch.zeros(
+                    B, self.num_heads, self.seq_len, self.head_dim,
+                    dtype=k.dtype, device=k.device
+                ).scatter_(
+                    2,
+                    (self.ids
+                     .expand(B, self.num_heads, -1, self.head_dim)[mask]
+                     .reshape(B, self.num_heads, -1, self.head_dim)),
+                    k
+                )
+                k = t
             k = self.k_compressor(
                 k.transpose(2, 3)
             ).transpose(2, 3)
         if self.v_compressor is not None:
+            if T < self.seq_len:
+                t = torch.zeros(
+                    B, self.num_heads, self.seq_len, self.head_dim,
+                    dtype=k.dtype, device=k.device
+                ).scatter_(
+                    2,
+                    (self.ids
+                     .expand(B, self.num_heads, -1, self.head_dim)[mask]
+                     .reshape(B, self.num_heads, -1, self.head_dim)),
+                    v
+                )
+                v = t
             v = self.v_compressor(
                 v.transpose(2, 3)
             ).transpose(2, 3)
