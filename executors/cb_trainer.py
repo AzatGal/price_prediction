@@ -96,7 +96,7 @@ Stopped by overfitting detector  (200 iterations wait)
 bestTest = 0.09281683573
 bestIteration = 14420
 
-Shrink modules to first 14421 iterations.
+Shrink models to first 14421 iterations.
 /Users/azatgalautdinov/PycharmProjects/price_prediction/.venv/lib/python3.12/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but PowerTransformer was fitted with feature names
   warnings.warn(
 MAPE:  0.05062643910621021

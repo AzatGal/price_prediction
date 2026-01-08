@@ -9,7 +9,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cfg = EasyDict()
 cfg.seed = 0
 
-cfg.batch_size = 16  # 16
+cfg.batch_size = 1024  # 16
 cfg.lr = 3e-3  # 1 3 5
 cfg.lr_decay_factor = 1e-3
 cfg.lr_decay_by_block = 0.9
@@ -29,7 +29,7 @@ cfg.model_cfg = model_cfg
 cfg.data_cfg = data_cfg
 
 cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir', 'train')
-cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'pretrain', "transformer.pt")
+# cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'pretrain', "transformer.pt")
 
 cfg.num_epoch = 125
-cfg.task = 'price_prediction'
+cfg.model = 'PricePrediction'

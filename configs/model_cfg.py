@@ -4,9 +4,9 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_heads = 4
-cfg.embed_dim = 24 * cfg.num_heads
-cfg.num_blocks = 3
+cfg.num_heads = 16
+cfg.embed_dim = 8 * cfg.num_heads  # 24
+cfg.num_blocks = 2  # 3
 cfg.act = 'SiLU'  # SiLU
 cfg.num_embed_features = (data_cfg.data_transformer.num_bins +
                           data_cfg.data_transformer.num_cats)
@@ -14,7 +14,7 @@ cfg.num_embed_features = (data_cfg.data_transformer.num_bins +
 cfg.attn_dropout = 0.0
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
-cfg.compression_factor = 0.25
+cfg.compression_factor = 0.15
 cfg.compression = 'Head'  # Head KV Layer
 cfg.mlp_dim_factor = 1  # 5 / 3
 cfg.attn = 'Attn'  # Linear

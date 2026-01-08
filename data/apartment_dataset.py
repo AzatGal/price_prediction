@@ -14,7 +14,7 @@ class ApartmentDataset(Dataset):
                  data_transformer,
                  target,
                  num_masks,
-                 smooth=True
+                 smooth=True,
                  ) -> None:
         df = pd.read_csv(os.path.join(path, f"{dataset_type}.csv"))
         self.features = torch.as_tensor(data_transformer.transform(df))

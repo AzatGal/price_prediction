@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from modules.attention import LinearAttention, Attention
-from modules.mlp import GLUMLP, MLP
+from models.attention import LinearAttention, Attention
+from models.mlp import GLUMLP, MLP
 
 
 class Block(nn.Module):

@@ -17,8 +17,8 @@ def set_seed(seed):
 def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
     wu_steps = int(0.05 * num_steps)
     num_steps -= wu_steps
-    decay_steps = int(0.5 * num_steps)
-    num_steps -= decay_steps
+    # decay_steps = int(0.5 * num_steps)
+    # num_steps -= decay_steps
     schedulers = [
         torch.optim.lr_scheduler.LinearLR(optimizer,
                                           total_iters=wu_steps,
@@ -28,28 +28,28 @@ def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
     if decay == 'linear':
         schedulers.append(
             torch.optim.lr_scheduler.LinearLR(optimizer,
-                                              total_iters=decay_steps,
+                                              total_iters=num_steps,  # decay_steps,
                                               start_factor=1.0,
                                               end_factor=lr_decay_factor)
         )
     elif decay == 'cosine':
         schedulers.append(
             torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-                                                       T_max=decay_steps,
+                                                       T_max=num_steps,  # decay_steps,
                                                        eta_min=lr * lr_decay_factor)
         )
     else:
         raise NotImplementedError()
-    schedulers.append(
-        torch.optim.lr_scheduler.LinearLR(optimizer,
-                                          total_iters=num_steps,
-                                          start_factor=lr_decay_factor,
-                                          end_factor=lr_decay_factor / 10)
-    )
+    # schedulers.append(
+    #     torch.optim.lr_scheduler.LinearLR(optimizer,
+    #                                       total_iters=num_steps,
+    #                                       start_factor=lr_decay_factor,
+    #                                       end_factor=lr_decay_factor / 10)
+    # )
     return torch.optim.lr_scheduler.SequentialLR(
         optimizer,
         schedulers=schedulers,
-        milestones=[wu_steps, wu_steps + decay_steps],
+        milestones=[wu_steps],  # , wu_steps + decay_steps],
     )
 
 

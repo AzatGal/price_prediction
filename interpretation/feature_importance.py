@@ -12,9 +12,10 @@ from configs.train_cfg import cfg
 
 @torch.no_grad()
 def main():
+    print(cfg)
     trainer = Trainer(cfg)
-    trainer.load_model()
-    # print(trainer.model.embed.weight.dtype)
+    trainer.load_model('/Users/azatgalautdinov/PycharmProjects/price_prediction/interpretation/transformer.pt')
+    print(trainer.model.embed.weight.dtype)
 
     def kv_weights(block):
         k = block.attn.k_compressor.weight.abs().sum(dim=0)
@@ -32,8 +33,8 @@ def main():
 
     # num_bins = np.cumsum(cfg.data_cfg.data_transformer.num_bins)
     # # print(num_bins)
-    # # print(trainer.modules.embed.embed.weight)
-    # embed_weight = trainer.modules.embed.embed.weight[num_bins[0]: num_bins[1]]
+    # # print(trainer.models.embed.embed.weight)
+    # embed_weight = trainer.models.embed.embed.weight[num_bins[0]: num_bins[1]]
     # # for ew in embed_weight:
     # cs = cosine_similarity(embed_weight, embed_weight)
     # # sns.heatmap(cs) # , cmap="viridis")

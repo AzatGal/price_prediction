@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
-from modules.models import MaskedTableModeling, PricePrediction
+from models.transformers import MaskedTableModeling, PricePrediction, MaskedTableAutoencoder
 from utils.utils import set_seed, get_scheduler, mape, accuracy
 
 
@@ -18,14 +18,21 @@ class Trainer:
         self.cfg = cfg
         self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
-        # self.accelerator = None
-        self.accelerator = Accelerator(**self.cfg.accelerator_args)
+
+        self.accelerator = Accelerator(**cfg.accelerator_args)
+        (
+            self.model, self.optimizer, self.train_dataloader,
+            self.val_dataloader, self.scheduler
+        ) = self.accelerator.prepare(
+            self.model, self.optimizer, self.train_dataloader,
+            self.val_dataloader, self.scheduler
+        )
         print(self.accelerator.device)
 
         self.best_epoch = 0
-        if self.cfg.task == 'masked_table_modeling':
+        if self.cfg.target == 'mask':
             self.best_metric = float('-inf')
-        elif self.cfg.task == 'price_prediction':
+        elif self.cfg.target in ('cat', 'num'):
             self.best_metric = float('inf')
         else:
             raise NotImplementedError()
@@ -37,19 +44,22 @@ class Trainer:
         self.num_masks = self.cfg.get('num_masks')
 
         self.train_data = ApartmentDataset("train", data_cfg.path, self.data_transformer,
-                                           self.cfg.target, self.num_masks)  # , data_cfg.smooth)
+                                           self.cfg.target, self.num_masks)
         self.val_data = ApartmentDataset('valid', data_cfg.path, self.data_transformer,
-                                         self.cfg.target, self.num_masks)  # , data_cfg.smooth)
+                                         self.cfg.target, self.num_masks)
         self.train_dataloader = DataLoader(self.train_data, batch_size=self.cfg.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_data, batch_size=self.cfg.batch_size, shuffle=False)
 
     def _prepare_model(self, model_cfg):
-        if self.cfg.task == 'masked_table_modeling':
+        if self.cfg.model == 'MaskedTableModeling':
             self.model = MaskedTableModeling(**model_cfg)
-        elif self.cfg.task == 'price_prediction':
+        elif self.cfg.model == 'MaskedTableAutoencoder':
+            self.model = MaskedTableAutoencoder(**model_cfg)
+        elif self.cfg.model == 'PricePrediction':
             self.model = PricePrediction(**model_cfg)
         else:
             raise NotImplementedError()
+
         load_path = self.cfg.get('load_pretrained')
         if load_path is not None:
             self.load_model(load_path)
@@ -62,14 +72,14 @@ class Trainer:
     def metric(self, pred, label):
         pred = pred.cpu()
         label = label.cpu()
-        if self.cfg.task == 'masked_table_modeling':
+        if self.cfg.target == 'mask':
             return accuracy(pred, label)
-        elif self.cfg.task == 'price_prediction':
+        elif self.cfg.target in ('num', 'cat'):
+            if self.cfg.target == 'cat':
+                pred = pred.argmax(-1)
             pred = torch.as_tensor(
                 self.data_transformer.inverse_transform(pred, target=self.cfg.target)
             )
-            # print('pred', pred.device)
-            # print('label', label.device)
             return mape(pred, label)
         else:
             raise NotImplementedError()
@@ -87,7 +97,7 @@ class Trainer:
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
             pred = self.model(batch['features'], batch['mask'])
-            if self.cfg.task == 'masked_table_modeling':
+            if self.cfg.target == 'mask':
                 pred = pred.transpose(1, 2)
                 batch['target'] = batch['target'].transpose(1, 2)
             loss = self.criterion(pred, batch['target'])
@@ -138,8 +148,8 @@ class Trainer:
         total_metric /= len(self.val_data) * self.num_masks
         self._print('valid', total_loss, total_metric, time.time() - t)
         if (
-                (self.cfg.task == 'price_prediction' and total_metric < self.best_metric) or
-                (self.cfg.task == 'masked_table_modeling' and total_metric > self.best_metric)
+                (self.cfg.target in ('cat', 'num') and total_metric < self.best_metric) or
+                (self.cfg.target == 'mask' and total_metric > self.best_metric)
         ):
             print('best')
             self.save_model()
@@ -148,22 +158,12 @@ class Trainer:
             self.best_epoch = epoch
 
     def fit(self):
-        # self.accelerator = Accelerator(**self.cfg.accelerator_args)
-        # print(self.accelerator.device)
-        (
-            self.model, self.optimizer, self.train_dataloader,
-            self.val_dataloader, self.scheduler
-        ) = self.accelerator.prepare(
-            self.model, self.optimizer, self.train_dataloader,
-            self.val_dataloader, self.scheduler
-        )
         for epoch in range(self.cfg.num_epoch):
             epoch = epoch + 1
             print(f"Epoch {epoch}/{self.cfg.num_epoch}")
             self.train_epoch()
             self.evaluate(epoch)
         print(f"\nbest epoch: {self.best_epoch} - metric: {self.best_metric} - loss: {self.best_loss}")
-        # self.accelerator = None
 
     def overfitting_on_batch(self, max_step=1000):
         batch = next(iter(self.train_dataloader))

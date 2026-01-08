@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from modules.embedding import FeatureEmbedding
-from modules.block import Block
+from models.embedding import FeatureEmbedding
+from models.block import Block
 
 
 class Transformer(nn.Module):
@@ -159,6 +159,89 @@ class Transformer(nn.Module):
                 {'params': no_decay, 'weight_decay': 0.0}
             ]
             return torch.optim.AdamW(optim_groups, lr=lr)
+
+
+class MaskedTableAutoencoder(Transformer):
+    def __init__(self,
+                 embed_dim: int,
+                 decoder_embed_dim: int,
+                 num_embed_features: list[int],
+                 num_heads: int,
+                 decoder_num_heads: int,
+                 attn_dropout: float,
+                 mlp_dropout: float,
+                 dropout: float,
+                 act: str,
+                 mlp_dim_factor: float,
+                 num_blocks: int,
+                 decoder_num_blocks: int,
+                 attn: str,
+                 mlp: str,
+                 norm: str,
+                 pred_dim: int,
+                 log_softmax: bool = False,
+                 compression_factor: float = None,
+                 compression: str = None,
+                 ) -> None:
+        super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
+                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
+                         log_softmax, compression_factor, compression)
+
+        if compression is None:
+            compressors = [(None, None)] * num_blocks
+        elif compression == 'Head':
+            compressors = [self._get_compressors(False) for _ in range(decoder_num_blocks)]
+        elif compression == 'KV':
+            compressors = [self._get_compressors() for _ in range(decoder_num_blocks)]
+        elif compression == 'Layer':
+            compressors = [self._get_compressors()] * decoder_num_blocks
+        else:
+            raise NotImplementedError()
+
+        self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim)
+        self.decoder_pos_embed = nn.Parameter(torch.empty(self.seq_len, decoder_embed_dim))
+        self.decoder_embed_norm = getattr(nn, norm)(decoder_embed_dim)
+        self.decoder_blocks = nn.ModuleList([
+            Block(decoder_embed_dim, decoder_num_heads, attn_dropout, mlp_dropout, dropout,
+                  act, mlp_dim_factor, attn, mlp, norm, *compressors[i])
+            for i in range(decoder_num_blocks)
+        ])
+        self.decoder_norm = getattr(nn, norm)(decoder_embed_dim)
+        self.decoder_head = nn.Linear(decoder_embed_dim, pred_dim)
+        self.ids = torch.arange(self.seq_len).reshape(1, self.seq_len, 1)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        x = self.embed(x, mask)
+        B, T, C = x.shape
+
+        mask_ids = self.ids.expand(B, -1, C)[mask].reshape(B, -1, C)
+        mask_x = x.gather(1, mask_ids)
+        unmask_ids = self.ids.expand(B, -1, C)[~mask].reshape(B, -1, C)
+        unmask_x = x.gather(1, unmask_ids)
+
+        for i, block in enumerate(self.blocks):
+            unmask_x = block(unmask_x, None, self.apply_norm(i))
+        unmask_x = self.norm(unmask_x)
+
+        x = torch.cat(
+            [mask_x, unmask_x], dim=1
+        ).gather(
+            1, torch.cat([mask_ids, unmask_ids], dim=1).argsort(1)
+        )
+
+        x = self.decoder_embed(x)
+        x = x + self.decoder_pos_embed
+        x = self.decoder_embed_norm(x)
+
+        for i, block in enumerate(self.decoder_blocks):
+            x = block(x, mask if self.apply_mask(i) else None, self.apply_norm(i))
+
+        x = self.decoder_norm(x)
+        x = self.decoder_head(x)
+
+        if self.log_softmax:
+            x = F.log_softmax(x, -1)
+        return x.squeeze(2)
 
 
 class MaskedTableModeling(Transformer):

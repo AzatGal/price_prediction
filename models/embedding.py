@@ -23,10 +23,9 @@ class FeatureEmbedding(nn.Module):
         self.norm = getattr(nn, norm)(embed_dim)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        # assert torch.all(x < self.num_embed_features)
-        # x = x + self.offsets
-        x = x.masked_fill(mask, self.num_embeds)
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+        if mask is not None:
+            x = x.masked_fill(mask, self.num_embeds)
         x = F.embedding(x, self.weight)
         x = x + self.pos_embed
         x = self.norm(x)
