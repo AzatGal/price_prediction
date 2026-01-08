@@ -30,7 +30,7 @@ cfg.data_cfg = data_cfg
 
 cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')  # , 'train')
 cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'MaskedTableModeling.pt')
-# 'MaskedTableAutoencoder.pt')  # 'pretrain', "transformer.pt")
+# 'MaskedTableAutoencoder.pt')  # 'pretrain', "transformer.pt") MaskedTableModeling
 
 cfg.num_epoch = 125
 cfg.model = 'PricePrediction'
