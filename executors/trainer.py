@@ -42,13 +42,16 @@ class Trainer:
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
         self.num_masks = self.cfg.get('num_masks')
-
         self.train_data = ApartmentDataset("train", data_cfg.path, self.data_transformer,
                                            self.cfg.target, self.num_masks)
         self.val_data = ApartmentDataset('valid', data_cfg.path, self.data_transformer,
                                          self.cfg.target, self.num_masks)
-        self.train_dataloader = DataLoader(self.train_data, batch_size=self.cfg.batch_size, shuffle=True)
-        self.val_dataloader = DataLoader(self.val_data, batch_size=self.cfg.batch_size, shuffle=False)
+        kwargs = {'batch_size': self.cfg.batch_size}
+        if torch.cuda.is_available():
+            kwargs['num_workers'] = 4
+            kwargs['pin_memory'] = True
+        self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
+        self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
         if self.cfg.model == 'MaskedTableModeling':
