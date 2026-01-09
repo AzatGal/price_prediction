@@ -211,7 +211,7 @@ class MaskedTableAutoencoder(Transformer):
         ])
         self.decoder_norm = getattr(nn, norm)(decoder_embed_dim)
         self.decoder_head = nn.Linear(decoder_embed_dim, pred_dim)
-        self.ids = torch.arange(self.seq_len).reshape(1, self.seq_len, 1)
+        self.register_buffer('ids', torch.arange(self.seq_len).reshape(1, self.seq_len, 1))
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.embed(x, mask)
@@ -313,9 +313,9 @@ class PricePrediction(Transformer):
         super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
                          dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
                          log_softmax, compression_factor, compression)
-        # self.pp_head = nn.Linear(embed_dim, pred_dim)
-        self.pp_head = nn.Sequential(nn.SiLU(),
-                                     nn.Linear(embed_dim, pred_dim))
+        self.pp_head = nn.Linear(embed_dim, pred_dim)
+        # self.pp_head = nn.Sequential(nn.SiLU(),
+        #                              nn.Linear(embed_dim, pred_dim))
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.last_hidden_state(x, mask)
