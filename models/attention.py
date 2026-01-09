@@ -86,7 +86,7 @@ class Attention(nn.Module):
         self.k_compressor = k_compressor
         self.v_compressor = v_compressor
         self.seq_len = self.k_compressor.in_features
-        self.ids = torch.arange(self.seq_len).reshape(1, 1, self.seq_len, 1)
+        self.register_buffer('ids', torch.arange(self.seq_len).reshape(1, 1, self.seq_len, 1))
         # .expand(-1, self.num_heads, -1, self.head_dim))
 
     def forward(self,
