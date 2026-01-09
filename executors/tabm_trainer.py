@@ -180,7 +180,7 @@ if __name__ == "__main__":
     cfg.model_cfg = EasyDict(
         cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
         d_out=1,
-        arch_type='tabm-mini'
+        # arch_type='tabm-mini'
         # d_in,
         # n_blocks,
         # d_block,

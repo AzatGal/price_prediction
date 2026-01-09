@@ -32,6 +32,6 @@ class FeatureEmbedding(nn.Module):
             # x[torch.arange(x.size(0)), i] = self.num_embeds
         x = F.embedding(x, self.weight)
         x = x + self.pos_embed
-        x = self.norm(x)
+        # x = self.norm(x)
         x = self.dropout(x)
         return x

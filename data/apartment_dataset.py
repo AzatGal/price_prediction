@@ -51,6 +51,7 @@ class ApartmentDataset(Dataset):
         else:
             raise NotImplementedError()
 
+        self._target = self._target.float()
         self.target = target
         self.num_masks = num_masks
         self.num_unmasks = self.num_features - self.num_masks

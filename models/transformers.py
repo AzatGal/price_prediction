@@ -52,10 +52,11 @@ class Transformer(nn.Module):
         ])
         self.norm = getattr(nn, norm)(embed_dim)
 
-    def _forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def last_hidden_state(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.embed(x, mask)
         for i, block in enumerate(self.blocks):
-            x = block(x, mask, i > 0, i + 1 == len(self.blocks))
+            # x = block(x, mask, i > 0, i + 1 == len(self.blocks))
+            x = block(x, mask, True, i + 1 == len(self.blocks))
         x = self.norm(x)
         return x
 
@@ -280,7 +281,7 @@ class MaskedTableModeling(Transformer):
         self.tm_head = nn.Linear(embed_dim, pred_dim)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        x = super()._forward(x, mask)
+        x = self.last_hidden_state(x, mask)
         x = self.tm_head(x)
         if self.log_softmax:
             x = F.log_softmax(x, -1)
@@ -309,13 +310,12 @@ class PricePrediction(Transformer):
         super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
                          dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
                          log_softmax, compression_factor, compression)
-        self.pp_head = nn.Linear(embed_dim, pred_dim)
-        # self.pp_head = nn.Sequential(nn.Linear(embed_dim, 4 * embed_dim),
-        #                              nn.SiLU(),
-        #                              nn.Linear(4 * embed_dim, pred_dim))
+        # self.pp_head = nn.Linear(embed_dim, pred_dim)
+        self.pp_head = nn.Sequential(nn.SiLU(),
+                                     nn.Linear(embed_dim, pred_dim))
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        x = super()._forward(x, mask)
+        x = self.last_hidden_state(x, mask)
         x = self.pp_head(x)
         if self.log_softmax:
             x = F.log_softmax(x, -1)
