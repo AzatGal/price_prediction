@@ -76,6 +76,8 @@ class Trainer:
         if self.cfg.target == 'mask':
             return accuracy(pred, label)
         elif self.cfg.target in ('num', 'cat'):
+            # print(pred.shape)
+            # print(label.shape)
             pred = torch.as_tensor(
                 self.data_transformer.inverse_transform(pred, target=self.cfg.target)
             )
@@ -101,8 +103,8 @@ class Trainer:
                 batch['target'] = batch['target'].transpose(1, 2)
             # print('pred', pred.shape)
             # print('target', batch['target'].shape)
-            # loss = self.criterion(pred, batch['target'])
-            loss = logcosh_loss(pred, batch['target'])
+            loss = self.criterion(pred, batch['target'])
+            # loss = logcosh_loss(pred, batch['target'])
 
         if update_model:
             self.accelerator.backward(loss)
@@ -121,16 +123,19 @@ class Trainer:
         self.model.train()
         total_loss = 0
         total_metric = 0
+        total_samples = 0
 
         t = time.time()
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
-            total_loss += loss
-            total_metric += self.metric(pred, batch['label'])
+            batch_len = len(batch['label'])
+            total_samples += batch_len * self.num_masks
+            total_loss += loss * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
-        total_loss /= len(self.train_dataloader)
-        total_metric /= len(self.train_data) * self.num_masks
+        total_loss /= total_samples
+        total_metric /= total_samples
         self.time_training += t
 
         self._print('train', total_loss, total_metric, t)
@@ -140,15 +145,20 @@ class Trainer:
         self.model.eval()
         total_loss = 0
         total_metric = 0
+        total_samples = 0
+
         t = time.time()
         for i, batch in enumerate(self.val_dataloader):
             loss, pred = self.make_step(batch, False)
-            total_loss += loss
-            total_metric += self.metric(pred, batch['label'])
+            batch_len = len(batch['label'])
+            total_samples += batch_len * self.num_masks
+            total_loss += loss * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
 
-        total_loss /= len(self.val_dataloader)
-        total_metric /= len(self.val_data) * self.num_masks
+        total_loss /= total_samples
+        total_metric /= total_samples
         self._print('valid', total_loss, total_metric, time.time() - t)
+
         if (
                 (self.cfg.target in ('cat', 'num') and total_metric < self.best_metric) or
                 (self.cfg.target == 'mask' and total_metric > self.best_metric)

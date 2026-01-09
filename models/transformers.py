@@ -94,10 +94,13 @@ class Transformer(nn.Module):
                 if 'bias' in pn:
                     nn.init.zeros_(p)
                 else:
-                    nn.init.kaiming_uniform_(p, a=5 ** 0.5)
-                    # nn.init.normal_(p, std=0.02)
-                    # nn.init.kaiming_normal_(p, a=5 ** 0.5)
-                    # nn.init.xavier_uniform_(p, gain=1 / (2 ** 0.5))
+                    if 'compressor' in pn:
+                        nn.init.kaiming_normal_(p, a=5 ** 0.5)
+                    else:
+                        nn.init.kaiming_uniform_(p, a=5 ** 0.5)
+                        # nn.init.normal_(p, std=0.02)
+                        # nn.init.kaiming_normal_(p, a=5 ** 0.5)
+                        # nn.init.xavier_uniform_(p, gain=1 / (2 ** 0.5))
             if lr_decay_by_block is not None:
                 if 'embed' in pn:
                     embed.add(pn)

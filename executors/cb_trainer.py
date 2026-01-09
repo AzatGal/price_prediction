@@ -40,7 +40,7 @@ def fit_catboost(train_dataset, val_dataset):
         iterations=20_000,
         learning_rate=0.05,
         depth=10,
-        loss_function='MAE',
+        # loss_function='MAE',
         # eval_metric='MAPE',  # можно заменить на нужную метрику или оставить только loss
         verbose=1000,
         early_stopping_rounds=200,
@@ -76,49 +76,44 @@ if __name__ == '__main__':
     # print(train_dataset)
 
 """
-0:	learn: 0.7421810	test: 0.7371102	best: 0.7371102 (0)	total: 68.4ms	remaining: 22m 48s
-1000:	learn: 0.0718784	test: 0.1038959	best: 0.1038959 (1000)	total: 34s	remaining: 10m 45s
-2000:	learn: 0.0582226	test: 0.0990088	best: 0.0990088 (2000)	total: 1m 9s	remaining: 10m 25s
-3000:	learn: 0.0530162	test: 0.0974451	best: 0.0974450 (2999)	total: 1m 45s	remaining: 9m 56s
-4000:	learn: 0.0495079	test: 0.0964105	best: 0.0964105 (4000)	total: 2m 22s	remaining: 9m 29s
-5000:	learn: 0.0470900	test: 0.0956858	best: 0.0956838 (4996)	total: 2m 57s	remaining: 8m 51s
-6000:	learn: 0.0451075	test: 0.0950896	best: 0.0950896 (6000)	total: 3m 31s	remaining: 8m 14s
-7000:	learn: 0.0437175	test: 0.0946929	best: 0.0946890 (6990)	total: 4m 6s	remaining: 7m 37s
-8000:	learn: 0.0424693	test: 0.0942856	best: 0.0942856 (8000)	total: 4m 40s	remaining: 7m 1s
-9000:	learn: 0.0412132	test: 0.0939539	best: 0.0939539 (9000)	total: 5m 15s	remaining: 6m 25s
-10000:	learn: 0.0403156	test: 0.0937270	best: 0.0937269 (9999)	total: 5m 52s	remaining: 5m 52s
-11000:	learn: 0.0394307	test: 0.0934686	best: 0.0934686 (11000)	total: 6m 28s	remaining: 5m 17s
-12000:	learn: 0.0386447	test: 0.0932783	best: 0.0932770 (11994)	total: 7m 3s	remaining: 4m 42s
-13000:	learn: 0.0378554	test: 0.0931053	best: 0.0931009 (12958)	total: 7m 39s	remaining: 4m 7s
-14000:	learn: 0.0371141	test: 0.0928788	best: 0.0928788 (13992)	total: 8m 14s	remaining: 3m 31s
+0:	learn: 0.9611843	test: 0.9574410	best: 0.9574410 (0)	total: 89.4ms	remaining: 29m 47s
+1000:	learn: 0.0925948	test: 0.1510753	best: 0.1510715 (998)	total: 35.1s	remaining: 11m 6s
+2000:	learn: 0.0647928	test: 0.1441555	best: 0.1441493 (1999)	total: 1m 13s	remaining: 10m 58s
+3000:	learn: 0.0510592	test: 0.1419336	best: 0.1419336 (2999)	total: 1m 48s	remaining: 10m 13s
+4000:	learn: 0.0423678	test: 0.1408791	best: 0.1408765 (3996)	total: 2m 23s	remaining: 9m 35s
+5000:	learn: 0.0361971	test: 0.1403368	best: 0.1403367 (4999)	total: 3m	remaining: 9m
+6000:	learn: 0.0314793	test: 0.1400304	best: 0.1400303 (5999)	total: 3m 35s	remaining: 8m 23s
+7000:	learn: 0.0280239	test: 0.1398106	best: 0.1398106 (7000)	total: 4m 11s	remaining: 7m 47s
+8000:	learn: 0.0250604	test: 0.1397189	best: 0.1397153 (7947)	total: 4m 48s	remaining: 7m 12s
+9000:	learn: 0.0225972	test: 0.1396240	best: 0.1396166 (8904)	total: 5m 26s	remaining: 6m 38s
 Stopped by overfitting detector  (200 iterations wait)
 
-bestTest = 0.09281683573
-bestIteration = 14420
+bestTest = 0.139577544
+bestIteration = 9603
 
-Shrink models to first 14421 iterations.
-/Users/azatgalautdinov/PycharmProjects/price_prediction/.venv/lib/python3.12/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but PowerTransformer was fitted with feature names
+Shrink model to first 9604 iterations.
+/Users/azatgalautdinov/PycharmProjects/price_prediction/.venv/lib/python3.12/site-packages/sklearn/utils/validation.py:2739: UserWarning: X does not have valid feature names, but PowerTransformer was fitted with feature names
   warnings.warn(
-MAPE:  0.05062643910621021
+MAPE:  0.045554759900980964
                        Признак   Важность
-0                Общая площадь  24.148380
-1                        Округ  22.492477
-2          Расстояние до метро   9.343367
-3                        Район   9.277808
-4                     Парковка   6.777528
-5                Этажей в доме   4.112154
-6              Высота потолков   3.621754
-7                  Вид из окон   2.885054
-8                Площадь кухни   2.737452
-9                     Тип дома   2.518449
-10                        Этаж   2.488714
-11                 Тип продажи   2.463392
-12               Жилая площадь   2.102312
-13           Количество комнат   1.345585
-14  Лифт пассажирский (кол-во)   1.257071
-15      Лифт грузовой (кол-во)   1.232516
-16  Кол-во раздельных санузлов   0.996658
-17              Объект продажи   0.185637
-18                Мусоропровод   0.013693
+0                        Округ  26.520317
+1                Общая площадь  26.049735
+2                        Район   9.846700
+3          Расстояние до метро   8.397434
+4                     Парковка   5.391764
+5                Этажей в доме   4.171155
+6                  Тип продажи   3.443368
+7              Высота потолков   2.594383
+8                Площадь кухни   2.511524
+9                         Этаж   2.236118
+10                 Вид из окон   1.840830
+11                    Тип дома   1.557816
+12               Жилая площадь   1.476015
+13      Лифт грузовой (кол-во)   1.349974
+14           Количество комнат   0.985569
+15  Кол-во раздельных санузлов   0.905528
+16  Лифт пассажирский (кол-во)   0.663570
+17              Объект продажи   0.055959
+18                Мусоропровод   0.002240
 
 """

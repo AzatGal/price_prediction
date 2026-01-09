@@ -14,7 +14,7 @@ from configs.train_cfg import cfg
 def main():
     print(cfg)
     trainer = Trainer(cfg)
-    trainer.load_model('/Users/azatgalautdinov/PycharmProjects/price_prediction/interpretation/transformer.pt')
+    trainer.load_model()  # '/Users/azatgalautdinov/PycharmProjects/price_prediction/interpretation/transformer.pt')
     print(trainer.model.embed.weight.dtype)
 
     def kv_weights(block):

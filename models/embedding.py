@@ -22,7 +22,7 @@ class FeatureEmbedding(nn.Module):
         #     'offsets',
         #     torch.tensor([[0] + num_embed_features[:-1]]).cumsum(0)
         # )
-        self.norm = getattr(nn, norm)(embed_dim)
+        # self.norm = getattr(nn, norm)(embed_dim)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:

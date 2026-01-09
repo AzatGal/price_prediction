@@ -55,13 +55,13 @@ def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
 
 def accuracy(pred, label):
     pred = pred.argmax(1)
-    return torch.sum(pred == label).item()
+    return torch.mean(pred == label).item()
 
 
 def mape(pred, label, epsilon=1e-8):
     return torch.abs(
         (label - pred) / (label + epsilon)
-    ).sum().item()
+    ).mean().item()
 
 
 def logcosh_loss(pred, target):
