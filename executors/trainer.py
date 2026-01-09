@@ -63,6 +63,7 @@ class Trainer:
         load_path = self.cfg.get('load_pretrained')
         if load_path is not None:
             self.load_model(load_path)
+            print('load_pretrained')
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
                                                         self.cfg.get('lr_decay_by_block'))
@@ -75,8 +76,6 @@ class Trainer:
         if self.cfg.target == 'mask':
             return accuracy(pred, label)
         elif self.cfg.target in ('num', 'cat'):
-            if self.cfg.target == 'cat':
-                pred = pred.argmax(-1)
             pred = torch.as_tensor(
                 self.data_transformer.inverse_transform(pred, target=self.cfg.target)
             )
@@ -179,7 +178,53 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
     # from configs.pretrain_cfg import cfg
 
+    # cfg.lr = 1e-4
     trainer = Trainer(cfg)
+    # trainer.load_model()
     # trainer.overfitting_on_batch()
     trainer.fit()
 
+"""
+cpu
+Epoch 1/125
+train loss: 0.7999 - metric: 0.487 - time: 7.3 (7.3) 
+valid loss: 0.8201 - metric: 0.496 - time: 7.3 (0.3) 
+best
+Epoch 2/125
+train loss: 0.5164 - metric: 0.296 - time: 14.6 (7.2) 
+valid loss: 0.3990 - metric: 0.188 - time: 14.6 (0.4) 
+best
+Epoch 3/125
+train loss: 0.2732 - metric: 0.147 - time: 22.3 (7.7) 
+valid loss: 0.3086 - metric: 0.105 - time: 22.3 (0.3) 
+best
+Epoch 4/125
+train loss: 0.2629 - metric: 0.145 - time: 29.9 (7.6) 
+valid loss: 0.2703 - metric: 0.094 - time: 29.9 (0.3) 
+best
+Epoch 5/125
+train loss: 0.2206 - metric: 0.119 - time: 39.3 (9.4) 
+valid loss: 0.2952 - metric: 0.104 - time: 39.3 (0.3) 
+Epoch 6/125
+train loss: 0.2076 - metric: 0.112 - time: 47.0 (7.7) 
+valid loss: 0.2731 - metric: 0.087 - time: 47.0 (0.3) 
+best
+Epoch 7/125
+train loss: 0.1892 - metric: 0.103 - time: 54.4 (7.5) 
+valid loss: 0.2696 - metric: 0.092 - time: 54.4 (0.4) 
+Epoch 8/125
+train loss: 0.1778 - metric: 0.096 - time: 63.8 (9.3) 
+valid loss: 0.2645 - metric: 0.082 - time: 63.8 (0.5) 
+best
+Epoch 9/125
+train loss: 0.1694 - metric: 0.092 - time: 71.4 (7.7) 
+valid loss: 0.2501 - metric: 0.086 - time: 71.4 (0.4) 
+Epoch 10/125
+train loss: 0.1632 - metric: 0.089 - time: 80.0 (8.6) 
+valid loss: 0.2928 - metric: 0.093 - time: 80.0 (0.3) 
+Epoch 11/125
+train loss: 0.1500 - metric: 0.081 - time: 89.2 (9.2) 
+valid loss: 0.2132 - metric: 0.078 - time: 89.2 (0.4) 
+best
+Epoch 12/125
+"""

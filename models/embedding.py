@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from models.mlp import GLUMLP
+
 
 class FeatureEmbedding(nn.Module):
     def __init__(self,
@@ -26,6 +28,8 @@ class FeatureEmbedding(nn.Module):
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         if mask is not None:
             x = x.masked_fill(mask, self.num_embeds)
+            # i = torch.randint(0, mask.size(1), (1,)).item()
+            # x[torch.arange(x.size(0)), i] = self.num_embeds
         x = F.embedding(x, self.weight)
         x = x + self.pos_embed
         x = self.norm(x)

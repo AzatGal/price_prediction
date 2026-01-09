@@ -150,11 +150,11 @@ class BlockEnsemble(nn.Module):
                     norm_attn: bool,
                     mask_only_attn: bool
                     ) -> torch.Tensor:
-        if norm_attn:
-            y = self.attn_norm(x)
-        else:
-            y = x
-        y = self.attn(y, mask, mask_only_attn)
+        # if norm_attn:
+        #     y = self.attn_norm(x)
+        # else:
+        #     y = x
+        y = self.attn(x, mask, mask_only_attn) # y
         y = self.attn_drop(y)
         if mask_only_attn:
             y = y + x[mask].reshape(y.shape)
@@ -163,8 +163,8 @@ class BlockEnsemble(nn.Module):
         return y
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
-        y = self.mlp_norm(x)
-        y = self.mlp(y)
+        # y = self.mlp_norm(x)
+        y = self.mlp(x) # y
         y = self.mlp_drop(y)
         y = y + x
         return y
@@ -232,7 +232,7 @@ class PricePredEnsemble(nn.Module):
         mask = mask.unsqueeze(1).expand(-1, self.k, -1)
         for i, block in enumerate(self.blocks):
             x = block(x, mask, i > 0, i + 1 == len(self.blocks))
-        x = self.norm(x)
+        # x = self.norm(x)
         # print(x.shape)
         x = self.head(x)
         # print(x.shape)

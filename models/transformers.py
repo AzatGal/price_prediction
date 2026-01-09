@@ -60,11 +60,11 @@ class Transformer(nn.Module):
         return x
 
     def _get_compressors(self, same: bool = True) -> (nn.Linear, nn.Linear):
-        c = nn.Linear(self.seq_len, int(self.compression_factor * self.seq_len), False)
+        c = nn.Linear(self.seq_len, max(1, int(self.compression_factor * self.seq_len)), False)
         if same:
             return c, c
         else:
-            return c, nn.Linear(self.seq_len, int(self.compression_factor * self.seq_len), False)
+            return c, nn.Linear(self.seq_len, max(1, int(self.compression_factor * self.seq_len)), False)
 
     def configure_optimizer(self,
                             lr: float,
@@ -93,11 +93,10 @@ class Transformer(nn.Module):
                 if 'bias' in pn:
                     nn.init.zeros_(p)
                 else:
-                    nn.init.kaiming_uniform_(p, a=5**0.5)
+                    nn.init.kaiming_uniform_(p, a=5 ** 0.5)
                     # nn.init.normal_(p, std=0.02)
                     # nn.init.kaiming_normal_(p, a=5 ** 0.5)
                     # nn.init.xavier_uniform_(p, gain=1 / (2 ** 0.5))
-
             if lr_decay_by_block is not None:
                 if 'embed' in pn:
                     embed.add(pn)
@@ -217,13 +216,13 @@ class MaskedTableAutoencoder(Transformer):
         mask_ids = self.ids.expand(B, -1, C)[mask].reshape(B, -1, C)
         mask_x = x.gather(1, mask_ids)
 
-        noise = torch.rand(mask_x.shape[:2], device=x.device)
-        ids_shuffle = noise.argsort(dim=1)
-        ids_restore = ids_shuffle.argsort(1)
-        ids_shuffle = ids_shuffle.unsqueeze(2).expand(-1, -1, C)
-        ids_restore = ids_restore.unsqueeze(2).expand(-1, -1, C)
-
-        mask_x = mask_x.gather(1, ids_shuffle)
+        # noise = torch.rand(mask_x.shape[:2], device=x.device)
+        # ids_shuffle = noise.argsort(dim=1)
+        # ids_restore = ids_shuffle.argsort(1)
+        # ids_shuffle = ids_shuffle.unsqueeze(2).expand(-1, -1, C)
+        # ids_restore = ids_restore.unsqueeze(2).expand(-1, -1, C)
+        #
+        # mask_x = mask_x.gather(1, ids_shuffle)
 
         unmask_ids = self.ids.expand(B, -1, C)[~mask].reshape(B, -1, C)
         unmask_x = x.gather(1, unmask_ids)
@@ -232,7 +231,7 @@ class MaskedTableAutoencoder(Transformer):
             unmask_x = block(unmask_x, ~mask, i > 0)
         unmask_x = self.norm(unmask_x)
 
-        mask_x = mask_x.gather(1, ids_restore)
+        # mask_x = mask_x.gather(1, ids_restore)
 
         x = torch.cat(
             [mask_x, unmask_x], dim=1
@@ -245,8 +244,6 @@ class MaskedTableAutoencoder(Transformer):
         x = self.decoder_embed_norm(x)
 
         for i, block in enumerate(self.decoder_blocks):
-            # print(2)
-            # print(i + 1 == len(self.decoder_blocks))
             x = block(x, mask, i > 0, i + 1 == len(self.decoder_blocks))
 
         # print(x.shape)
@@ -313,13 +310,16 @@ class PricePrediction(Transformer):
                          dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
                          log_softmax, compression_factor, compression)
         self.pp_head = nn.Linear(embed_dim, pred_dim)
+        # self.pp_head = nn.Sequential(nn.Linear(embed_dim, 4 * embed_dim),
+        #                              nn.SiLU(),
+        #                              nn.Linear(4 * embed_dim, pred_dim))
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = super()._forward(x, mask)
         x = self.pp_head(x)
         if self.log_softmax:
             x = F.log_softmax(x, -1)
-        return x.squeeze(2)
+        return x.squeeze(1)
 
 
 if __name__ == '__main__':

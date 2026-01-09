@@ -3,8 +3,8 @@ import time
 
 from easydict import EasyDict
 
-from models.ensembles import PricePredEnsemble
-from models.tabm import TabM
+# from models.ensembles import PricePredEnsemble
+import models.tabm as tabm
 
 import torch
 import torch.nn as nn
@@ -48,13 +48,28 @@ class TabmTrainer:
         self.val_dataloader = DataLoader(self.val_data, batch_size=self.cfg.batch_size, shuffle=False)
 
     def _prepare_model(self, model_cfg):
-        # self.model = TabM.make(**model_cfg)
-        self.model = PricePredEnsemble(**model_cfg)
+        self.model = tabm.TabM.make(**model_cfg)
+        # d_in = 24
+        # d = 512
+        # d_out = 1
+        # k = 32
+        #
+        # # Any MLP-like backbone can be used.
+        # backbone = tabm.MLPBackbone(
+        #     d_in=d_in, n_blocks=2, d_block=d, dropout=0.1
+        # )
+        # self.model = nn.Sequential(
+        #     tabm.EnsembleView(k=k),
+        #     tabm.ElementwiseAffine((k, d_in), bias=False, scaling_init='normal'),
+        #     backbone,
+        #     tabm.LinearEnsemble(d, d_out, k=k),
+        # )
+        # self.model = PricePredEnsemble(**model_cfg)
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        # self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
-        #                                    weight_decay=self.cfg.weight_decay)
-        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
-                                                        self.cfg.get('lr_decay_by_block'))
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
+                                           weight_decay=self.cfg.weight_decay)
+        # self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
+        #                                                 self.cfg.get('lr_decay_by_block'))
         self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
                                        self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
@@ -70,21 +85,19 @@ class TabmTrainer:
 
     def save_model(self):
         os.makedirs(self.cfg.exp_dir, exist_ok=True)
-        save_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  # "tabm.pt")
+        save_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  #
         torch.save(self.model.state_dict(), save_path)
 
     def load_model(self, load_path=None):
         if load_path is None:
-            load_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  # "tabm.pt")
+            load_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  # "tabm.pt")
         self.model.load_state_dict(torch.load(load_path))
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            # pred = self.model(x_cat=batch['features'][:, 1:])
-            pred = self.model(batch['features'], batch['mask'])
+            pred = self.model(x_cat=batch['features'][:, 1:])
+            # pred = self.model(batch['features'], batch['mask'])
             pred = pred.squeeze(-1)
-            # print(pred.shape)
-            # print(batch['target'].shape)
             target = batch['target'].expand(-1, pred.size(1))
             # print(pred.shape)
             # print(target.shape)
@@ -162,37 +175,38 @@ class TabmTrainer:
 if __name__ == "__main__":
     from configs.train_cfg import cfg
 
-    # cfg.weight_decay = 3e-4
+    cfg.weight_decay = 3e-4
 
-    # cfg.model_cfg = EasyDict(
-    #     cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
-    #     d_out=1,
-    #     # d_in,
-    #     # n_blocks,
-    #     # d_block,
-    #     # dropout=0.1,
-    #     # activation='ReLU',
-    #     # k=32
-    # )
-    model_cfg = EasyDict()
-
-    model_cfg.k = 32
-    model_cfg.embed_dim = 32  # 24
-    model_cfg.num_blocks = 1  # 3
-    model_cfg.act = 'SiLU'  # SiLU
-    model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
-                                    cfg.data_cfg.data_transformer.num_cats)
-    model_cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
-    model_cfg.attn_dropout = 0.0
-    model_cfg.mlp_dropout = 0.1
-    model_cfg.dropout = 0.1
-    model_cfg.compression_factor = 0.2
-    model_cfg.compression = 'Head'  # Head KV Layer
-    model_cfg.mlp_dim_factor = 1  # 5 / 3
-    model_cfg.norm = 'LayerNorm'
-    model_cfg.log_softmax = False  # False True
-
-    cfg.model_cfg = model_cfg
+    cfg.model_cfg = EasyDict(
+        cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
+        d_out=1,
+        arch_type='tabm-mini'
+        # d_in,
+        # n_blocks,
+        # d_block,
+        # dropout=0.1,
+        # activation='ReLU',
+        # k=32
+    )
+    # model_cfg = EasyDict()
+    #
+    # model_cfg.k = 16
+    # model_cfg.embed_dim = 16  # 24
+    # model_cfg.num_blocks = 1  # 3
+    # model_cfg.act = 'SiLU'  # SiLU
+    # model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
+    #                                 cfg.data_cfg.data_transformer.num_cats)
+    # model_cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
+    # model_cfg.attn_dropout = 0.0
+    # model_cfg.mlp_dropout = 0.1
+    # model_cfg.dropout = 0.1
+    # model_cfg.compression_factor = 0.5
+    # model_cfg.compression = 'Head'  # Head KV Layer
+    # model_cfg.mlp_dim_factor = 4  # 5 / 3
+    # model_cfg.norm = 'LayerNorm'
+    # model_cfg.log_softmax = False  # False True
+    #
+    # cfg.model_cfg = model_cfg
 
     trainer = TabmTrainer(cfg)
     # trainer.overfitting_on_batch()
@@ -201,77 +215,40 @@ if __name__ == "__main__":
 """
 cpu
 Epoch 1/125
-train loss: 0.7820 - metric: 0.490 - time: 5.4 (5.4) 
-valid loss: 0.5449 - metric: 0.297 - time: 5.4 (0.3) 
+train loss: 0.7584 - metric: 0.450 - time: 37.2 (37.2) 
+valid loss: 0.4836 - metric: 0.237 - time: 37.2 (1.7) 
 best
 Epoch 2/125
-train loss: 0.4184 - metric: 0.221 - time: 10.7 (5.3) 
-valid loss: 0.3114 - metric: 0.159 - time: 10.7 (0.3) 
+train loss: 0.3793 - metric: 0.190 - time: 72.4 (35.2) 
+valid loss: 0.3031 - metric: 0.157 - time: 72.4 (1.7) 
 best
 Epoch 3/125
-train loss: 0.3368 - metric: 0.176 - time: 16.1 (5.4) 
-valid loss: 0.2667 - metric: 0.141 - time: 16.1 (0.3) 
+train loss: 0.2945 - metric: 0.150 - time: 109.6 (37.2) 
+valid loss: 0.2585 - metric: 0.125 - time: 109.6 (1.7) 
 best
 Epoch 4/125
-train loss: 0.3164 - metric: 0.165 - time: 21.8 (5.7) 
-valid loss: 0.2589 - metric: 0.141 - time: 21.8 (0.3) 
+train loss: 0.2571 - metric: 0.131 - time: 144.9 (35.3) 
+valid loss: 0.2357 - metric: 0.115 - time: 144.9 (1.7) 
 best
 Epoch 5/125
-train loss: 0.3056 - metric: 0.160 - time: 27.2 (5.4) 
-valid loss: 0.2619 - metric: 0.133 - time: 27.2 (0.3) 
+train loss: 0.2366 - metric: 0.122 - time: 179.1 (34.2) 
+valid loss: 0.2203 - metric: 0.108 - time: 179.1 (1.7) 
 best
 Epoch 6/125
-train loss: 0.2965 - metric: 0.155 - time: 32.6 (5.4) 
-valid loss: 0.2551 - metric: 0.135 - time: 32.6 (0.3) 
+train loss: 0.2294 - metric: 0.118 - time: 214.7 (35.6) 
+valid loss: 0.2148 - metric: 0.104 - time: 214.7 (1.7) 
+best
 Epoch 7/125
-train loss: 0.2897 - metric: 0.152 - time: 38.0 (5.4) 
-valid loss: 0.2579 - metric: 0.132 - time: 38.0 (0.3) 
+train loss: 0.2191 - metric: 0.113 - time: 250.1 (35.4) 
+valid loss: 0.2164 - metric: 0.103 - time: 250.1 (1.7) 
 best
 Epoch 8/125
-train loss: 0.2814 - metric: 0.148 - time: 43.3 (5.4) 
-valid loss: 0.2550 - metric: 0.140 - time: 43.3 (0.3) 
+train loss: 0.2139 - metric: 0.111 - time: 284.8 (34.7) 
+valid loss: 0.2056 - metric: 0.104 - time: 284.8 (1.7) 
 Epoch 9/125
-train loss: 0.2759 - metric: 0.145 - time: 48.7 (5.4) 
-valid loss: 0.2354 - metric: 0.124 - time: 48.7 (0.3) 
-best
-Epoch 10/125
-train loss: 0.2707 - metric: 0.143 - time: 54.1 (5.4) 
-valid loss: 0.2290 - metric: 0.118 - time: 54.1 (0.3) 
-best
-Epoch 11/125
-train loss: 0.2677 - metric: 0.140 - time: 59.5 (5.3) 
-valid loss: 0.2399 - metric: 0.132 - time: 59.5 (0.3) 
-Epoch 12/125
-train loss: 0.2661 - metric: 0.140 - time: 64.8 (5.4) 
-valid loss: 0.2364 - metric: 0.126 - time: 64.8 (0.3) 
-Epoch 13/125
-train loss: 0.2678 - metric: 0.142 - time: 70.2 (5.4) 
-valid loss: 0.2419 - metric: 0.123 - time: 70.2 (0.3) 
-Epoch 14/125
-train loss: 0.2642 - metric: 0.139 - time: 75.6 (5.4) 
-valid loss: 0.2445 - metric: 0.139 - time: 75.6 (0.3) 
-Epoch 15/125
-train loss: 0.2619 - metric: 0.138 - time: 81.0 (5.5) 
-valid loss: 0.2265 - metric: 0.122 - time: 81.0 (0.3) 
-Epoch 16/125
-train loss: 0.2588 - metric: 0.136 - time: 86.4 (5.4) 
-valid loss: 0.2340 - metric: 0.119 - time: 86.4 (0.3) 
-Epoch 17/125
-train loss: 0.2591 - metric: 0.136 - time: 91.8 (5.4) 
-valid loss: 0.2316 - metric: 0.126 - time: 91.8 (0.3) 
-Epoch 18/125
-train loss: 0.2593 - metric: 0.137 - time: 97.2 (5.4) 
-valid loss: 0.2307 - metric: 0.129 - time: 97.2 (0.3) 
-Epoch 19/125
-train loss: 0.2569 - metric: 0.135 - time: 102.6 (5.4) 
-valid loss: 0.2426 - metric: 0.129 - time: 102.6 (0.3) 
-Epoch 20/125
-train loss: 0.2565 - metric: 0.135 - time: 108.2 (5.6) 
-valid loss: 0.2272 - metric: 0.122 - time: 108.2 (0.3) 
-Epoch 21/125
-train loss: 0.2559 - metric: 0.136 - time: 113.6 (5.4) 
-valid loss: 0.2234 - metric: 0.121 - time: 113.6 (0.3) 
-Epoch 22/125
+train loss: 0.2100 - metric: 0.108 - time: 321.5 (36.7) 
+valid loss: 0.2008 - metric: 0.096 - time: 321.5 (1.7) 
+
 
 cpu
 Epoch 1/125

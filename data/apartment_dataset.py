@@ -22,7 +22,8 @@ class ApartmentDataset(Dataset):
 
         if target == 'cat':
             num_bins = data_transformer.num_bins[0] if smooth else None
-            self._target = self.get_target(self.features[:, 0], data_transformer.num_bins[0], num_bins)
+            self._target = self.get_target(self.features[:, 0], data_transformer.num_bins[0],
+                                           num_bins, [0, num_bins]).squeeze()
             self._label = torch.as_tensor(df[['Стоимость']].values)
             self._mask = torch.zeros(self.num_features, dtype=torch.bool)
             self._mask[0] = True
@@ -58,7 +59,7 @@ class ApartmentDataset(Dataset):
         if smooth_range is None:
             target = F.one_hot(labels, num_classes=num_classes)
         else:
-            smooth_range = smooth_range // 4
+            smooth_range = smooth_range // 2
             smooth_range = smooth_range + smooth_range % 2 + 1
             if smooth_range < 5:
                 target = F.one_hot(labels, num_classes=num_classes)
@@ -109,12 +110,14 @@ class ApartmentDataset(Dataset):
 if __name__ == '__main__':
     from configs.data_cfg import cfg
     ad = ApartmentDataset('train', cfg.path,
-                          cfg.data_transformer, 'mask', 20)
-    # t = ad[0]['features']
+                          cfg.data_transformer, 'cat', 1)
+    # print(cfg.data_transformer.offsets)
+    t = ad[10]['features']
+    print(t)
     # print(t.shape)
     # print(cfg.data_transformer.inverse_transform(t))  # , target=True))
     # print(t)
-    labels = torch.randint(0, 12, [64,])
-    ad.num_samples = 64
-    print(labels)
-    print(ad.get_target(labels, 64, 12, [0, 12]).squeeze()[torch.argwhere(labels == 0)])
+    # labels = torch.randint(0, 12, [64,])
+    # ad.num_samples = 64
+    # print(labels)
+    # print(ad.get_target(labels, 64, 12, [0, 12]).squeeze()[torch.argwhere(labels == 0)])
