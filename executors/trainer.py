@@ -131,8 +131,8 @@ class Trainer:
         t = time.time()
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
-            batch_len = len(batch['label'])
-            total_samples += batch_len * self.num_masks
+            batch_len = len(batch['label']) * self.num_masks
+            total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
 
@@ -153,8 +153,8 @@ class Trainer:
         t = time.time()
         for i, batch in enumerate(self.val_dataloader):
             loss, pred = self.make_step(batch, False)
-            batch_len = len(batch['label'])
-            total_samples += batch_len * self.num_masks
+            batch_len = len(batch['label']) * self.num_masks
+            total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
 
