@@ -64,6 +64,10 @@ def mape(pred, label, epsilon=1e-8):
     ).sum().item()
 
 
+def logcosh_loss(pred, target):
+    return torch.cosh(pred - target).log().mean()
+
+
 if __name__ == '__main__':
     model = torch.nn.Linear(2, 2)
     opt = torch.optim.SGD(model.parameters(), lr=0.1)

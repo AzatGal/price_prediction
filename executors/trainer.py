@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
 from models.transformers import MaskedTableModeling, PricePrediction, MaskedTableAutoencoder
-from utils.utils import set_seed, get_scheduler, mape, accuracy
+from utils.utils import set_seed, get_scheduler, mape, accuracy, logcosh_loss
 
 
 class Trainer:
@@ -101,7 +101,8 @@ class Trainer:
                 batch['target'] = batch['target'].transpose(1, 2)
             # print('pred', pred.shape)
             # print('target', batch['target'].shape)
-            loss = self.criterion(pred, batch['target'])
+            # loss = self.criterion(pred, batch['target'])
+            loss = logcosh_loss(pred, batch['target'])
 
         if update_model:
             self.accelerator.backward(loss)
