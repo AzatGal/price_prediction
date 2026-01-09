@@ -55,7 +55,7 @@ def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
 
 def accuracy(pred, label):
     pred = pred.argmax(1)
-    return torch.mean(pred == label).item()
+    return (pred == label).float().mean().item()
 
 
 def mape(pred, label, epsilon=1e-8):
