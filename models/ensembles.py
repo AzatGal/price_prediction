@@ -20,6 +20,7 @@ class LinearEnsemble(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: [B, k, T, C]
+        # print('lex', x.shape)
         x = x @ self.weight
         if self.bias is not None:
             x = x + self.bias
@@ -39,13 +40,15 @@ class AttnEnsemble(nn.Module):
         self.k = k
         self.embed_dim = embed_dim
         self.qkv_proj = LinearEnsemble(k, embed_dim, 3 * embed_dim)
-        # self.out_proj = LinearEnsemble(k, embed_dim, embed_dim)
+        self.num_heads = 2
+        self.head_dim = embed_dim // self.num_heads
+        self.out_proj = LinearEnsemble(k, embed_dim, embed_dim)
 
         self.k_compressor = k_compressor
         self.v_compressor = v_compressor
         if k_compressor is not None:
             self.seq_len = self.k_compressor.in_features
-            self.ids = torch.arange(self.seq_len).reshape(1, 1, self.seq_len, 1)
+            self.register_buffer('ids', torch.arange(self.seq_len).reshape(1, 1, 1, self.seq_len, 1))
 
     def forward(self,
                 x: torch.Tensor,
@@ -54,47 +57,59 @@ class AttnEnsemble(nn.Module):
                 ) -> torch.Tensor:
         # x: [B, k, T, C]
         B, _, T, _ = x.shape
-        q, k, v = self.qkv_proj(x).chunk(3, 3)
-        # if mask is not None:
-        #     mask = mask.unsqueeze(1).expand(-1, self.k, -1)
+        q, k, v = (self.qkv_proj(x)
+                   .reshape(B, self.k, T, self.num_heads, 3, self.head_dim)
+                   .permute(0, 3, 1, 2, 4, 5)
+                   .unbind(4))
+        # print('q', q.shape)
+        if mask is not None:
+            # print('mask', mask.shape)
+            mask = mask.unsqueeze(1).expand(-1, self.num_heads, -1, -1)
         if mask_only_attn:
-            q = q[mask].reshape(B, self.k, -1, self.embed_dim)
+            q = q[mask].reshape(B, self.num_heads, self.k, -1, self.head_dim)
         if self.k_compressor is not None:
-            if T < self.seq_len:
-                t = torch.zeros(
-                    B, self.k, self.seq_len, self.embed_dim,
-                    dtype=k.dtype, device=k.device
-                ).scatter_(
-                    2,
-                    (self.ids
-                     .expand(B, self.k, -1, self.embed_dim)[mask]
-                     .reshape(B, self.k, -1, self.embed_dim)),
-                    k
-                )
-                k = t
+            # if T < self.seq_len:
+            #     t = torch.zeros(
+            #         B, self.k, self.num_heads, self.seq_len, self.embed_dim,
+            #         dtype=k.dtype, device=k.device
+            #     ).scatter_(
+            #         2,
+            #         (self.ids
+            #          .expand(B, self.k, self.num_heads, -1, self.embed_dim)[mask]
+            #          .reshape(B, self.k, self.num_heads, -1, self.embed_dim)),
+            #         k
+            #     )
+            #     k = t
             k = self.k_compressor(
-                k.transpose(2, 3)
-            ).transpose(2, 3)
+                k.transpose(3, 4)
+            ).transpose(3, 4)
         if self.v_compressor is not None:
-            if T < self.seq_len:
-                t = torch.zeros(
-                    B, self.k, self.seq_len, self.embed_dim,
-                    dtype=k.dtype, device=k.device
-                ).scatter_(
-                    2,
-                    (self.ids
-                     .expand(B, self.k, -1, self.embed_dim)[mask]
-                     .reshape(B, self.k, -1, self.embed_dim)),
-                    v
-                )
-                v = t
+            # if T < self.seq_len:
+            #     t = torch.zeros(
+            #         B, self.k, self.num_heads, self.seq_len, self.embed_dim,
+            #         dtype=k.dtype, device=k.device
+            #     ).scatter_(
+            #         2,
+            #         (self.ids
+            #          .expand(B, self.k, self.num_heads, -1, self.embed_dim)[mask]
+            #          .reshape(B, self.k, self.num_heads, -1, self.embed_dim)),
+            #         v
+            #     )
+            #     v = t
             v = self.v_compressor(
-                v.transpose(2, 3)
-            ).transpose(2, 3)
+                v.transpose(3, 4)
+            ).transpose(3, 4)
         a = F.scaled_dot_product_attention(
             q, k, v,
             dropout_p=self.dropout if self.training else 0.0
         )
+        # print('a', a.shape)
+        a = self.out_proj(
+            a
+            .transpose(2, 3)
+            .reshape(B, self.k, -1, self.embed_dim)
+        )
+        # print(a.shape)
         return a
 
 
@@ -135,8 +150,8 @@ class BlockEnsemble(nn.Module):
                  v_compressor: LinearEnsemble = None
                  ) -> None:
         super().__init__()
-        self.attn_norm = getattr(nn, norm)(embed_dim)
-        self.mlp_norm = getattr(nn, norm)(embed_dim)
+        self.attn_norm = getattr(nn, norm)([k, embed_dim])
+        self.mlp_norm = getattr(nn, norm)([k, embed_dim])
 
         self.attn_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)
@@ -150,11 +165,14 @@ class BlockEnsemble(nn.Module):
                     norm_attn: bool,
                     mask_only_attn: bool
                     ) -> torch.Tensor:
-        # if norm_attn:
-        #     y = self.attn_norm(x)
-        # else:
-        #     y = x
-        y = self.attn(x, mask, mask_only_attn) # y
+        if norm_attn:
+            y = self.attn_norm(
+                x.transpose(1, 2)
+            ).transpose(1, 2)
+        else:
+            y = x
+        # y = self.attn_norm(x)
+        y = self.attn(y, mask, mask_only_attn)  # y
         y = self.attn_drop(y)
         if mask_only_attn:
             y = y + x[mask].reshape(y.shape)
@@ -163,8 +181,10 @@ class BlockEnsemble(nn.Module):
         return y
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
-        # y = self.mlp_norm(x)
-        y = self.mlp(x) # y
+        y = self.mlp_norm(
+            x.transpose(1, 2)
+        ).transpose(1, 2)
+        y = self.mlp(y)  # y
         y = self.mlp_drop(y)
         y = y + x
         return y
@@ -226,12 +246,13 @@ class PricePredEnsemble(nn.Module):
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.embed(x, mask)
         x = x.unsqueeze(1).expand(-1, self.k, -1, -1)
+        # print(x.shape)
         # print(mask.shape)
         # mask = mask.unsqueeze(1)
         # print(mask.shape)
         mask = mask.unsqueeze(1).expand(-1, self.k, -1)
         for i, block in enumerate(self.blocks):
-            x = block(x, mask, i > 0, i + 1 == len(self.blocks))
+            x = block(x, mask, True, i + 1 == len(self.blocks))
         # x = self.norm(x)
         # print(x.shape)
         x = self.head(x)

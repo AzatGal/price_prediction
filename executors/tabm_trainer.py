@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
+from models.ensembles import PricePredEnsemble
 from utils.utils import set_seed, get_scheduler, mape
 
 
@@ -39,16 +40,17 @@ class TabmTrainer:
 
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
-        self.data_transformer.apply_offsets = False
+        # self.data_transformer.apply_offsets = False
+        self.num_masks = self.cfg.get('num_masks')
         self.train_data = ApartmentDataset("train", data_cfg.path, self.data_transformer,
-                                           self.cfg.target, 1)
+                                           self.cfg.target, self.num_masks)
         self.val_data = ApartmentDataset('valid', data_cfg.path, self.data_transformer,
-                                         self.cfg.target, 1)
+                                         self.cfg.target, self.num_masks)
         self.train_dataloader = DataLoader(self.train_data, batch_size=self.cfg.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_data, batch_size=self.cfg.batch_size, shuffle=False)
 
     def _prepare_model(self, model_cfg):
-        self.model = tabm.TabM.make(**model_cfg)
+        # self.model = tabm.TabM.make(**model_cfg)
         # d_in = 24
         # d = 512
         # d_out = 1
@@ -64,12 +66,12 @@ class TabmTrainer:
         #     backbone,
         #     tabm.LinearEnsemble(d, d_out, k=k),
         # )
-        # self.model = PricePredEnsemble(**model_cfg)
+        self.model = PricePredEnsemble(**model_cfg)
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
-                                           weight_decay=self.cfg.weight_decay)
-        # self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
-        #                                                 self.cfg.get('lr_decay_by_block'))
+        # self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
+        #                                    weight_decay=self.cfg.weight_decay)
+        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
+                                                        self.cfg.get('lr_decay_by_block'))
         self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
                                        self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
@@ -85,18 +87,20 @@ class TabmTrainer:
 
     def save_model(self):
         os.makedirs(self.cfg.exp_dir, exist_ok=True)
-        save_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  #
+        # save_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  #
+        save_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  #
         torch.save(self.model.state_dict(), save_path)
 
     def load_model(self, load_path=None):
         if load_path is None:
-            load_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  # "tabm.pt")
+            # load_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  # "tabm.pt")
+            load_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  # "tabm.pt")
         self.model.load_state_dict(torch.load(load_path))
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            pred = self.model(x_cat=batch['features'][:, 1:])
-            # pred = self.model(batch['features'], batch['mask'])
+            # pred = self.model(x_cat=batch['features'][:, 1:])
+            pred = self.model(batch['features'], batch['mask'])
             pred = pred.squeeze(-1)
             target = batch['target'].expand(-1, pred.size(1))
             # print(pred.shape)
@@ -121,16 +125,19 @@ class TabmTrainer:
         self.model.train()
         total_loss = 0
         total_metric = 0
+        total_samples = 0
 
         t = time.time()
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
-            total_loss += loss
-            total_metric += self.metric(pred, batch['label'])
+            batch_len = len(batch['label']) * self.num_masks
+            total_samples += batch_len
+            total_loss += loss * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
-        total_loss /= len(self.train_dataloader)
-        total_metric /= len(self.train_data)
+        total_loss /= total_samples
+        total_metric /= total_samples
         self.time_training += t
 
         self._print('train', total_loss, total_metric, t)
@@ -140,15 +147,22 @@ class TabmTrainer:
         self.model.eval()
         total_loss = 0
         total_metric = 0
+        total_samples = 0
+
         t = time.time()
         for i, batch in enumerate(self.val_dataloader):
             loss, pred = self.make_step(batch, False)
-            total_loss += loss
-            total_metric += self.metric(pred, batch['label'])
+            batch_len = len(batch['label']) * self.num_masks
+            total_samples += batch_len
+            total_loss += loss * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
 
-        total_loss /= len(self.val_dataloader)
-        total_metric /= len(self.val_data)
-        self._print('valid', total_loss, total_metric, time.time() - t)
+        t = time.time() - t
+        total_loss /= total_samples
+        total_metric /= total_samples
+        self.time_training += t
+
+        self._print('valid', total_loss, total_metric, t)
         if total_metric < self.best_metric:
             print('best')
             self.save_model()
@@ -176,37 +190,37 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
 
     cfg.weight_decay = 3e-4
+    #
+    # cfg.model_cfg = EasyDict(
+    #     cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
+    #     d_out=1,
+    #     # arch_type='tabm-mini'
+    #     # d_in,
+    #     # n_blocks,
+    #     # d_block,
+    #     # dropout=0.1,
+    #     # activation='ReLU',
+    #     # k=32
+    # )
+    model_cfg = EasyDict()
 
-    cfg.model_cfg = EasyDict(
-        cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
-        d_out=1,
-        # arch_type='tabm-mini'
-        # d_in,
-        # n_blocks,
-        # d_block,
-        # dropout=0.1,
-        # activation='ReLU',
-        # k=32
-    )
-    # model_cfg = EasyDict()
-    #
-    # model_cfg.k = 16
-    # model_cfg.embed_dim = 16  # 24
-    # model_cfg.num_blocks = 1  # 3
-    # model_cfg.act = 'SiLU'  # SiLU
-    # model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
-    #                                 cfg.data_cfg.data_transformer.num_cats)
-    # model_cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
-    # model_cfg.attn_dropout = 0.0
-    # model_cfg.mlp_dropout = 0.1
-    # model_cfg.dropout = 0.1
-    # model_cfg.compression_factor = 0.5
-    # model_cfg.compression = 'Head'  # Head KV Layer
-    # model_cfg.mlp_dim_factor = 4  # 5 / 3
-    # model_cfg.norm = 'LayerNorm'
-    # model_cfg.log_softmax = False  # False True
-    #
-    # cfg.model_cfg = model_cfg
+    model_cfg.k = 12
+    model_cfg.embed_dim = 48  # 24
+    model_cfg.num_blocks = 1  # 3
+    model_cfg.act = 'SiLU'  # SiLU
+    model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
+                                    cfg.data_cfg.data_transformer.num_cats)
+    model_cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
+    model_cfg.attn_dropout = 0.05
+    model_cfg.mlp_dropout = 0.1
+    model_cfg.dropout = 0.1
+    model_cfg.compression_factor = 0.15
+    model_cfg.compression = 'KV'  # Head KV Layer
+    model_cfg.mlp_dim_factor = 1  # 5 / 3
+    model_cfg.norm = 'LayerNorm'
+    model_cfg.log_softmax = False  # False True
+
+    cfg.model_cfg = model_cfg
 
     trainer = TabmTrainer(cfg)
     # trainer.overfitting_on_batch()
