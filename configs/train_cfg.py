@@ -9,18 +9,18 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cfg = EasyDict()
 cfg.seed = 0
 
-cfg.batch_size = 256  # 16
-cfg.lr = 3e-3  # 1 3 5
+cfg.batch_size = 16  # 16
+cfg.lr = 6e-3  # 1 3 5
 cfg.lr_decay_factor = 1e-3
 # cfg.lr_decay_by_block = 0.5
 
-cfg.weight_decay = 0.1
-cfg.target = 'num'  # cat
+cfg.weight_decay = 0.0001
+cfg.target = 'num'  # cat num
 cfg.num_masks = 1
 
-cfg.loss = 'MSELoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
+cfg.loss = 'MSELoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss MSELoss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
-cfg.decay = 'cosine'
+cfg.decay = 'linear'  # cosine
 
 cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}
 

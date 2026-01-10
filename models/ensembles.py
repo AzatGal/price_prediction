@@ -5,6 +5,49 @@ import torch.nn.functional as F
 from models.embedding import FeatureEmbedding
 
 
+class FeatureEmbeddingEnsemble(nn.Module):
+    def __init__(self,
+                 k: int,
+                 num_embed_features: list[int],
+                 embed_dim: int,
+                 norm: str,
+                 dropout: float
+                 ) -> None:
+        super().__init__()
+        # self.num_embed_features = torch.tensor(num_embed_features)
+        self.k = k
+        self.embed_dim = embed_dim
+        self.num_embeds = sum(num_embed_features) + 1
+        self.seq_len = len(num_embed_features)
+        # self.mask_token = nn.Parameter(torch)
+        self.weight = nn.Parameter(torch.empty(self.num_embeds * k, embed_dim))
+        self.pos_embed = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        self.register_buffer('offsets',
+                             torch.arange(k).unsqueeze(1) * self.num_embeds)
+        # self.norm = getattr(nn, norm)(embed_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+        x = x.unsqueeze(1).repeat(1, self.k, 1)
+        x = x + self.offsets
+        if mask is not None:
+            # print(x.shape)
+            # print(x[mask.unsqueeze(1).repeat(1, self.k, 1)].shape)
+            for i in range(self.k):
+                x[:, i] = x[:, i].masked_fill(mask, (self.offsets[i] + self.num_embeds - 1).item())
+            # x[mask.unsqueeze(1).repeat(1, self.k, 1)].reshape(x.size(0), self.k, -1) = self.offsets - 1
+            # x = x.masked_fill(mask, self.num_embeds - 1)
+            # i = torch.randint(0, mask.size(1), (1,)).item()
+            # x[torch.arange(x.size(0)), i] = self.num_embeds
+        # print(x.max())
+        x = F.embedding(x, self.weight)
+        # x = x.reshape(-1, self.k, self.seq_len, self.embed_dim)
+        x = x + self.pos_embed
+        # x = self.norm(x)
+        x = self.dropout(x)
+        return x
+
+
 class LinearEnsemble(nn.Module):
     def __init__(self,
                  k: int,
@@ -152,8 +195,8 @@ class BlockEnsemble(nn.Module):
                  v_compressor: LinearEnsemble = None
                  ) -> None:
         super().__init__()
-        self.attn_norm = getattr(nn, norm)([k, embed_dim])
-        self.mlp_norm = getattr(nn, norm)([k, embed_dim])
+        self.attn_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        self.mlp_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
 
         self.attn_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)
@@ -168,9 +211,7 @@ class BlockEnsemble(nn.Module):
                     mask_only_attn: bool
                     ) -> torch.Tensor:
         if norm_attn:
-            y = self.attn_norm(
-                x.transpose(1, 2)
-            ).transpose(1, 2)
+            y = self.attn_norm(x)
         else:
             y = x
         # y = self.attn_norm(x)
@@ -183,9 +224,7 @@ class BlockEnsemble(nn.Module):
         return y
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
-        y = self.mlp_norm(
-            x.transpose(1, 2)
-        ).transpose(1, 2)
+        y = self.mlp_norm(x)
         y = self.mlp(y)  # y
         y = self.mlp_drop(y)
         y = y + x
@@ -222,7 +261,7 @@ class PricePredEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.k = k
-        self.embed = FeatureEmbedding(num_embed_features, embed_dim, norm, dropout)
+        self.embed = FeatureEmbeddingEnsemble(k, num_embed_features, embed_dim, norm, dropout)
 
         self.log_softmax = log_softmax
         self.seq_len = len(num_embed_features)
@@ -248,7 +287,7 @@ class PricePredEnsemble(nn.Module):
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.embed(x, mask)
-        x = x.unsqueeze(1).expand(-1, self.k, -1, -1)
+        # x = x.unsqueeze(1).expand(-1, self.k, -1, -1)
         # print(x.shape)
         # print(mask.shape)
         # mask = mask.unsqueeze(1)

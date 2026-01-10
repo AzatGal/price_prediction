@@ -106,7 +106,13 @@ class TabmTrainer:
             # pred = self.model(x_cat=batch['features'][:, 1:])
             pred = self.model(batch['features'], batch['mask'])
             pred = pred.squeeze(-1)
-            target = batch['target'].expand(-1, pred.size(1))
+            # print(pred.shape)
+            if self.cfg.target == 'cat':
+                target = batch['target'].unsqueeze(1).expand(-1, pred.size(1), -1)
+                pred = pred.transpose(1, 2)
+                target = target.transpose(1, 2)
+            elif self.cfg.target == 'num':
+                target = batch['target'].expand(-1, pred.size(1))
             # print(pred.shape)
             # print(target.shape)
             loss = self.criterion(pred, target)
@@ -119,7 +125,12 @@ class TabmTrainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        pred = pred.mean(1)
+        if self.cfg.target == 'cat':
+            pred = pred.sum(2)
+        elif self.cfg.target == 'num':
+            pred = pred.mean(1)
+        else:
+            raise NotImplementedError()
         return loss.item(), pred.detach()
 
     def _print(self, s, l, m, t):
@@ -210,18 +221,18 @@ if __name__ == "__main__":
 
     model_cfg.k = 12
     model_cfg.embed_dim = 12  # 24
-    model_cfg.num_heads = 3
+    model_cfg.num_heads = 2
     model_cfg.num_blocks = 1  # 3
     model_cfg.act = 'SiLU'  # SiLU
     model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
                                     cfg.data_cfg.data_transformer.num_cats)
-    model_cfg.pred_dim = 1  # cfg.num_embed_features[0]  # 1  #
+    model_cfg.pred_dim = 1  #
     model_cfg.attn_dropout = 0.05
     model_cfg.mlp_dropout = 0.1
     model_cfg.dropout = 0.1
     model_cfg.compression_factor = 0.15
     model_cfg.compression = 'KV'  # Head KV Layer
-    model_cfg.mlp_dim_factor = 1  # 5 / 3
+    model_cfg.mlp_dim_factor = 5 / 3
     model_cfg.norm = 'LayerNorm'
     model_cfg.log_softmax = False  # False True
 
@@ -234,40 +245,63 @@ if __name__ == "__main__":
 """
 cpu
 Epoch 1/125
-train loss: 0.7584 - metric: 0.450 - time: 37.2 (37.2) 
-valid loss: 0.4836 - metric: 0.237 - time: 37.2 (1.7) 
+train loss: 4.4923 - metric: 0.543 - time: 21.0 (21.0) 
+valid loss: 3.9489 - metric: 0.257 - time: 22.0 (1.0) 
 best
 Epoch 2/125
-train loss: 0.3793 - metric: 0.190 - time: 72.4 (35.2) 
-valid loss: 0.3031 - metric: 0.157 - time: 72.4 (1.7) 
+train loss: 3.5333 - metric: 0.153 - time: 45.7 (23.7) 
+valid loss: 3.2604 - metric: 0.119 - time: 46.9 (1.2) 
 best
 Epoch 3/125
-train loss: 0.2945 - metric: 0.150 - time: 109.6 (37.2) 
-valid loss: 0.2585 - metric: 0.125 - time: 109.6 (1.7) 
+train loss: 3.3376 - metric: 0.122 - time: 70.8 (23.9) 
+valid loss: 3.1580 - metric: 0.116 - time: 72.0 (1.2) 
 best
 Epoch 4/125
-train loss: 0.2571 - metric: 0.131 - time: 144.9 (35.3) 
-valid loss: 0.2357 - metric: 0.115 - time: 144.9 (1.7) 
+train loss: 3.2289 - metric: 0.111 - time: 96.1 (24.1) 
+valid loss: 3.0216 - metric: 0.092 - time: 97.3 (1.2) 
 best
 Epoch 5/125
-train loss: 0.2366 - metric: 0.122 - time: 179.1 (34.2) 
-valid loss: 0.2203 - metric: 0.108 - time: 179.1 (1.7) 
-best
+train loss: 3.1364 - metric: 0.102 - time: 121.3 (24.0) 
+valid loss: 3.0314 - metric: 0.094 - time: 122.5 (1.2) 
 Epoch 6/125
-train loss: 0.2294 - metric: 0.118 - time: 214.7 (35.6) 
-valid loss: 0.2148 - metric: 0.104 - time: 214.7 (1.7) 
+train loss: 3.0893 - metric: 0.098 - time: 146.3 (23.8) 
+valid loss: 3.0127 - metric: 0.089 - time: 147.5 (1.2) 
 best
 Epoch 7/125
-train loss: 0.2191 - metric: 0.113 - time: 250.1 (35.4) 
-valid loss: 0.2164 - metric: 0.103 - time: 250.1 (1.7) 
-best
+train loss: 3.0510 - metric: 0.094 - time: 171.6 (24.1) 
+valid loss: 3.0213 - metric: 0.105 - time: 172.7 (1.2) 
 Epoch 8/125
-train loss: 0.2139 - metric: 0.111 - time: 284.8 (34.7) 
-valid loss: 0.2056 - metric: 0.104 - time: 284.8 (1.7) 
+train loss: 2.9978 - metric: 0.089 - time: 196.8 (24.1) 
+valid loss: 2.9651 - metric: 0.106 - time: 198.0 (1.2) 
 Epoch 9/125
-train loss: 0.2100 - metric: 0.108 - time: 321.5 (36.7) 
-valid loss: 0.2008 - metric: 0.096 - time: 321.5 (1.7) 
-
+train loss: 2.9590 - metric: 0.087 - time: 222.0 (23.9) 
+valid loss: 2.8622 - metric: 0.088 - time: 223.2 (1.2) 
+best
+Epoch 10/125
+train loss: 2.9293 - metric: 0.085 - time: 247.1 (23.9) 
+valid loss: 2.9927 - metric: 0.094 - time: 248.3 (1.2) 
+Epoch 11/125
+train loss: 2.9038 - metric: 0.083 - time: 272.3 (24.1) 
+valid loss: 2.8241 - metric: 0.083 - time: 273.5 (1.2) 
+best
+Epoch 12/125
+train loss: 2.8786 - metric: 0.081 - time: 297.5 (24.0) 
+valid loss: 2.8797 - metric: 0.090 - time: 298.9 (1.4) 
+Epoch 13/125
+train loss: 2.8597 - metric: 0.079 - time: 326.2 (27.3) 
+valid loss: 2.8930 - metric: 0.091 - time: 327.7 (1.5) 
+Epoch 14/125
+train loss: 2.8378 - metric: 0.077 - time: 357.1 (29.4) 
+valid loss: 2.8477 - metric: 0.081 - time: 358.3 (1.2) 
+best
+Epoch 15/125
+train loss: 2.8226 - metric: 0.076 - time: 384.7 (26.4) 
+valid loss: 2.8437 - metric: 0.081 - time: 386.0 (1.2) 
+Epoch 16/125
+train loss: 2.8068 - metric: 0.075 - time: 415.2 (29.2) 
+valid loss: 2.7880 - metric: 0.073 - time: 416.6 (1.4) 
+best
+Epoch 17/125
 
 cpu
 Epoch 1/125
