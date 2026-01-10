@@ -31,6 +31,7 @@ class AttnEnsemble(nn.Module):
     def __init__(self,
                  k: int,
                  embed_dim: int,
+                 num_heads: int,
                  dropout: float,
                  k_compressor: LinearEnsemble = None,
                  v_compressor: LinearEnsemble = None,
@@ -40,8 +41,8 @@ class AttnEnsemble(nn.Module):
         self.k = k
         self.embed_dim = embed_dim
         self.qkv_proj = LinearEnsemble(k, embed_dim, 3 * embed_dim)
-        self.num_heads = 2
-        self.head_dim = embed_dim // self.num_heads
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
         self.out_proj = LinearEnsemble(k, embed_dim, embed_dim)
 
         self.k_compressor = k_compressor
@@ -140,6 +141,7 @@ class BlockEnsemble(nn.Module):
     def __init__(self,
                  k: int,
                  embed_dim: int,
+                 num_heads: int,
                  attn_dropout: float,
                  mlp_dropout: float,
                  dropout: float,
@@ -157,7 +159,7 @@ class BlockEnsemble(nn.Module):
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = GLUMLPEnsemble(k, embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.attn = AttnEnsemble(k, embed_dim, attn_dropout, k_compressor, v_compressor)
+        self.attn = AttnEnsemble(k, embed_dim, num_heads, attn_dropout, k_compressor, v_compressor)
 
     def _attn_block(self,
                     x: torch.Tensor,
@@ -204,6 +206,7 @@ class PricePredEnsemble(nn.Module):
     def __init__(self,
                  k: int,
                  embed_dim: int,
+                 num_heads: int,
                  num_embed_features: list[int],
                  attn_dropout: float,
                  mlp_dropout: float,
@@ -236,7 +239,7 @@ class PricePredEnsemble(nn.Module):
             raise NotImplementedError()
 
         self.blocks = nn.ModuleList([
-            BlockEnsemble(k, embed_dim, attn_dropout, mlp_dropout, dropout,
+            BlockEnsemble(k, embed_dim, num_heads, attn_dropout, mlp_dropout, dropout,
                           act, mlp_dim_factor, norm, *compressors[i])
             for i in range(num_blocks)
         ])

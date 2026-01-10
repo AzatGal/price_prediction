@@ -46,8 +46,12 @@ class TabmTrainer:
                                            self.cfg.target, self.num_masks)
         self.val_data = ApartmentDataset('valid', data_cfg.path, self.data_transformer,
                                          self.cfg.target, self.num_masks)
-        self.train_dataloader = DataLoader(self.train_data, batch_size=self.cfg.batch_size, shuffle=True)
-        self.val_dataloader = DataLoader(self.val_data, batch_size=self.cfg.batch_size, shuffle=False)
+        kwargs = {'batch_size': self.cfg.batch_size}
+        if torch.cuda.is_available():
+            kwargs['num_workers'] = 4
+            kwargs['pin_memory'] = True
+        self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
+        self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
         # self.model = tabm.TabM.make(**model_cfg)
@@ -205,7 +209,8 @@ if __name__ == "__main__":
     model_cfg = EasyDict()
 
     model_cfg.k = 12
-    model_cfg.embed_dim = 48  # 24
+    model_cfg.embed_dim = 12  # 24
+    model_cfg.num_heads = 3
     model_cfg.num_blocks = 1  # 3
     model_cfg.act = 'SiLU'  # SiLU
     model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
