@@ -26,6 +26,7 @@ class FeatureEmbeddingEnsemble(nn.Module):
                              torch.arange(k).unsqueeze(1) * self.num_embeds)
         # self.norm = getattr(nn, norm)(embed_dim)
         self.dropout = nn.Dropout(dropout)
+        # self.compressor = LinearEnsemble(k, self.seq_len, int(self.seq_len * 0.75))
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         x = x.unsqueeze(1).repeat(1, self.k, 1)
@@ -43,6 +44,9 @@ class FeatureEmbeddingEnsemble(nn.Module):
         x = F.embedding(x, self.weight)
         # x = x.reshape(-1, self.k, self.seq_len, self.embed_dim)
         x = x + self.pos_embed
+        # x = self.compressor(
+        #     x.transpose(2, 3)
+        # ).transpose(2, 3)
         # x = self.norm(x)
         x = self.dropout(x)
         return x

@@ -9,12 +9,12 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cfg = EasyDict()
 cfg.seed = 0
 
-cfg.batch_size = 16  # 16
+cfg.batch_size = 64  # 16
 cfg.lr = 6e-3  # 1 3 5
 cfg.lr_decay_factor = 1e-3
 # cfg.lr_decay_by_block = 0.5
 
-cfg.weight_decay = 0.0001
+cfg.weight_decay = 0.00001
 cfg.target = 'num'  # cat num
 cfg.num_masks = 1
 
@@ -33,7 +33,7 @@ cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')  # , 'train')
 # 'MaskedTableAutoencoder.pt')  # 'pretrain', "transformer.pt") MaskedTableModeling
 
 cfg.num_epoch = 125
-cfg.model = 'PricePrediction'
+cfg.model = 'PricePredEnsemble'  # PricePrediction TabM
 
 
 """

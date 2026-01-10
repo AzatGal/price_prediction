@@ -54,23 +54,27 @@ class TabmTrainer:
         self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        # self.model = tabm.TabM.make(**model_cfg)
-        # d_in = 24
-        # d = 512
-        # d_out = 1
-        # k = 32
-        #
-        # # Any MLP-like backbone can be used.
-        # backbone = tabm.MLPBackbone(
-        #     d_in=d_in, n_blocks=2, d_block=d, dropout=0.1
-        # )
-        # self.model = nn.Sequential(
-        #     tabm.EnsembleView(k=k),
-        #     tabm.ElementwiseAffine((k, d_in), bias=False, scaling_init='normal'),
-        #     backbone,
-        #     tabm.LinearEnsemble(d, d_out, k=k),
-        # )
-        self.model = PricePredEnsemble(**model_cfg)
+        if self.cfg.model == 'TabM':
+            self.model = tabm.TabM.make(**model_cfg)
+            # d_in = 24
+            # d = 512
+            # d_out = 1
+            # k = 32
+            #
+            # # Any MLP-like backbone can be used.
+            # backbone = tabm.MLPBackbone(
+            #     d_in=d_in, n_blocks=2, d_block=d, dropout=0.1
+            # )
+            # self.model = nn.Sequential(
+            #     tabm.EnsembleView(k=k),
+            #     tabm.ElementwiseAffine((k, d_in), bias=False, scaling_init='normal'),
+            #     backbone,
+            #     tabm.LinearEnsemble(d, d_out, k=k),
+            # )
+        elif self.cfg.model == 'PricePredEnsemble':
+            self.model = PricePredEnsemble(**model_cfg)
+        else:
+            raise NotImplementedError()
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         # self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
         #                                    weight_decay=self.cfg.weight_decay)
@@ -204,9 +208,10 @@ class TabmTrainer:
 if __name__ == "__main__":
     from configs.train_cfg import cfg
 
-    cfg.weight_decay = 3e-4
+    # cfg.weight_decay = 3e-4
     #
     # cfg.model_cfg = EasyDict(
+
     #     cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
     #     d_out=1,
     #     # arch_type='tabm-mini'
@@ -219,8 +224,8 @@ if __name__ == "__main__":
     # )
     model_cfg = EasyDict()
 
-    model_cfg.k = 12
-    model_cfg.embed_dim = 12  # 24
+    model_cfg.k = 32
+    model_cfg.embed_dim = 16  # 24
     model_cfg.num_heads = 2
     model_cfg.num_blocks = 1  # 3
     model_cfg.act = 'SiLU'  # SiLU
@@ -230,11 +235,13 @@ if __name__ == "__main__":
     model_cfg.attn_dropout = 0.05
     model_cfg.mlp_dropout = 0.1
     model_cfg.dropout = 0.1
-    model_cfg.compression_factor = 0.15
+    model_cfg.compression_factor = 0.1
     model_cfg.compression = 'KV'  # Head KV Layer
     model_cfg.mlp_dim_factor = 5 / 3
     model_cfg.norm = 'LayerNorm'
     model_cfg.log_softmax = False  # False True
+
+    # model_cfg.name = 'PricePredEnsemble'
 
     cfg.model_cfg = model_cfg
 
