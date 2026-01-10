@@ -33,7 +33,7 @@ cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')  # , 'train')
 # 'MaskedTableAutoencoder.pt')  # 'pretrain', "transformer.pt") MaskedTableModeling
 
 cfg.num_epoch = 125
-cfg.model = 'PricePredEnsemble'  # PricePrediction TabM
+cfg.model = 'TabM'  # PricePrediction TabM PricePredEnsemble
 
 
 """

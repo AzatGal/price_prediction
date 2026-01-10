@@ -40,7 +40,8 @@ class TabmTrainer:
 
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
-        # self.data_transformer.apply_offsets = False
+        if self.cfg.model == 'TabM':
+            self.data_transformer.apply_offsets = False
         self.num_masks = self.cfg.get('num_masks')
         self.train_data = ApartmentDataset("train", data_cfg.path, self.data_transformer,
                                            self.cfg.target, self.num_masks)
@@ -76,10 +77,12 @@ class TabmTrainer:
         else:
             raise NotImplementedError()
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        # self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
-        #                                    weight_decay=self.cfg.weight_decay)
-        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
-                                                        self.cfg.get('lr_decay_by_block'))
+        if self.cfg.model == 'TabM':
+            self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
+                                               weight_decay=self.cfg.weight_decay)
+        else:
+            self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
+                                                            self.cfg.get('lr_decay_by_block'))
         self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
                                        self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
@@ -107,8 +110,10 @@ class TabmTrainer:
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            # pred = self.model(x_cat=batch['features'][:, 1:])
-            pred = self.model(batch['features'], batch['mask'])
+            if self.cfg.model == 'TabM':
+                pred = self.model(x_cat=batch['features'][:, 1:])
+            else:
+                pred = self.model(batch['features'], batch['mask'])
             pred = pred.squeeze(-1)
             # print(pred.shape)
             if self.cfg.target == 'cat':
@@ -209,41 +214,40 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
 
     # cfg.weight_decay = 3e-4
+
+    cfg.model_cfg = EasyDict(
+        cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
+        d_out=1,
+        # arch_type='tabm-mini'
+        # d_in,
+        # n_blocks,
+        # d_block,
+        # dropout=0.1,
+        # activation='ReLU',
+        # k=32
+    )
+    # model_cfg = EasyDict()
     #
-    # cfg.model_cfg = EasyDict(
-
-    #     cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
-    #     d_out=1,
-    #     # arch_type='tabm-mini'
-    #     # d_in,
-    #     # n_blocks,
-    #     # d_block,
-    #     # dropout=0.1,
-    #     # activation='ReLU',
-    #     # k=32
-    # )
-    model_cfg = EasyDict()
-
-    model_cfg.k = 32
-    model_cfg.embed_dim = 16  # 24
-    model_cfg.num_heads = 2
-    model_cfg.num_blocks = 1  # 3
-    model_cfg.act = 'SiLU'  # SiLU
-    model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
-                                    cfg.data_cfg.data_transformer.num_cats)
-    model_cfg.pred_dim = 1  #
-    model_cfg.attn_dropout = 0.05
-    model_cfg.mlp_dropout = 0.1
-    model_cfg.dropout = 0.1
-    model_cfg.compression_factor = 0.1
-    model_cfg.compression = 'KV'  # Head KV Layer
-    model_cfg.mlp_dim_factor = 5 / 3
-    model_cfg.norm = 'LayerNorm'
-    model_cfg.log_softmax = False  # False True
+    # model_cfg.k = 32
+    # model_cfg.embed_dim = 16  # 24
+    # model_cfg.num_heads = 2
+    # model_cfg.num_blocks = 1  # 3
+    # model_cfg.act = 'SiLU'  # SiLU
+    # model_cfg.num_embed_features = (cfg.data_cfg.data_transformer.num_bins +
+    #                                 cfg.data_cfg.data_transformer.num_cats)
+    # model_cfg.pred_dim = 1  #
+    # model_cfg.attn_dropout = 0.05
+    # model_cfg.mlp_dropout = 0.1
+    # model_cfg.dropout = 0.1
+    # model_cfg.compression_factor = 0.1
+    # model_cfg.compression = 'KV'  # Head KV Layer
+    # model_cfg.mlp_dim_factor = 5 / 3
+    # model_cfg.norm = 'LayerNorm'
+    # model_cfg.log_softmax = False  # False True
 
     # model_cfg.name = 'PricePredEnsemble'
 
-    cfg.model_cfg = model_cfg
+    # cfg.model_cfg = model_cfg
 
     trainer = TabmTrainer(cfg)
     # trainer.overfitting_on_batch()
