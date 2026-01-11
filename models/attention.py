@@ -105,7 +105,7 @@ class Attention(nn.Module):
             q = q[mask].reshape(B, self.num_heads, -1, self.head_dim)
         if self.k_compressor is not None:
             if T < self.seq_len:
-                t = torch.zeros(
+                k = torch.zeros(
                     B, self.num_heads, self.seq_len, self.head_dim,
                     dtype=k.dtype, device=k.device
                 ).scatter_(
@@ -115,13 +115,13 @@ class Attention(nn.Module):
                      .reshape(B, self.num_heads, -1, self.head_dim)),
                     k
                 )
-                k = t
+                # k = t
             k = self.k_compressor(
                 k.transpose(2, 3)
             ).transpose(2, 3)
         if self.v_compressor is not None:
             if T < self.seq_len:
-                t = torch.zeros(
+                v = torch.zeros(
                     B, self.num_heads, self.seq_len, self.head_dim,
                     dtype=k.dtype, device=k.device
                 ).scatter_(
@@ -131,7 +131,7 @@ class Attention(nn.Module):
                      .reshape(B, self.num_heads, -1, self.head_dim)),
                     v
                 )
-                v = t
+                # v = t
             v = self.v_compressor(
                 v.transpose(2, 3)
             ).transpose(2, 3)

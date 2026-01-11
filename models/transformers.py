@@ -94,13 +94,19 @@ class Transformer(nn.Module):
                 if 'bias' in pn:
                     nn.init.zeros_(p)
                 else:
-                    if 'compressor' in pn:
-                        nn.init.kaiming_normal_(p, a=5 ** 0.5)
-                    else:
+                    if 'head' in pn:
                         nn.init.kaiming_uniform_(p, a=5 ** 0.5)
-                        # nn.init.normal_(p, std=0.02)
-                        # nn.init.kaiming_normal_(p, a=5 ** 0.5)
-                        # nn.init.xavier_uniform_(p, gain=1 / (2 ** 0.5))
+                    else:
+                        nn.init.normal_(p, std=0.02)
+                    # if 'compressor' in pn:
+                    #     # nn.init.kaiming_normal_(p, a=5 ** 0.5)
+                    #     # nn.init.normal_(p, std=0.02)
+                    # else:
+                    #     # nn.init.kaiming_uniform_(p, a=5 ** 0.5)
+                    #     # nn.init.uniform_(p, -0.02, 0.02)
+                    #     # nn.init.normal_(p, std=0.02)
+                    #     # nn.init.kaiming_normal_(p, a=5 ** 0.5)
+                    #     # nn.init.xavier_uniform_(p, gain=1 / (2 ** 0.5))
             if lr_decay_by_block is not None:
                 if 'embed' in pn:
                     embed.add(pn)
@@ -121,6 +127,8 @@ class Transformer(nn.Module):
                 else:
                     decay.add(pn)
 
+
+        # self.embed.fill_last_values_features_zero()
         # if self.embed.weight[:-1].shape == self.pred_head.weight.shape:
         #     self.embed.weight[:-1] = self.pred_head.weight
 
@@ -203,7 +211,7 @@ class MaskedTableAutoencoder(Transformer):
 
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim)
         self.decoder_pos_embed = nn.Parameter(torch.empty(self.seq_len, decoder_embed_dim))
-        self.decoder_embed_norm = getattr(nn, norm)(decoder_embed_dim)
+        # self.decoder_embed_norm = getattr(nn, norm)(decoder_embed_dim)
         self.decoder_blocks = nn.ModuleList([
             Block(decoder_embed_dim, decoder_num_heads, attn_dropout, mlp_dropout, dropout,
                   act, mlp_dim_factor, attn, mlp, norm, *compressors[i])
@@ -219,6 +227,7 @@ class MaskedTableAutoencoder(Transformer):
 
         mask_ids = self.ids.expand(B, -1, C)[mask].reshape(B, -1, C)
         mask_x = x.gather(1, mask_ids)
+        # mask_x = x[mask].reshape(B, -1, C)
 
         # noise = torch.rand(mask_x.shape[:2], device=x.device)
         # ids_shuffle = noise.argsort(dim=1)
@@ -230,6 +239,7 @@ class MaskedTableAutoencoder(Transformer):
 
         unmask_ids = self.ids.expand(B, -1, C)[~mask].reshape(B, -1, C)
         unmask_x = x.gather(1, unmask_ids)
+        # unmask_x = x[~mask].reshape(B, -1, C)
 
         for i, block in enumerate(self.blocks):
             unmask_x = block(unmask_x, ~mask, i > 0)
@@ -245,10 +255,10 @@ class MaskedTableAutoencoder(Transformer):
 
         x = self.decoder_embed(x)
         x = x + self.decoder_pos_embed
-        x = self.decoder_embed_norm(x)
+        # x = self.decoder_embed_norm(x)
 
         for i, block in enumerate(self.decoder_blocks):
-            x = block(x, mask, i > 0, i + 1 == len(self.decoder_blocks))
+            x = block(x, mask, True, i + 1 == len(self.decoder_blocks))
 
         # print(x.shape)
         x = self.decoder_norm(x)

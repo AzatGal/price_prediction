@@ -13,6 +13,7 @@ class FeatureEmbedding(nn.Module):
                  dropout: float
                  ) -> None:
         super().__init__()
+        # nn.Embedding
         # self.num_embed_features = torch.tensor(num_embed_features)
         self.num_embeds = sum(num_embed_features)
         # self.mask_token = nn.Parameter(torch)
@@ -20,10 +21,14 @@ class FeatureEmbedding(nn.Module):
         self.pos_embed = nn.Parameter(torch.empty(len(num_embed_features), embed_dim))
         # self.register_buffer(
         #     'offsets',
-        #     torch.tensor([[0] + num_embed_features[:-1]]).cumsum(0)
+        #     torch.tensor(num_embed_features).cumsum(0)
         # )
         # self.norm = getattr(nn, norm)(embed_dim)
         self.dropout = nn.Dropout(dropout)
+
+    # @torch.no_grad()
+    # def fill_last_values_features_zero(self):
+    #     self.weight[self.num_embeds] = 0
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         if mask is not None:
@@ -35,3 +40,10 @@ class FeatureEmbedding(nn.Module):
         # x = self.norm(x)
         x = self.dropout(x)
         return x
+
+
+if __name__ == '__main__':
+    em = FeatureEmbedding([4, 2], 2, '', 0.1)
+    nn.init.normal_(em.weight, std=0.02)
+    em.fill_last_values_features_zero()
+    print(em.weight)

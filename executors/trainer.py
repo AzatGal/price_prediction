@@ -201,44 +201,127 @@ if __name__ == "__main__":
 """
 cpu
 Epoch 1/125
-train loss: 0.7999 - metric: 0.487 - time: 7.3 (7.3) 
-valid loss: 0.8201 - metric: 0.496 - time: 7.3 (0.3) 
+train loss: 1.1554 - metric: 0.503 - time: 7.4 (7.4) 
+valid loss: 0.9043 - metric: 0.436 - time: 7.4 (0.4) 
 best
 Epoch 2/125
-train loss: 0.5164 - metric: 0.296 - time: 14.6 (7.2) 
-valid loss: 0.3990 - metric: 0.188 - time: 14.6 (0.4) 
+train loss: 0.6577 - metric: 0.358 - time: 13.5 (6.1) 
+valid loss: 0.2940 - metric: 0.250 - time: 13.5 (0.4) 
 best
 Epoch 3/125
-train loss: 0.2732 - metric: 0.147 - time: 22.3 (7.7) 
-valid loss: 0.3086 - metric: 0.105 - time: 22.3 (0.3) 
+train loss: 0.2237 - metric: 0.195 - time: 19.8 (6.3) 
+valid loss: 0.1440 - metric: 0.144 - time: 19.8 (0.3) 
 best
 Epoch 4/125
-train loss: 0.2629 - metric: 0.145 - time: 29.9 (7.6) 
-valid loss: 0.2703 - metric: 0.094 - time: 29.9 (0.3) 
-best
+train loss: 0.1534 - metric: 0.166 - time: 26.2 (6.4) 
+valid loss: 0.1101 - metric: 0.150 - time: 26.2 (0.3) 
 Epoch 5/125
-train loss: 0.2206 - metric: 0.119 - time: 39.3 (9.4) 
-valid loss: 0.2952 - metric: 0.104 - time: 39.3 (0.3) 
+train loss: 0.0982 - metric: 0.127 - time: 32.9 (6.7) 
+valid loss: 0.0779 - metric: 0.128 - time: 32.9 (0.4) 
+best
 Epoch 6/125
-train loss: 0.2076 - metric: 0.112 - time: 47.0 (7.7) 
-valid loss: 0.2731 - metric: 0.087 - time: 47.0 (0.3) 
+train loss: 0.0776 - metric: 0.112 - time: 39.5 (6.6) 
+valid loss: 0.0753 - metric: 0.127 - time: 39.5 (0.3) 
 best
 Epoch 7/125
-train loss: 0.1892 - metric: 0.103 - time: 54.4 (7.5) 
-valid loss: 0.2696 - metric: 0.092 - time: 54.4 (0.4) 
+train loss: 0.0730 - metric: 0.112 - time: 45.9 (6.4) 
+valid loss: 0.0539 - metric: 0.088 - time: 45.9 (0.3) 
+best
 Epoch 8/125
-train loss: 0.1778 - metric: 0.096 - time: 63.8 (9.3) 
-valid loss: 0.2645 - metric: 0.082 - time: 63.8 (0.5) 
+train loss: 0.0641 - metric: 0.101 - time: 52.2 (6.3) 
+valid loss: 0.0491 - metric: 0.086 - time: 52.2 (0.3) 
 best
 Epoch 9/125
-train loss: 0.1694 - metric: 0.092 - time: 71.4 (7.7) 
-valid loss: 0.2501 - metric: 0.086 - time: 71.4 (0.4) 
-Epoch 10/125
-train loss: 0.1632 - metric: 0.089 - time: 80.0 (8.6) 
-valid loss: 0.2928 - metric: 0.093 - time: 80.0 (0.3) 
-Epoch 11/125
-train loss: 0.1500 - metric: 0.081 - time: 89.2 (9.2) 
-valid loss: 0.2132 - metric: 0.078 - time: 89.2 (0.4) 
+train loss: 0.0560 - metric: 0.094 - time: 58.6 (6.4) 
+valid loss: 0.0451 - metric: 0.081 - time: 58.6 (0.4) 
 best
+Epoch 10/125
+train loss: 0.0513 - metric: 0.089 - time: 64.9 (6.3) 
+valid loss: 0.0457 - metric: 0.081 - time: 64.9 (0.4) 
+best
+Epoch 11/125
+train loss: 0.0496 - metric: 0.087 - time: 71.0 (6.1) 
+valid loss: 0.0433 - metric: 0.082 - time: 71.0 (0.4) 
 Epoch 12/125
+train loss: 0.0491 - metric: 0.088 - time: 77.3 (6.3) 
+valid loss: 0.0442 - metric: 0.078 - time: 77.3 (0.3) 
+best
+Epoch 13/125
+train loss: 0.0493 - metric: 0.087 - time: 83.5 (6.2) 
+valid loss: 0.0442 - metric: 0.085 - time: 83.5 (0.3) 
+Epoch 14/125
+train loss: 0.0459 - metric: 0.084 - time: 89.7 (6.2) 
+valid loss: 0.0404 - metric: 0.076 - time: 89.7 (0.3) 
+best
+Epoch 15/125
+train loss: 0.0440 - metric: 0.082 - time: 96.0 (6.3) 
+valid loss: 0.0386 - metric: 0.076 - time: 96.0 (0.3) 
+best
+Epoch 16/125
+train loss: 0.0432 - metric: 0.081 - time: 102.3 (6.3) 
+valid loss: 0.0426 - metric: 0.076 - time: 102.3 (0.3) 
+Epoch 17/125
+train loss: 0.0427 - metric: 0.081 - time: 108.5 (6.2) 
+valid loss: 0.0375 - metric: 0.074 - time: 108.5 (0.4) 
+best
+Epoch 18/125
+train loss: 0.0416 - metric: 0.080 - time: 114.5 (6.1) 
+valid loss: 0.0408 - metric: 0.073 - time: 114.5 (0.4) 
+best
+Epoch 19/125
+train loss: 0.0417 - metric: 0.080 - time: 120.7 (6.1) 
+valid loss: 0.0406 - metric: 0.082 - time: 120.7 (0.3) 
+Epoch 20/125
+train loss: 0.0408 - metric: 0.079 - time: 126.9 (6.2) 
+valid loss: 0.0371 - metric: 0.075 - time: 126.9 (0.3) 
+Epoch 21/125
+train loss: 0.0396 - metric: 0.078 - time: 133.1 (6.2) 
+valid loss: 0.0384 - metric: 0.072 - time: 133.1 (0.4) 
+best
+Epoch 22/125
+train loss: 0.0391 - metric: 0.077 - time: 139.2 (6.1) 
+valid loss: 0.0376 - metric: 0.076 - time: 139.2 (0.3) 
+Epoch 23/125
+train loss: 0.0390 - metric: 0.078 - time: 145.6 (6.4) 
+valid loss: 0.0360 - metric: 0.075 - time: 145.6 (0.3) 
+Epoch 24/125
+train loss: 0.0383 - metric: 0.076 - time: 152.7 (7.1) 
+valid loss: 0.0350 - metric: 0.073 - time: 152.7 (0.3) 
+Epoch 25/125
+train loss: 0.0373 - metric: 0.075 - time: 159.0 (6.3) 
+valid loss: 0.0348 - metric: 0.070 - time: 159.0 (0.3) 
+best
+Epoch 26/125
+train loss: 0.0368 - metric: 0.075 - time: 165.4 (6.4) 
+valid loss: 0.0341 - metric: 0.070 - time: 165.4 (0.3) 
+Epoch 27/125
+train loss: 0.0362 - metric: 0.075 - time: 172.4 (7.0) 
+valid loss: 0.0332 - metric: 0.067 - time: 172.4 (0.3) 
+best
+Epoch 28/125
+train loss: 0.0366 - metric: 0.075 - time: 178.6 (6.2) 
+valid loss: 0.0381 - metric: 0.079 - time: 178.6 (0.4) 
+Epoch 29/125
+train loss: 0.0369 - metric: 0.075 - time: 184.7 (6.1) 
+valid loss: 0.0339 - metric: 0.069 - time: 184.7 (0.3) 
+Epoch 30/125
+train loss: 0.0350 - metric: 0.074 - time: 190.9 (6.3) 
+valid loss: 0.0341 - metric: 0.069 - time: 190.9 (0.3) 
+Epoch 31/125
+train loss: 0.0340 - metric: 0.072 - time: 197.1 (6.2) 
+valid loss: 0.0329 - metric: 0.068 - time: 197.1 (0.3) 
+Epoch 32/125
+train loss: 0.0339 - metric: 0.072 - time: 203.3 (6.2) 
+valid loss: 0.0352 - metric: 0.070 - time: 203.3 (0.3) 
+Epoch 33/125
+train loss: 0.0343 - metric: 0.073 - time: 209.5 (6.2) 
+valid loss: 0.0337 - metric: 0.068 - time: 209.5 (0.3) 
+Epoch 34/125
+train loss: 0.0341 - metric: 0.072 - time: 215.8 (6.4) 
+valid loss: 0.0324 - metric: 0.066 - time: 215.8 (0.3) 
+best
+Epoch 35/125
+train loss: 0.0332 - metric: 0.072 - time: 221.9 (6.1) 
+valid loss: 0.0321 - metric: 0.067 - time: 221.9 (0.4) 
+Epoch 36/125
 """

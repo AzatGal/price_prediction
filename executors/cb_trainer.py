@@ -36,12 +36,18 @@ def fit_catboost(train_dataset, val_dataset):
     val_pool = Pool(val_dataset, val_target,
                     cat_features=cat_features)
 
+    # def mape(pred, label):
+    #     pred = target_processor.inverse_transform(pred.reshape(-1, 1))
+    #     label = target_processor.inverse_transform(label.reshape(-1, 1))
+    #     return mean_absolute_percentage_error(label, pred)
+
     model = CatBoostRegressor(
         iterations=20_000,
         learning_rate=0.05,
         depth=10,
-        # loss_function='MAE',
-        # eval_metric='MAPE',  # можно заменить на нужную метрику или оставить только loss
+        # loss_function='Huber:delta=1.0',
+        eval_metric='MAE',
+        # custom_metric=mape,
         verbose=1000,
         early_stopping_rounds=200,
         random_seed=42,
