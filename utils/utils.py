@@ -22,7 +22,7 @@ def get_scheduler(optimizer, num_steps, decay, lr, lr_decay_factor):
     schedulers = [
         torch.optim.lr_scheduler.LinearLR(optimizer,
                                           total_iters=wu_steps,
-                                          start_factor=lr_decay_factor,
+                                          start_factor=0,
                                           end_factor=1.0)
     ]
     if decay == 'linear':
