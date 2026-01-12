@@ -12,7 +12,10 @@ class FeatureEmbedding(nn.Module):
                  dropout: float
                  ) -> None:
         super().__init__()
-        self.num_embed_features = torch.tensor(num_embed_features)
+        self.register_buffer(
+            'num_embed_features',
+            torch.tensor(num_embed_features)
+        )
         # print(self.num_embed_features)
         self.mask_idx = sum(num_embed_features)
         self.seq_len = len(num_embed_features)
