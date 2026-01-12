@@ -9,10 +9,7 @@ class DataTransformer:
                  num_cfg,
                  cat_cfg,
                  target_cfg,
-                 apply_offsets=True
                  ) -> None:
-        self.apply_offsets = apply_offsets
-
         self.num_path = num_cfg['path']
         self.cat_path = cat_cfg['path']
         self.target_path = target_cfg['path']
@@ -54,8 +51,8 @@ class DataTransformer:
         ]
         self.num_cats = [i - j for i, j in zip(cats, inf_cats)]
         self.num_bins = self.num_processor.n_bins_.tolist()
-        num_classes = self.num_bins + self.num_cats
-        self.offsets = np.cumsum([0] + num_classes[:-1])
+        # num_classes = self.num_bins + self.num_cats
+        # self.offsets = np.cumsum([0] + num_classes[:-1])
 
     def fit(self, data):
         self.num_processor.fit(data[self.num_cols].fillna(-1.0))
@@ -68,21 +65,24 @@ class DataTransformer:
             return self.target_processor.transform(data)
         else:
             num = self.num_processor.transform(data[self.num_cols].fillna(-1.0))
+            # if not self.include_target_in_features:
+            #     num = num[:, 1:]
             cat = self.cat_processor.transform(data[self.cat_cols])
             for i, c in enumerate(self.num_cats):
                 cat[cat[:, i] == -1, i] = c - 1
             data = np.hstack([num, cat])
-            if self.apply_offsets:
-                data = data + self.offsets
+            # if self.apply_offsets:
+            #     data = data + self.offsets
             return data.astype(int)
 
     def inverse_transform(self, data, target=None, numpy=True):
         if target is None:
             if data.ndim < 2:
                 data = np.reshape(data, [1, -1])
-            if self.apply_offsets:
-                data = data - self.offsets
+            # if self.apply_offsets:
+            #     data = data - self.offsets
             i = len(self.num_cols)
+            # if not self.include_target_in_features:
             num = self.num_processor.inverse_transform(data[:, :i])
             num[num < 0] = np.nan
             cat = self.cat_processor.inverse_transform(data[:, i:])

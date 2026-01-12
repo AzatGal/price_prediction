@@ -8,16 +8,37 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
-from models.transformers import MaskedTableModeling, PricePrediction, MaskedTableAutoencoder
-from utils.utils import set_seed, get_scheduler, mape, accuracy, logcosh_loss
+import models.transformers as models
+from utils.utils import set_seed, get_scheduler, mape, accuracy
 
 
 class Trainer:
     def __init__(self, cfg):
         set_seed(cfg.seed)
+
         self.cfg = cfg
-        self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
+
+        self.best_epoch = 0
+        self.best_loss = float('inf')
+        self.time_training = 0
+
+        if cfg.target_type == 'mask':
+            cfg.data_cfg.mask_ratio = cfg.mask_ratio
+            cfg.data_cfg.offsets = self.model.embed.offsets.cpu().numpy()
+            self.best_metric = float('-inf')
+        elif cfg.target_type in ('cat', 'num'):
+            self.best_metric = float('inf')
+        else:
+            raise NotImplementedError()
+
+        self._prepare_data(cfg.data_cfg)
+
+        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
+                                                        self.cfg.get('lr_decay_by_block'))
+        self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
+                                       self.cfg.lr_decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
         self.accelerator = Accelerator(**cfg.accelerator_args)
         (
@@ -29,81 +50,60 @@ class Trainer:
         )
         print(self.accelerator.device)
 
-        self.best_epoch = 0
-        if self.cfg.target == 'mask':
-            self.best_metric = float('-inf')
-        elif self.cfg.target in ('cat', 'num'):
-            self.best_metric = float('inf')
-        else:
-            raise NotImplementedError()
-        self.best_loss = float('inf')
-        self.time_training = 0
-
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
-        self.num_masks = self.cfg.get('num_masks')
-        self.train_data = ApartmentDataset("train", data_cfg.path, self.data_transformer,
-                                           self.cfg.target, self.num_masks)
-        self.val_data = ApartmentDataset('valid', data_cfg.path, self.data_transformer,
-                                         self.cfg.target, self.num_masks)
+
+        self.train_data = ApartmentDataset("train", **data_cfg)
+        self.valid_data = ApartmentDataset('valid', **data_cfg)
+
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
             kwargs['num_workers'] = 4
             kwargs['pin_memory'] = True
         self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
+        self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        if self.cfg.model == 'MaskedTableModeling':
-            self.model = MaskedTableModeling(**model_cfg)
-        elif self.cfg.model == 'MaskedTableAutoencoder':
-            self.model = MaskedTableAutoencoder(**model_cfg)
-        elif self.cfg.model == 'PricePrediction':
-            self.model = PricePrediction(**model_cfg)
-        else:
-            raise NotImplementedError()
-        # print(self.model)
+        self.model = getattr(models, self.cfg.model)(**model_cfg)
         load_path = self.cfg.get('load_pretrained')
         if load_path is not None:
-            self.load_model(load_path)
+            self.load_model(load_path, strict=False)
             print('load_pretrained')
-        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
-                                                        self.cfg.get('lr_decay_by_block'))
-        self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
-                                       self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
 
     def metric(self, pred, label):
         pred = pred.cpu()
         label = label.cpu()
-        if self.cfg.target == 'mask':
+        if self.cfg.target_type == 'mask':
             return accuracy(pred, label)
-        elif self.cfg.target in ('num', 'cat'):
+        elif self.cfg.target_type in ('num', 'cat'):
             # print(pred.shape)
             # print(label.shape)
             pred = torch.as_tensor(
-                self.data_transformer.inverse_transform(pred, target=self.cfg.target)
+                self.data_transformer.inverse_transform(pred, target=self.cfg.target_type)
             )
             return mape(pred, label)
         else:
             raise NotImplementedError()
 
-    def save_model(self):
+    def save_model(self, **kwargs):
         os.makedirs(self.cfg.exp_dir, exist_ok=True)
         save_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
-        torch.save(self.model.state_dict(), save_path)
+        torch.save(self.model.state_dict(**kwargs), save_path)
 
-    def load_model(self, load_path=None):
+    def load_model(self, load_path=None, **kwargs):
         if load_path is None:
             load_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
-        self.model.load_state_dict(torch.load(load_path), strict=False)
+        self.model.load_state_dict(torch.load(load_path), **kwargs)
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            pred = self.model(batch['features'], batch['mask'])
-            if self.cfg.target == 'mask':
-                pred = pred.transpose(1, 2)
+            if self.cfg.target_type == 'mask':
+                pred = self.model(batch['features'], batch['mask'])
+                pred = pred.reshape(batch['target'].shape).transpose(1, 2)
                 batch['target'] = batch['target'].transpose(1, 2)
+            else:
+                pred = self.model(batch['features'])
+
             # print('pred', pred.shape)
             # print('target', batch['target'].shape)
             loss = self.criterion(pred, batch['target'])
@@ -131,7 +131,7 @@ class Trainer:
         t = time.time()
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
-            batch_len = len(batch['label']) * self.num_masks
+            batch_len = len(batch['label'])  # * self.num_masks
             total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
@@ -153,7 +153,7 @@ class Trainer:
         t = time.time()
         for i, batch in enumerate(self.val_dataloader):
             loss, pred = self.make_step(batch, False)
-            batch_len = len(batch['label']) * self.num_masks
+            batch_len = len(batch['label'])  # * self.num_masks
             total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
@@ -163,8 +163,8 @@ class Trainer:
         self._print('valid', total_loss, total_metric, time.time() - t)
 
         if (
-                (self.cfg.target in ('cat', 'num') and total_metric < self.best_metric) or
-                (self.cfg.target == 'mask' and total_metric > self.best_metric)
+                (self.cfg.target_type in ('cat', 'num') and total_metric < self.best_metric) or
+                (self.cfg.target_type == 'mask' and total_loss < self.best_loss)
         ):
             print('best')
             self.save_model()
@@ -192,136 +192,92 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
     # from configs.pretrain_cfg import cfg
 
-    # cfg.lr = 1e-4
     trainer = Trainer(cfg)
-    # trainer.load_model()
     # trainer.overfitting_on_batch()
     trainer.fit()
 
 """
+load_pretrained
 cpu
-Epoch 1/125
-train loss: 1.1554 - metric: 0.503 - time: 7.4 (7.4) 
-valid loss: 0.9043 - metric: 0.436 - time: 7.4 (0.4) 
+Epoch 1/256
+train loss: 1.2073 - metric: 0.623 - time: 1.5 (1.5) 
+valid loss: 1.1772 - metric: 0.610 - time: 1.5 (0.1) 
 best
-Epoch 2/125
-train loss: 0.6577 - metric: 0.358 - time: 13.5 (6.1) 
-valid loss: 0.2940 - metric: 0.250 - time: 13.5 (0.4) 
+Epoch 2/256
+train loss: 1.1330 - metric: 0.570 - time: 2.9 (1.4) 
+valid loss: 1.0580 - metric: 0.522 - time: 2.9 (0.1) 
 best
-Epoch 3/125
-train loss: 0.2237 - metric: 0.195 - time: 19.8 (6.3) 
-valid loss: 0.1440 - metric: 0.144 - time: 19.8 (0.3) 
+Epoch 3/256
+train loss: 1.0288 - metric: 0.488 - time: 4.3 (1.4) 
+valid loss: 0.9517 - metric: 0.448 - time: 4.3 (0.1) 
 best
-Epoch 4/125
-train loss: 0.1534 - metric: 0.166 - time: 26.2 (6.4) 
-valid loss: 0.1101 - metric: 0.150 - time: 26.2 (0.3) 
-Epoch 5/125
-train loss: 0.0982 - metric: 0.127 - time: 32.9 (6.7) 
-valid loss: 0.0779 - metric: 0.128 - time: 32.9 (0.4) 
+Epoch 4/256
+train loss: 0.9226 - metric: 0.440 - time: 5.7 (1.4) 
+valid loss: 0.8264 - metric: 0.427 - time: 5.7 (0.1) 
 best
-Epoch 6/125
-train loss: 0.0776 - metric: 0.112 - time: 39.5 (6.6) 
-valid loss: 0.0753 - metric: 0.127 - time: 39.5 (0.3) 
+Epoch 5/256
+train loss: 0.7961 - metric: 0.419 - time: 7.1 (1.4) 
+valid loss: 0.6816 - metric: 0.377 - time: 7.1 (0.1) 
 best
-Epoch 7/125
-train loss: 0.0730 - metric: 0.112 - time: 45.9 (6.4) 
-valid loss: 0.0539 - metric: 0.088 - time: 45.9 (0.3) 
+Epoch 6/256
+train loss: 0.6378 - metric: 0.350 - time: 8.5 (1.5) 
+valid loss: 0.5064 - metric: 0.303 - time: 8.5 (0.1) 
 best
-Epoch 8/125
-train loss: 0.0641 - metric: 0.101 - time: 52.2 (6.3) 
-valid loss: 0.0491 - metric: 0.086 - time: 52.2 (0.3) 
+Epoch 7/256
+train loss: 0.4723 - metric: 0.294 - time: 10.0 (1.4) 
+valid loss: 0.3524 - metric: 0.247 - time: 10.0 (0.1) 
 best
-Epoch 9/125
-train loss: 0.0560 - metric: 0.094 - time: 58.6 (6.4) 
-valid loss: 0.0451 - metric: 0.081 - time: 58.6 (0.4) 
+Epoch 8/256
+train loss: 0.3446 - metric: 0.245 - time: 11.4 (1.4) 
+valid loss: 0.2612 - metric: 0.208 - time: 11.4 (0.1) 
 best
-Epoch 10/125
-train loss: 0.0513 - metric: 0.089 - time: 64.9 (6.3) 
-valid loss: 0.0457 - metric: 0.081 - time: 64.9 (0.4) 
+Epoch 9/256
+train loss: 0.2649 - metric: 0.212 - time: 12.8 (1.4) 
+valid loss: 0.1951 - metric: 0.178 - time: 12.8 (0.1) 
 best
-Epoch 11/125
-train loss: 0.0496 - metric: 0.087 - time: 71.0 (6.1) 
-valid loss: 0.0433 - metric: 0.082 - time: 71.0 (0.4) 
-Epoch 12/125
-train loss: 0.0491 - metric: 0.088 - time: 77.3 (6.3) 
-valid loss: 0.0442 - metric: 0.078 - time: 77.3 (0.3) 
+Epoch 10/256
+train loss: 0.2083 - metric: 0.185 - time: 14.2 (1.4) 
+valid loss: 0.1517 - metric: 0.161 - time: 14.2 (0.1) 
 best
-Epoch 13/125
-train loss: 0.0493 - metric: 0.087 - time: 83.5 (6.2) 
-valid loss: 0.0442 - metric: 0.085 - time: 83.5 (0.3) 
-Epoch 14/125
-train loss: 0.0459 - metric: 0.084 - time: 89.7 (6.2) 
-valid loss: 0.0404 - metric: 0.076 - time: 89.7 (0.3) 
+Epoch 11/256
+train loss: 0.1668 - metric: 0.165 - time: 15.7 (1.4) 
+valid loss: 0.1214 - metric: 0.143 - time: 15.7 (0.1) 
 best
-Epoch 15/125
-train loss: 0.0440 - metric: 0.082 - time: 96.0 (6.3) 
-valid loss: 0.0386 - metric: 0.076 - time: 96.0 (0.3) 
+Epoch 12/256
+train loss: 0.1384 - metric: 0.149 - time: 17.0 (1.4) 
+valid loss: 0.0995 - metric: 0.124 - time: 17.0 (0.1) 
 best
-Epoch 16/125
-train loss: 0.0432 - metric: 0.081 - time: 102.3 (6.3) 
-valid loss: 0.0426 - metric: 0.076 - time: 102.3 (0.3) 
-Epoch 17/125
-train loss: 0.0427 - metric: 0.081 - time: 108.5 (6.2) 
-valid loss: 0.0375 - metric: 0.074 - time: 108.5 (0.4) 
+Epoch 13/256
+train loss: 0.1188 - metric: 0.137 - time: 18.5 (1.4) 
+valid loss: 0.0858 - metric: 0.118 - time: 18.5 (0.1) 
 best
-Epoch 18/125
-train loss: 0.0416 - metric: 0.080 - time: 114.5 (6.1) 
-valid loss: 0.0408 - metric: 0.073 - time: 114.5 (0.4) 
+Epoch 14/256
+train loss: 0.1035 - metric: 0.128 - time: 19.9 (1.4) 
+valid loss: 0.0757 - metric: 0.108 - time: 19.9 (0.1) 
 best
-Epoch 19/125
-train loss: 0.0417 - metric: 0.080 - time: 120.7 (6.1) 
-valid loss: 0.0406 - metric: 0.082 - time: 120.7 (0.3) 
-Epoch 20/125
-train loss: 0.0408 - metric: 0.079 - time: 126.9 (6.2) 
-valid loss: 0.0371 - metric: 0.075 - time: 126.9 (0.3) 
-Epoch 21/125
-train loss: 0.0396 - metric: 0.078 - time: 133.1 (6.2) 
-valid loss: 0.0384 - metric: 0.072 - time: 133.1 (0.4) 
+Epoch 15/256
+train loss: 0.0922 - metric: 0.121 - time: 21.3 (1.5) 
+valid loss: 0.0680 - metric: 0.102 - time: 21.3 (0.1) 
 best
-Epoch 22/125
-train loss: 0.0391 - metric: 0.077 - time: 139.2 (6.1) 
-valid loss: 0.0376 - metric: 0.076 - time: 139.2 (0.3) 
-Epoch 23/125
-train loss: 0.0390 - metric: 0.078 - time: 145.6 (6.4) 
-valid loss: 0.0360 - metric: 0.075 - time: 145.6 (0.3) 
-Epoch 24/125
-train loss: 0.0383 - metric: 0.076 - time: 152.7 (7.1) 
-valid loss: 0.0350 - metric: 0.073 - time: 152.7 (0.3) 
-Epoch 25/125
-train loss: 0.0373 - metric: 0.075 - time: 159.0 (6.3) 
-valid loss: 0.0348 - metric: 0.070 - time: 159.0 (0.3) 
+Epoch 16/256
+train loss: 0.0844 - metric: 0.115 - time: 22.9 (1.5) 
+valid loss: 0.0631 - metric: 0.099 - time: 22.9 (0.1) 
 best
-Epoch 26/125
-train loss: 0.0368 - metric: 0.075 - time: 165.4 (6.4) 
-valid loss: 0.0341 - metric: 0.070 - time: 165.4 (0.3) 
-Epoch 27/125
-train loss: 0.0362 - metric: 0.075 - time: 172.4 (7.0) 
-valid loss: 0.0332 - metric: 0.067 - time: 172.4 (0.3) 
+Epoch 17/256
+train loss: 0.0785 - metric: 0.110 - time: 24.3 (1.4) 
+valid loss: 0.0589 - metric: 0.097 - time: 24.3 (0.1) 
 best
-Epoch 28/125
-train loss: 0.0366 - metric: 0.075 - time: 178.6 (6.2) 
-valid loss: 0.0381 - metric: 0.079 - time: 178.6 (0.4) 
-Epoch 29/125
-train loss: 0.0369 - metric: 0.075 - time: 184.7 (6.1) 
-valid loss: 0.0339 - metric: 0.069 - time: 184.7 (0.3) 
-Epoch 30/125
-train loss: 0.0350 - metric: 0.074 - time: 190.9 (6.3) 
-valid loss: 0.0341 - metric: 0.069 - time: 190.9 (0.3) 
-Epoch 31/125
-train loss: 0.0340 - metric: 0.072 - time: 197.1 (6.2) 
-valid loss: 0.0329 - metric: 0.068 - time: 197.1 (0.3) 
-Epoch 32/125
-train loss: 0.0339 - metric: 0.072 - time: 203.3 (6.2) 
-valid loss: 0.0352 - metric: 0.070 - time: 203.3 (0.3) 
-Epoch 33/125
-train loss: 0.0343 - metric: 0.073 - time: 209.5 (6.2) 
-valid loss: 0.0337 - metric: 0.068 - time: 209.5 (0.3) 
-Epoch 34/125
-train loss: 0.0341 - metric: 0.072 - time: 215.8 (6.4) 
-valid loss: 0.0324 - metric: 0.066 - time: 215.8 (0.3) 
+Epoch 18/256
+train loss: 0.0741 - metric: 0.107 - time: 25.7 (1.5) 
+valid loss: 0.0557 - metric: 0.092 - time: 25.7 (0.1) 
 best
-Epoch 35/125
-train loss: 0.0332 - metric: 0.072 - time: 221.9 (6.1) 
-valid loss: 0.0321 - metric: 0.067 - time: 221.9 (0.4) 
-Epoch 36/125
+Epoch 19/256
+train loss: 0.0707 - metric: 0.105 - time: 27.2 (1.5) 
+valid loss: 0.0532 - metric: 0.090 - time: 27.2 (0.1) 
+best
+Epoch 20/256
+train loss: 0.0670 - metric: 0.102 - time: 28.6 (1.4) 
+valid loss: 0.0530 - metric: 0.093 - time: 28.6 (0.1) 
+Epoch 21/256
+
 """

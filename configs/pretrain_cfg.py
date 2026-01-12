@@ -8,37 +8,38 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 cfg = EasyDict()
 cfg.seed = 0
+cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')
 
 cfg.batch_size = 1024
-cfg.lr = 6e-3  # 1 3 5
-cfg.lr_decay_factor = 1e-3
+cfg.num_epoch = 125
 
-cfg.weight_decay = 1e-5
-cfg.target = 'mask'
+cfg.lr = 6e-3
+cfg.lr_decay_factor = 1e-3
+cfg.lr_decay = 'cosine'
 
 cfg.loss = 'CrossEntropyLoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
-cfg.decay = 'cosine'
+cfg.weight_decay = 1e-5
 
 cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}
+cfg.target_type = 'mask'
+
+cfg.model = 'MaskedTableAutoencoder'
+cfg.mask_ratio = 0.75
+model_cfg.decoder_embed_dim = model_cfg.embed_dim // 2
+model_cfg.decoder_num_heads = model_cfg.num_heads
+model_cfg.decoder_num_blocks = max(1, model_cfg.num_blocks // 3)
+
+# cfg.model = 'MaskedTableModeling'
+# cfg.mask_ratio = 0.5
+
+model_cfg.pred_dim = sum(model_cfg.num_embed_features)
+
+data_cfg.target_type = cfg.target_type
+data_cfg.mask_first_token = len(data_cfg.features) == len(model_cfg.num_embed_features)
 
 cfg.data_cfg = data_cfg
-
-cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')  # , 'pretrain')
-cfg.num_epoch = 125
-
-# cfg.model = 'MaskedTableAutoencoder'
-# cfg.num_masks = int(0.65 * len(data_cfg.features))
-# model_cfg.decoder_embed_dim = model_cfg.embed_dim // 2
-# model_cfg.decoder_num_heads = model_cfg.num_heads
-# model_cfg.decoder_num_blocks = max(1, model_cfg.num_blocks // 3)
-
-model_cfg.pred_dim = sum(model_cfg.num_embed_features)  # 1  #
 cfg.model_cfg = model_cfg
-
-cfg.model = 'MaskedTableModeling'
-cfg.num_masks = int(0.5 * len(data_cfg.features))
-
 
 """
 cpu
