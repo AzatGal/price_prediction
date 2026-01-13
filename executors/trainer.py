@@ -191,13 +191,13 @@ if __name__ == "__main__":
     # from configs.pretrain_cfg import cfg
 
     trainer = Trainer(cfg)
-
+    print(trainer.model.blocks[0].attn)
     # with torch.no_grad():
     #     for block in trainer.model.blocks:
     #         block.attn.k_compressor.weight.zero_()
     #         block.attn.v_compressor.weight.zero_()
     # trainer.overfitting_on_batch()
-    trainer.fit()
+    # trainer.fit()
 
 """
 cpu

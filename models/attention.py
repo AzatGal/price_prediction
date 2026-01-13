@@ -88,7 +88,7 @@ class Attention(nn.Module):
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         B, _, seq_len = mask.shape
-        ids = (torch.arange(seq_len)
+        ids = (torch.arange(seq_len, dtype=x.dtype, device=x.device)
                .reshape(1, 1, seq_len, 1)
                .expand(B, self.num_heads, -1, self.head_dim)[mask]
                .reshape(B, self.num_heads, -1, self.head_dim))

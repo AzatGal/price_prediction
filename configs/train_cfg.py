@@ -14,7 +14,7 @@ cfg.batch_size = 8 * 1024  # 16
 cfg.num_epoch = 100
 
 cfg.lr = 1e-2  # 1 3 5
-cfg.lr_decay_factor = 0.01
+cfg.lr_decay_factor = 1e-2
 
 cfg.weight_decay = 1e-5
 cfg.lr_decay = 'cosine'  # cosine
