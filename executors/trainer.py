@@ -99,7 +99,7 @@ class Trainer:
         with self.accelerator.autocast():
             if self.cfg.target_type == 'mask':
                 pred = self.model(batch['features'], batch['mask'])
-                pred = pred.reshape(batch['target'].shape).transpose(1, 2)
+                pred = pred.transpose(1, 2)
                 batch['target'] = batch['target'].transpose(1, 2)
             else:
                 pred = self.model(batch['features'])

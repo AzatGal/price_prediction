@@ -65,7 +65,8 @@ class Transformer(nn.Module):
     def configure_optimizer(self,
                             lr: float,
                             weight_decay: float,
-                            lr_decay_by_block: float = None
+                            lr_decay_by_block: float = None,
+                            **optim_kwargs
                             ) -> torch.optim.Optimizer:
         if lr_decay_by_block is not None:
             lrs = [
@@ -150,7 +151,7 @@ class Transformer(nn.Module):
                 {'params': decay, 'weight_decay': weight_decay},
                 {'params': no_decay, 'weight_decay': 0.0}
             ]
-            return torch.optim.AdamW(optim_groups, lr=lr)
+            return torch.optim.AdamW(optim_groups, lr=lr, **optim_kwargs)
 
 
 class MaskedTableAutoencoder(Transformer):
@@ -226,13 +227,22 @@ class MaskedTableAutoencoder(Transformer):
         for i, block in enumerate(self.decoder_blocks):
             x = block(x, None)
 
-        x = x[mask]
+        x = x[mask].reshape(x.size(0), -1, x.size(2))
         x = self.decoder_norm(x)
         x = self.decoder_head(x)
 
         if self.log_softmax:
             x = F.log_softmax(x, -1)
         return x
+
+    def configure_optimizer(self,
+                            lr: float,
+                            weight_decay: float,
+                            lr_decay_by_block: float = None,
+                            **optim_kwargs
+                            ) -> torch.optim.Optimizer:
+        return super().configure_optimizer(lr, weight_decay, lr_decay_by_block,
+                                           betas=(0.9, 0.95))
 
 
 class MaskedTableModeling(Transformer):
@@ -261,12 +271,21 @@ class MaskedTableModeling(Transformer):
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         x = self.last_hidden_states(x, mask)
-        x = x[mask]
+        x = x[mask].reshape(x.size(0), -1, x.size(2))
         x = self.norm(x)
         x = self.tm_head(x)
         if self.log_softmax:
             x = F.log_softmax(x, -1)
-        return x.squeeze(2)
+        return x
+
+    def configure_optimizer(self,
+                            lr: float,
+                            weight_decay: float,
+                            lr_decay_by_block: float = None,
+                            **optim_kwargs
+                            ) -> torch.optim.Optimizer:
+        return super().configure_optimizer(lr, weight_decay, lr_decay_by_block,
+                                           betas=(0.9, 0.95))
 
 
 class PricePrediction(Transformer):

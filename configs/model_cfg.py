@@ -4,9 +4,9 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_heads = 8
-cfg.embed_dim = 8 * cfg.num_heads  # 24
-cfg.num_blocks = 2
+cfg.num_heads = 4
+cfg.embed_dim = 4 * cfg.num_heads  # 24
+cfg.num_blocks = 12
 cfg.act = 'SiLU'  # SiLU
 
 cfg.num_embed_features = (data_cfg.data_transformer.num_bins[1:] +

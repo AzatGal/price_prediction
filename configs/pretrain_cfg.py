@@ -13,7 +13,7 @@ cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')
 cfg.batch_size = 1024
 cfg.num_epoch = 125
 
-cfg.lr = 6e-3
+cfg.lr = 1e-2
 cfg.lr_decay_factor = 1e-3
 cfg.lr_decay = 'cosine'
 
@@ -25,7 +25,7 @@ cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}
 cfg.target_type = 'mask'
 
 cfg.model = 'MaskedTableAutoencoder'
-cfg.mask_ratio = 0.75
+cfg.mask_ratio = 0.65
 model_cfg.decoder_embed_dim = model_cfg.embed_dim // 2
 model_cfg.decoder_num_heads = model_cfg.num_heads
 model_cfg.decoder_num_blocks = max(1, model_cfg.num_blocks // 3)
