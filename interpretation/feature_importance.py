@@ -14,7 +14,7 @@ from configs.train_cfg import cfg
 def main():
     print(cfg)
     trainer = Trainer(cfg)
-    trainer.load_model()  # '/Users/azatgalautdinov/PycharmProjects/price_prediction/interpretation/transformer.pt')
+    trainer.load_model('/Users/azatgalautdinov/PycharmProjects/price_prediction/interpretation/PricePrediction.pt')
     print(trainer.model.embed.weight.dtype)
 
     def kv_weights(block):
@@ -28,7 +28,7 @@ def main():
         ws = ws + w[i]
     ids = torch.argsort(ws).numpy()[::-1]
     print(ws.numpy()[ids])
-    print(np.array(cfg.data_cfg.features)[ids])
+    print(np.array(cfg.data_cfg.features[1:])[ids])
 
 
     # num_bins = np.cumsum(cfg.data_cfg.data_transformer.num_bins)

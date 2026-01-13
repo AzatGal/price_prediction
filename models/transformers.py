@@ -87,12 +87,18 @@ class Transformer(nn.Module):
         params = {pn: p for pn, p in self.named_parameters()}
         for pn, p in params.items():
             if 'norm' not in pn:
-                if 'bias' in pn:
+                if 'bias' in pn or 'compressor' in pn:
                     nn.init.zeros_(p)
                 else:
                     if 'head' in pn:
                         nn.init.kaiming_uniform_(p, a=5 ** 0.5)
                     else:
+                        # if 'out' in pn:
+                        #     nn.init.normal_(
+                        #         p,
+                        #         std=0.02 / ((2 * len(self.blocks)) ** 0.5)
+                        #     )
+                        # else:
                         nn.init.normal_(p, std=0.02)
             if lr_decay_by_block is not None:
                 if 'embed' in pn:
@@ -314,8 +320,8 @@ class PricePrediction(Transformer):
         # self.pp_head = nn.Sequential(nn.SiLU(),
         #                              nn.Linear(embed_dim, pred_dim))
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.last_hidden_states(x, None)
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+        x = self.last_hidden_states(x, mask)
         x = x.mean(1)
         x = self.norm(x)
         x = self.pp_head(x)
@@ -326,4 +332,6 @@ class PricePrediction(Transformer):
 
 if __name__ == '__main__':
     from configs.model_cfg import cfg
-    opt = Transformer(**cfg).configure_optimizer(0.1, 0.1)
+    m = Transformer(**cfg, pred_dim=1) #
+    o = m.configure_optimizer(0.1, 0.1)
+    print(m.embed.pos_embed)

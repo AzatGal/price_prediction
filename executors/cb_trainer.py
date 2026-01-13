@@ -78,8 +78,8 @@ if __name__ == '__main__':
     path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets'
     train_dataset = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
     val_dataset = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
-    fit_catboost(train_dataset, val_dataset)
-    # print(train_dataset)
+    # fit_catboost(train_dataset, val_dataset)
+    print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
 
 """
 0:	learn: 0.9611843	test: 0.9574410	best: 0.9574410 (0)	total: 89.4ms	remaining: 29m 47s

@@ -20,10 +20,31 @@ from utils.utils import set_seed, get_scheduler, mape
 class TabmTrainer:
     def __init__(self, cfg):
         set_seed(cfg.seed)
+
         self.cfg = cfg
-        self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
-        self.accelerator = Accelerator(**self.cfg.accelerator_args)
+
+        self.best_epoch = 0
+        self.best_loss = float('inf')
+        self.time_training = 0
+
+        if cfg.target_type == 'mask':
+            cfg.data_cfg.mask_ratio = cfg.mask_ratio
+            cfg.data_cfg.offsets = self.model.embed.offsets.cpu().numpy()
+            self.best_metric = float('-inf')
+        elif cfg.target_type in ('cat', 'num'):
+            self.best_metric = float('inf')
+        else:
+            raise NotImplementedError()
+
+        self._prepare_data(cfg.data_cfg)
+
+        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
+                                           weight_decay=self.cfg.weight_decay)
+        self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
+                                       self.cfg.lr_decay, self.cfg.lr, self.cfg.lr_decay_factor)
+        self.accelerator = Accelerator(**cfg.accelerator_args)
         (
             self.model, self.optimizer, self.train_dataloader,
             self.val_dataloader, self.scheduler
@@ -33,58 +54,21 @@ class TabmTrainer:
         )
         print(self.accelerator.device)
 
-        self.best_epoch = 0
-        self.best_metric = float('inf')
-        self.best_loss = float('inf')
-        self.time_training = 0
-
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
-        if self.cfg.model == 'TabM':
-            self.data_transformer.apply_offsets = False
-        self.num_masks = self.cfg.get('num_masks')
-        self.train_data = ApartmentDataset("train", data_cfg.path, self.data_transformer,
-                                           self.cfg.target, self.num_masks)
-        self.val_data = ApartmentDataset('valid', data_cfg.path, self.data_transformer,
-                                         self.cfg.target, self.num_masks)
+
+        self.train_data = ApartmentDataset("train", **data_cfg)
+        self.valid_data = ApartmentDataset('valid', **data_cfg)
+
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
             kwargs['num_workers'] = 4
             kwargs['pin_memory'] = True
         self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
+        self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        if self.cfg.model == 'TabM':
-            self.model = tabm.TabM.make(**model_cfg)
-            # d_in = 24
-            # d = 512
-            # d_out = 1
-            # k = 32
-            #
-            # # Any MLP-like backbone can be used.
-            # backbone = tabm.MLPBackbone(
-            #     d_in=d_in, n_blocks=2, d_block=d, dropout=0.1
-            # )
-            # self.model = nn.Sequential(
-            #     tabm.EnsembleView(k=k),
-            #     tabm.ElementwiseAffine((k, d_in), bias=False, scaling_init='normal'),
-            #     backbone,
-            #     tabm.LinearEnsemble(d, d_out, k=k),
-            # )
-        elif self.cfg.model == 'PricePredEnsemble':
-            self.model = PricePredEnsemble(**model_cfg)
-        else:
-            raise NotImplementedError()
-        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        if self.cfg.model == 'TabM':
-            self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr,
-                                               weight_decay=self.cfg.weight_decay)
-        else:
-            self.optimizer = self.model.configure_optimizer(self.cfg.lr, self.cfg.weight_decay,
-                                                            self.cfg.get('lr_decay_by_block'))
-        self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
-                                       self.cfg.decay, self.cfg.lr, self.cfg.lr_decay_factor)
+        self.model = tabm.TabM.make(**model_cfg)
 
     def metric(self, pred, label):
         pred = pred.cpu()
@@ -92,35 +76,32 @@ class TabmTrainer:
         # print('pred', pred.shape)
         # print('label', label.shape)
         pred = torch.as_tensor(
-            self.data_transformer.inverse_transform(pred, target=self.cfg.target)
+            self.data_transformer.inverse_transform(pred, target=self.cfg.target_type)
         )
         return mape(pred, label)
 
     def save_model(self):
         os.makedirs(self.cfg.exp_dir, exist_ok=True)
-        # save_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  #
-        save_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  #
+        save_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  #
+        # save_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  #
         torch.save(self.model.state_dict(), save_path)
 
     def load_model(self, load_path=None):
         if load_path is None:
-            # load_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  # "tabm.pt")
-            load_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  # "tabm.pt")
+            load_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  # "tabm.pt")
+            # load_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  # "tabm.pt")
         self.model.load_state_dict(torch.load(load_path))
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            if self.cfg.model == 'TabM':
-                pred = self.model(x_cat=batch['features'][:, 1:])
-            else:
-                pred = self.model(batch['features'], batch['mask'])
+            pred = self.model(x_cat=batch['features'])
             pred = pred.squeeze(-1)
-            # print(pred.shape)
-            if self.cfg.target == 'cat':
+
+            if self.cfg.target_type == 'cat':
                 target = batch['target'].unsqueeze(1).expand(-1, pred.size(1), -1)
                 pred = pred.transpose(1, 2)
                 target = target.transpose(1, 2)
-            elif self.cfg.target == 'num':
+            elif self.cfg.target_type == 'num':
                 target = batch['target'].expand(-1, pred.size(1))
             # print(pred.shape)
             # print(target.shape)
@@ -134,9 +115,9 @@ class TabmTrainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        if self.cfg.target == 'cat':
+        if self.cfg.target_type == 'cat':
             pred = pred.sum(2)
-        elif self.cfg.target == 'num':
+        elif self.cfg.target_type == 'num':
             pred = pred.mean(1)
         else:
             raise NotImplementedError()
@@ -154,7 +135,7 @@ class TabmTrainer:
         t = time.time()
         for i, batch in enumerate(self.train_dataloader):
             loss, pred = self.make_step(batch)
-            batch_len = len(batch['label']) * self.num_masks
+            batch_len = sum(pred.shape[:2])
             total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
@@ -176,7 +157,7 @@ class TabmTrainer:
         t = time.time()
         for i, batch in enumerate(self.val_dataloader):
             loss, pred = self.make_step(batch, False)
-            batch_len = len(batch['label']) * self.num_masks
+            batch_len = sum(pred.shape[:2])
             total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
@@ -216,7 +197,7 @@ if __name__ == "__main__":
     # cfg.weight_decay = 3e-4
 
     cfg.model_cfg = EasyDict(
-        cat_cardinalities=cfg.model_cfg.num_embed_features[1:],
+        cat_cardinalities=cfg.model_cfg.num_embed_features,
         d_out=1,
         # arch_type='tabm-mini'
         # d_in,

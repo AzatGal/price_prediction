@@ -10,15 +10,16 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')
 
-cfg.batch_size = 1024
+cfg.batch_size = 8 * 1024
 cfg.num_epoch = 125
 
 cfg.lr = 1e-2
-cfg.lr_decay_factor = 1e-3
+cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'cosine'
 
-cfg.loss = 'CrossEntropyLoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
-cfg.loss_args = {}  # 'reduction': 'batchmean'}
+model_cfg.log_softmax = True  # False True
+cfg.loss = 'KLDivLoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
+cfg.loss_args = {'reduction': 'batchmean'}
 cfg.weight_decay = 1e-5
 
 cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}

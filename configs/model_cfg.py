@@ -4,9 +4,9 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_heads = 4
-cfg.embed_dim = 4 * cfg.num_heads  # 24
-cfg.num_blocks = 12
+cfg.num_heads = 2
+cfg.embed_dim = 8 * cfg.num_heads  # 24
+cfg.num_blocks = 3
 cfg.act = 'SiLU'  # SiLU
 
 cfg.num_embed_features = (data_cfg.data_transformer.num_bins[1:] +
@@ -20,7 +20,7 @@ cfg.mlp_dim_factor = 1  # 3 / 2
 cfg.attn = 'Attention'  # Linear
 cfg.mlp = 'GLUMLP'
 cfg.norm = 'LayerNorm'
-cfg.log_softmax = False  # False True
+# cfg.log_softmax = False  # False True
 
 # print(cfg.num_embed_features)
 
