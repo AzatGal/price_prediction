@@ -10,6 +10,11 @@ class DataTransformer:
                  cat_cfg,
                  target_cfg,
                  ) -> None:
+        self.json = {
+            'num_cfg': {k: v if isinstance(v, list) else str(v) for k, v in num_cfg.items()},
+            'cat_cfg': {k: v if isinstance(v, list) else str(v) for k, v in cat_cfg.items()},
+            'target_cfg': {k: v if isinstance(v, list) else str(v) for k, v in target_cfg.items()},
+        }
         self.num_path = num_cfg['path']
         self.cat_path = cat_cfg['path']
         self.target_path = target_cfg['path']
@@ -109,6 +114,9 @@ class DataTransformer:
                 return data
             else:
                 return pd.DataFrame(data, columns=self.target_cols)
+
+    # def __json__(self):
+    #     return self._json
 
 
 

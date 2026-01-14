@@ -22,8 +22,7 @@ cfg.data_transformer = DataTransformer(
                          'Высота потолков',
                          'Кол-во раздельных санузлов'],
              'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'num_processor.pkl')},
-    cat_cfg={'processor': OrdinalEncoder(encoded_missing_value=-1, handle_unknown='use_encoded_value',
-                                         min_frequency=26, unknown_value=-1),
+    cat_cfg={'processor': OrdinalEncoder(encoded_missing_value=-1, handle_unknown='use_encoded_value', min_frequency=26, unknown_value=-1),
              'columns': ['Тип продажи',
                          'Объект продажи',
                          'Мусоропровод',
@@ -38,8 +37,8 @@ cfg.data_transformer = DataTransformer(
                 'columns': ['Стоимость'],
                 'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'target_processor.pkl')},
 )
-cfg.features = cfg.data_transformer.num_cols + cfg.data_transformer.cat_cols
+# cfg.features = cfg.data_transformer.num_cols + cfg.data_transformer.cat_cols
 
 
 if __name__ == '__main__':
-    print(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    print(cfg.data_transformer)

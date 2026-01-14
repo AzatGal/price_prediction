@@ -20,17 +20,20 @@ class Transformer(nn.Module):
                  attn: str,
                  mlp: str,
                  norm: str,
+                 pool: str,
                  pred_dim: int,
-                 log_softmax: bool = False,
-                 compression_factor: float = None,
+                 add_first_token: bool,
+                 mask_first_token: bool,
                  compression: str = None,
+                 compression_ratio: float = None,
                  ) -> None:
         super().__init__()
-        self.embed = FeatureEmbedding(num_embed_features, embed_dim, dropout)
-
-        self.log_softmax = log_softmax
+        self.add_first_token = add_first_token
+        self.embed = FeatureEmbedding(num_embed_features, embed_dim,
+                                      dropout, add_first_token)
         self.seq_len = self.embed.seq_len
-        self.compression_factor = compression_factor
+
+        self.compression_ratio = compression_ratio
         if compression is None:
             compressors = [(None, None)] * num_blocks
         elif compression == 'Head':
@@ -49,18 +52,12 @@ class Transformer(nn.Module):
         ])
         self.norm = getattr(nn, norm)(embed_dim)
 
-    def last_hidden_states(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
-        x = self.embed(x, mask)
-        for i, block in enumerate(self.blocks):
-            x = block(x, mask)
-        return x
-
     def _get_compressors(self, same: bool = True) -> (nn.Linear, nn.Linear):
-        c = nn.Linear(self.seq_len, max(1, int(self.compression_factor * self.seq_len)), False)
+        c = nn.Linear(self.seq_len, max(1, int(self.compression_ratio * self.seq_len)), False)
         if same:
             return c, c
         else:
-            return c, nn.Linear(self.seq_len, max(1, int(self.compression_factor * self.seq_len)), False)
+            return c, nn.Linear(self.seq_len, max(1, int(self.compression_ratio * self.seq_len)), False)
 
     def configure_optimizer(self,
                             lr: float,
@@ -89,17 +86,10 @@ class Transformer(nn.Module):
             if 'norm' not in pn:
                 if 'bias' in pn or 'compressor' in pn:
                     nn.init.zeros_(p)
+                elif 'head' in pn:
+                    nn.init.kaiming_uniform_(p, a=5 ** 0.5)
                 else:
-                    if 'head' in pn:
-                        nn.init.kaiming_uniform_(p, a=5 ** 0.5)
-                    else:
-                        # if 'out' in pn:
-                        #     nn.init.normal_(
-                        #         p,
-                        #         std=0.02 / ((2 * len(self.blocks)) ** 0.5)
-                        #     )
-                        # else:
-                        nn.init.normal_(p, std=0.02)
+                    nn.init.normal_(p, std=0.02)
             if lr_decay_by_block is not None:
                 if 'embed' in pn:
                     embed.add(pn)
@@ -160,7 +150,55 @@ class Transformer(nn.Module):
             return torch.optim.AdamW(optim_groups, lr=lr, **optim_kwargs)
 
 
-class MaskedTableAutoencoder(Transformer):
+class MaskedTransformer(Transformer):
+    def __init__(self,
+                 embed_dim: int,
+                 num_embed_features: list[int],
+                 num_heads: int,
+                 attn_dropout: float,
+                 mlp_dropout: float,
+                 dropout: float,
+                 act: str,
+                 mlp_dim_factor: float,
+                 num_blocks: int,
+                 attn: str,
+                 mlp: str,
+                 norm: str,
+                 pool: str,
+                 pred_dim: int,
+                 add_first_token: bool,
+                 mask_first_token: bool,
+                 compression: str = None,
+                 compression_ratio: float = None,
+                 ) -> None:
+        super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
+                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pool, pred_dim,
+                         add_first_token, mask_first_token, compression, compression_ratio)
+
+    def get_mask(self, x: torch.Tensor, mask_ratio: float) -> torch.Tensor:
+        B, T = x.shape
+        noise = torch.rand(B, T, device=x.device)
+        mask = torch.zeros(B, T, device=x.device, dtype=torch.bool)
+        mask[:, :int(T * mask_ratio)] = True
+        mask = mask.gather(1, noise.argsort(1))
+        if self.add_first_token:
+            mask = torch.cat(
+                [torch.zeros(B, 1, device=x.device, dtype=torch.bool), mask],
+                1
+            )
+        return mask
+
+    def configure_optimizer(self,
+                            lr: float,
+                            weight_decay: float,
+                            lr_decay_by_block: float = None,
+                            **optim_kwargs
+                            ) -> torch.optim.Optimizer:
+        return super().configure_optimizer(lr, weight_decay, lr_decay_by_block,
+                                           betas=(0.9, 0.95))
+
+
+class MaskedTableAutoencoder(MaskedTransformer):
     def __init__(self,
                  embed_dim: int,
                  decoder_embed_dim: int,
@@ -177,14 +215,16 @@ class MaskedTableAutoencoder(Transformer):
                  attn: str,
                  mlp: str,
                  norm: str,
+                 pool: str,
                  pred_dim: int,
-                 log_softmax: bool = False,
-                 compression_factor: float = None,
+                 add_first_token: bool,
+                 mask_first_token: bool,
                  compression: str = None,
+                 compression_ratio: float = None
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
-                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
-                         log_softmax, compression_factor, compression)
+                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pool, pred_dim,
+                         add_first_token, mask_first_token, compression, compression_ratio)
         if compression is None:
             compressors = [(None, None)] * num_blocks
         elif compression == 'Head':
@@ -207,7 +247,9 @@ class MaskedTableAutoencoder(Transformer):
         self.decoder_head = nn.Linear(decoder_embed_dim, pred_dim)
         self.register_buffer('ids', torch.arange(self.seq_len).reshape(1, self.seq_len, 1))
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask_ratio: float) -> (torch.Tensor, torch.Tensor):
+        mask = self.get_mask(x, mask_ratio)
+
         x = self.embed(x, mask)
         B, T, C = x.shape
 
@@ -222,7 +264,7 @@ class MaskedTableAutoencoder(Transformer):
         unmask_x = self.norm(unmask_x)
 
         x = torch.cat(
-            [mask_x, unmask_x], dim=1
+            [mask_x, unmask_x], 1
         ).gather(
             1, torch.cat([mask_ids, unmask_ids], dim=1).argsort(1)
         )
@@ -231,27 +273,18 @@ class MaskedTableAutoencoder(Transformer):
         x = x + self.decoder_pos_embed
 
         for i, block in enumerate(self.decoder_blocks):
-            x = block(x, None)
+            x = block(x)
 
-        x = x[mask].reshape(x.size(0), -1, x.size(2))
+        if self.add_first_token:
+            x = x[:, 1:]
+
+        x = x[mask]  # .reshape(x.size(0), -1, x.size(2))
         x = self.decoder_norm(x)
         x = self.decoder_head(x)
-
-        if self.log_softmax:
-            x = F.log_softmax(x, -1)
-        return x
-
-    def configure_optimizer(self,
-                            lr: float,
-                            weight_decay: float,
-                            lr_decay_by_block: float = None,
-                            **optim_kwargs
-                            ) -> torch.optim.Optimizer:
-        return super().configure_optimizer(lr, weight_decay, lr_decay_by_block,
-                                           betas=(0.9, 0.95))
+        return x, mask
 
 
-class MaskedTableModeling(Transformer):
+class MaskedTableModeling(MaskedTransformer):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
@@ -265,33 +298,30 @@ class MaskedTableModeling(Transformer):
                  attn: str,
                  mlp: str,
                  norm: str,
+                 pool: str,
                  pred_dim: int,
-                 log_softmax: bool = False,
-                 compression_factor: float = None,
+                 add_first_token: bool,
+                 mask_first_token: bool,
                  compression: str = None,
+                 compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
-                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
-                         log_softmax, compression_factor, compression)
+                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pool, pred_dim,
+                         add_first_token, mask_first_token, compression, compression_ratio)
         self.tm_head = nn.Linear(embed_dim, pred_dim)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        x = self.last_hidden_states(x, mask)
-        x = x[mask].reshape(x.size(0), -1, x.size(2))
+    def forward(self, x: torch.Tensor, mask_ratio: float) -> (torch.Tensor, torch.Tensor):
+        mask = self.get_mask(x, mask_ratio)
+
+        x = self.embed(x, mask)
+
+        for i, block in enumerate(self.blocks):
+            x = block(x)
+
+        x = x[mask]  # .reshape(x.size(0), -1, x.size(2))
         x = self.norm(x)
         x = self.tm_head(x)
-        if self.log_softmax:
-            x = F.log_softmax(x, -1)
-        return x
-
-    def configure_optimizer(self,
-                            lr: float,
-                            weight_decay: float,
-                            lr_decay_by_block: float = None,
-                            **optim_kwargs
-                            ) -> torch.optim.Optimizer:
-        return super().configure_optimizer(lr, weight_decay, lr_decay_by_block,
-                                           betas=(0.9, 0.95))
+        return x, mask
 
 
 class PricePrediction(Transformer):
@@ -308,30 +338,46 @@ class PricePrediction(Transformer):
                  attn: str,
                  mlp: str,
                  norm: str,
+                 pool: str,
                  pred_dim: int,
-                 log_softmax: bool = False,
-                 compression_factor: float = None,
+                 add_first_token: bool,
+                 mask_first_token: bool,
                  compression: str = None,
+                 compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_heads, attn_dropout, mlp_dropout,
-                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pred_dim,
-                         log_softmax, compression_factor, compression)
+                         dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm, pool, pred_dim,
+                         add_first_token, mask_first_token, compression, compression_ratio)
+        self.pool = pool
+        self.mask_first_token = mask_first_token
+        if mask_first_token:
+            self.register_buffer('mask', torch.zeros(1, self.seq_len, dtype=torch.bool))
+            self.mask[:, 0] = True
         self.pp_head = nn.Linear(embed_dim, pred_dim)
-        # self.pp_head = nn.Sequential(nn.SiLU(),
-        #                              nn.Linear(embed_dim, pred_dim))
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
-        x = self.last_hidden_states(x, mask)
-        x = x.mean(1)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.mask_first_token:
+            x = self.embed(x, self.mask)
+        else:
+            x = self.embed(x)
+
+        for i, block in enumerate(self.blocks):
+            x = block(x)
+
+        if self.pool == 'token':
+            x = x[:, 0]
+        elif self.pool == 'mean':
+            x = x.mean(1)
+        else:
+            raise NotImplementedError()
+
         x = self.norm(x)
         x = self.pp_head(x)
-        if self.log_softmax:
-            x = F.log_softmax(x, -1)
         return x
 
 
 if __name__ == '__main__':
     from configs.model_cfg import cfg
-    m = Transformer(**cfg, pred_dim=1) #
+    m = Transformer(**cfg, pred_dim=1)
     o = m.configure_optimizer(0.1, 0.1)
     print(m.embed.pos_embed)

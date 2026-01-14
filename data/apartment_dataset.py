@@ -12,52 +12,40 @@ class ApartmentDataset(Dataset):
                  dataset_type,
                  path,
                  data_transformer,
-                 target_type,
-                 mask_first_token=False,
-                 smooth=True,
-                 **kwargs
+                 task,
+                 include_target=False,
                  ) -> None:
         df = pd.read_csv(os.path.join(path, f"{dataset_type}.csv"))
         features = torch.as_tensor(
             data_transformer.transform(df)
         )
 
-        self.mask_first_token = mask_first_token
-        if self.mask_first_token:
+        if include_target:
             self.features = features
-            self.mask = torch.zeros(self.features.size(1), dtype=torch.bool)
-            self.mask[0] = True
+            offsets = np.cumsum(data_transformer.num_bins +
+                                data_transformer.num_cats)
         else:
             self.features = features[:, 1:]
+            offsets = np.cumsum(data_transformer.num_bins[1:] +
+                                data_transformer.num_cats)
 
         self.num_samples, self.num_features = self.features.shape
 
-        if target_type == 'cat':
-            num_bins = data_transformer.num_bins[0] if smooth else None
-            self.target = self.get_target(features, data_transformer.num_bins[0],
-                                          num_bins, [0, num_bins]).squeeze()
-            self.label = torch.as_tensor(df[['Стоимость']].values)
-        elif target_type == 'num':
+        if task == 'train':
             self.target = torch.as_tensor(
                 data_transformer.transform(df[['Стоимость']], target=True)
             )
             self.label = torch.as_tensor(df[['Стоимость']].values)
-        elif target_type == 'mask':
-            num_mask = int(kwargs['mask_ratio'] * self.num_features)
-            num_unmask = self.num_features - num_mask
-            self.mask = torch.cat([torch.ones(num_mask),
-                                   torch.zeros(num_unmask)]).bool()
-
+        elif task == 'pretrain':
+            self.label = self.features
             num_bins = data_transformer.num_bins[
-                0 if self.mask_first_token else 1:
+                0 if include_target else 1:
             ]
             num_cats = data_transformer.num_cats
-            offsets = kwargs['offsets']
-            # print(offsets)
+
             num_classes = sum(num_bins + num_cats)
             num_bins_len = len(num_bins)
             num_cats_len = len(num_cats)
-            # print(num_bins_len, num_cats_len)
 
             self.target = torch.cat(
                 [
@@ -69,12 +57,10 @@ class ApartmentDataset(Dataset):
                 ],
                 dim=1
             )
-            # print(self.target)
         else:
             raise NotImplementedError()
 
         self.target = self.target.float()
-        self.target_type = target_type
 
     def get_target(self, labels, num_classes, smooth_range=None, id_range=None):
         if smooth_range is None:
@@ -104,40 +90,18 @@ class ApartmentDataset(Dataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        if self.target_type == 'mask':
-            mask = self.mask.gather(0, torch.rand(self.num_features).argsort())
-            # print(mask.shape)
-            # print(self.target.shape)
-            return {
-                'features': self.features[idx],
-                'mask': mask,
-                'target': self.target[idx][mask],
-                'label': self.features[idx][mask]
-            }
-        else:
-            res = {
-                'target': self.target[idx],
-                'label': self.label[idx]
-            }
-            if self.mask_first_token:
-                res['features'] = self.features[idx]
-                res['mask'] = self.mask
-            else:
-                res['features'] = self.features[idx]
-            return res
+        return {
+            'features': self.features[idx],
+            'target': self.target[idx],
+            'label': self.label[idx]
+        }
 
 
 if __name__ == '__main__':
-    from configs.data_cfg import cfg
-    ad = ApartmentDataset('train', cfg.path,
-                          cfg.data_transformer, 'num', 19)
-    # print(cfg.data_transformer.offsets)
-    t = ad[32]['features']
-    print(t)
-    # print(t.shape)
-    # print(cfg.data_transformer.inverse_transform(t))  # , target=True))
-    # print(t)
-    # labels = torch.randint(0, 12, [64,])
-    # ad.num_samples = 64
-    # print(labels)
-    # print(ad.get_target(labels, 64, 12, [0, 12]).squeeze()[torch.argwhere(labels == 0)])
+    from configs.pretrain_cfg import cfg
+    from executors.trainer import Trainer
+
+    trainer = Trainer(cfg)
+    print(trainer.train_data[0]['mask'])
+    print(trainer.train_data[0]['mask'])
+    print(trainer.train_data[0]['mask'])

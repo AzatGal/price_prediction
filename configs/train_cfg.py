@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from easydict import EasyDict
 from configs.data_cfg import cfg as data_cfg
@@ -7,35 +8,33 @@ from configs.model_cfg import cfg as model_cfg
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 cfg = EasyDict()
-cfg.seed = 0
-cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')
 
+cfg.seed = 0
+cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir', 'train',
+                           datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 cfg.batch_size = 8 * 1024  # 16
-cfg.num_epoch = 100
+cfg.num_epoch = 10
 
 cfg.lr = 1e-2  # 1 3 5
 cfg.lr_decay_factor = 1e-2
+cfg.lr_decay = 'cosine'  # cosine linear
 
-cfg.weight_decay = 1e-5
-cfg.lr_decay = 'cosine'  # cosine
-
-model_cfg.pred_dim = 1  # model_cfg.num_embed_features[0]  # 1  #
-model_cfg.log_softmax = False  # False True
-cfg.loss = 'MSELoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss MSELoss
+cfg.loss = 'MSELoss'  # SmoothL1Loss  L1Loss MSELoss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
+cfg.weight_decay = 1e-5
 
 cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}
 
-cfg.target_type = 'num'  # cat num
-
 # cfg.lr_decay_by_block = 0.95
-cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'MaskedTableAutoencoder.pt')
+# cfg.load_pretrained = os.path.join(ROOT_DIR, 'exp_dir', 'MaskedTableAutoencoder.pt')
 # MaskedTableAutoencoder MaskedTableModeling
 
-cfg.model = 'PricePrediction'  # PricePrediction TabM PricePredEnsemble
+cfg.model = 'PricePrediction'
 
-data_cfg.target_type = cfg.target_type
-data_cfg.mask_first_token = len(data_cfg.features) == len(model_cfg.num_embed_features)
+cfg.task = 'train'
+model_cfg.pred_dim = 1
+data_cfg.include_target = model_cfg.pop('include_target')
+data_cfg.task = cfg.task
 
 cfg.model_cfg = model_cfg
 cfg.data_cfg = data_cfg

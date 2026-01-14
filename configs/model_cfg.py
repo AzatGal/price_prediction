@@ -9,20 +9,26 @@ cfg.embed_dim = 8 * cfg.num_heads  # 24
 cfg.num_blocks = 3
 cfg.act = 'SiLU'  # SiLU
 
-cfg.num_embed_features = (data_cfg.data_transformer.num_bins[1:] +
-                          data_cfg.data_transformer.num_cats)
+cfg.pool = 'mean'  # mean token
+cfg.include_target = False  # False True
+cfg.add_first_token = cfg.pool == 'token' and not cfg.include_target
+cfg.mask_first_token = cfg.include_target
+cfg.num_embed_features = (
+    data_cfg.data_transformer.num_bins[0 if cfg.include_target else 1:] +
+    data_cfg.data_transformer.num_cats
+)
+
 cfg.attn_dropout = 0.05
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
-cfg.compression_factor = 0.05
 cfg.compression = 'Head'  # Head KV Layer
+cfg.compression_ratio = 0.01
 cfg.mlp_dim_factor = 1  # 3 / 2
+
 cfg.attn = 'Attention'  # Linear
 cfg.mlp = 'GLUMLP'
 cfg.norm = 'LayerNorm'
-# cfg.log_softmax = False  # False True
 
-# print(cfg.num_embed_features)
 
 """
 cpu

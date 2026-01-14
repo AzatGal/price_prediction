@@ -2,39 +2,44 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# from models.mlp import GLUMLP
-
 
 class FeatureEmbedding(nn.Module):
     def __init__(self,
                  num_embed_features: list[int],
                  embed_dim: int,
-                 dropout: float
+                 dropout: float,
+                 add_first_token: bool,
                  ) -> None:
         super().__init__()
         self.register_buffer(
             'num_embed_features',
             torch.tensor(num_embed_features)
         )
-        # print(self.num_embed_features)
-        self.mask_idx = sum(num_embed_features)
-        self.seq_len = len(num_embed_features)
-        self.weight = nn.Parameter(torch.empty(self.mask_idx + 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.empty(self.seq_len, embed_dim))
         self.register_buffer(
             'offsets',
             torch.tensor([0] + num_embed_features[:-1]).cumsum(0)
         )
-        # print(self.offsets)
+
+        self.add_first_token = add_first_token
+        self.mask_idx = sum(num_embed_features)
+        self.seq_len = len(num_embed_features) + add_first_token
+
+        self.weight = nn.Parameter(torch.empty(self.mask_idx + 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.empty(self.seq_len, embed_dim))
+
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         assert torch.all(x < self.num_embed_features)
         x = x + self.offsets
+        if self.add_first_token:
+            x = torch.cat(
+                [torch.tensor([[self.mask_idx]] * x.size(0)), x],
+                dim=1
+            )
         if mask is not None:
             x = x.masked_fill(mask, self.mask_idx)
-        # print(x)
-        # print(x)
+
         x = F.embedding(x, self.weight)
         x = x + self.pos_embed
         x = self.dropout(x)

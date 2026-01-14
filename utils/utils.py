@@ -51,6 +51,8 @@ def get_scheduler(optimizer,
 
 
 def accuracy(pred, label):
+    # print(pred.shape)
+    # print(label.shape)
     pred = pred.argmax(1)
     return (pred == label).float().mean().item()
 

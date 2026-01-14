@@ -28,8 +28,7 @@ class Block(nn.Module):
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = getattr(mlps, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.attn = getattr(attns, attn)(embed_dim, num_heads, attn_dropout,
-                                         k_compressor, v_compressor)
+        self.attn = getattr(attns, attn)(embed_dim, num_heads, attn_dropout, k_compressor, v_compressor)
 
     def _attn_block(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         x = self.attn_norm(x)

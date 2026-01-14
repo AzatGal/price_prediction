@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from easydict import EasyDict
 from configs.data_cfg import cfg as data_cfg
@@ -7,9 +8,10 @@ from configs.model_cfg import cfg as model_cfg
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 cfg = EasyDict()
-cfg.seed = 0
-cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir')
 
+cfg.seed = 0
+cfg.exp_dir = os.path.join(ROOT_DIR, 'exp_dir', 'pretrain',
+                           datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 cfg.batch_size = 8 * 1024
 cfg.num_epoch = 125
 
@@ -17,13 +19,11 @@ cfg.lr = 1e-2
 cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'cosine'
 
-model_cfg.log_softmax = True  # False True
-cfg.loss = 'KLDivLoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
-cfg.loss_args = {'reduction': 'batchmean'}
+cfg.loss = 'CrossEntropyLoss'  # CrossEntropyLoss SmoothL1Loss KLDivLoss L1Loss
+cfg.loss_args = {}  # 'reduction': 'batchmean'}
 cfg.weight_decay = 1e-5
 
 cfg.accelerator_args = {'mixed_precision': 'fp16', 'cpu': True}
-cfg.target_type = 'mask'
 
 cfg.model = 'MaskedTableAutoencoder'
 cfg.mask_ratio = 0.65
@@ -34,10 +34,10 @@ model_cfg.decoder_num_blocks = max(1, model_cfg.num_blocks // 3)
 # cfg.model = 'MaskedTableModeling'
 # cfg.mask_ratio = 0.5
 
+cfg.task = 'pretrain'
 model_cfg.pred_dim = sum(model_cfg.num_embed_features)
-
-data_cfg.target_type = cfg.target_type
-data_cfg.mask_first_token = len(data_cfg.features) == len(model_cfg.num_embed_features)
+data_cfg.include_target = model_cfg.pop('include_target')
+data_cfg.task = cfg.task
 
 cfg.data_cfg = data_cfg
 cfg.model_cfg = model_cfg
