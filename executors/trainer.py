@@ -210,10 +210,9 @@ class Trainer:
                     f"{self.best_metric:.5f} | loss: {self.best_loss:.5f}"
                 )
             self.save_checkpoint()
-
+            self.logger.save_plot('loss')
+            self.logger.save_plot('metric')
             # print(self.optimizer.param_groups[0]['lr'])
-        self.logger.save_plot('loss')
-        self.logger.save_plot('metric')
 
     def overfitting_on_batch(self, max_step=1000):
         batch = next(iter(self.train_dataloader))

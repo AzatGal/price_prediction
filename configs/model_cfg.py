@@ -4,10 +4,10 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_q_heads = 6
+cfg.num_q_heads = 4
 cfg.num_kv_heads = 2
-cfg.embed_dim = 8 * cfg.num_q_heads  # 24
-cfg.num_blocks = 3
+cfg.embed_dim = 4 * cfg.num_q_heads  # 24
+cfg.num_blocks = 24
 cfg.act = 'SiLU'  # SiLU
 
 cfg.pool = 'mean'  # mean token
