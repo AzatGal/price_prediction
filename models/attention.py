@@ -66,64 +66,71 @@ import torch.nn.functional as F
 class Attention(nn.Module):
     def __init__(self,
                  embed_dim: int,
-                 num_heads: int,
+                 num_q_heads: int,
+                 num_kv_heads: int,
                  dropout: float,
-                 k_compressor: nn.Linear = None,
-                 v_compressor: nn.Linear = None,
+                 # kv_compressors: nn.ModuleList | nn.Linear = None,
                  bias: bool = False
                  ) -> None:
         super().__init__()
-        assert embed_dim % num_heads == 0
+        assert embed_dim % num_q_heads == 0
+        assert num_q_heads % num_kv_heads == 0
 
         self.embed_dim = embed_dim
-        self.num_heads = num_heads
-        self.head_dim = embed_dim // num_heads
+        self.num_q_heads = num_q_heads
+        self.num_kv_heads = num_kv_heads
+        self.head_dim = embed_dim // num_q_heads
         self.dropout = dropout
 
-        self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
+        self.split_size = [embed_dim] + [self.head_dim * num_kv_heads] * 2
+
+        self.qkv_proj = nn.Linear(embed_dim, sum(self.split_size), bias)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        self.k_compressor = k_compressor
-        self.v_compressor = v_compressor
+        # self.kv_compressors = kv_compressors
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         B, _, seq_len = mask.shape
         ids = (torch.arange(seq_len, device=x.device)
                .reshape(1, 1, seq_len, 1)
-               .expand(B, self.num_heads, -1, self.head_dim)[mask]
-               .reshape(B, self.num_heads, -1, self.head_dim))
+               .repeat(B, self.num_kv_heads, -1, self.head_dim)[mask]
+               .reshape(B, self.num_kv_heads, -1, self.head_dim))
         x = torch.zeros(
-            B, self.num_heads, seq_len, self.head_dim,
+            B, self.num_kv_heads, seq_len, self.head_dim,
             dtype=x.dtype, device=x.device
         ).scatter_add_(2, ids, x)
         return x
 
     def forward(self,
                 x: torch.Tensor,
+                kv_compressors: nn.ModuleList | nn.Linear = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
         # mask - не стандартная маска внимания, а маска видимых токенов у mae
         B, T, C = x.shape
-        q, k, v = (self.qkv_proj(x)
-                   .reshape(B, T, self.num_heads, 3, self.head_dim)
-                   .transpose(1, 2)
-                   .unbind(3))
-        if self.k_compressor is not None and self.v_compressor is not None:
+        qkv = self.qkv_proj(x).split(self.split_size, 2)
+        qkv = [
+            x.reshape(B, T, -1, self.head_dim).transpose(1, 2)
+            for x in qkv
+        ]
+        if kv_compressors is not None:
             if mask is not None:
-                mask = (mask
-                        .unsqueeze(1)
-                        .expand(-1, self.num_heads, -1))
-                k = self._reshape_by_mask(k, mask)
-                v = self._reshape_by_mask(v, mask)
-            k = self.k_compressor(
-                k.transpose(2, 3)
-            ).transpose(2, 3)
-            v = self.v_compressor(
-                v.transpose(2, 3)
-            ).transpose(2, 3)
+                mask = mask.unsqueeze(1).repeat(-1, self.num_kv_heads, -1)
+                qkv = [qkv[0]] + [self._reshape_by_mask(x, mask) for x in qkv[1:]]
+            if isinstance(kv_compressors, nn.ModuleList):
+                qkv = [qkv[0]] + [
+                    kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
+                    for i, x in enumerate(qkv[1:])
+                ]
+            else:
+                qkv = [qkv[0]] + [
+                    kv_compressors(x.transpose(2, 3)).transpose(2, 3)
+                    for x in qkv[1:]
+                ]
         a = F.scaled_dot_product_attention(
-            q, k, v,
-            dropout_p=self.dropout if self.training else 0.0
+            *qkv,
+            dropout_p=self.dropout if self.training else 0.0,
+            enable_gqa=True
         )
         a = self.out_proj(
             a

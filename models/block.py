@@ -8,7 +8,8 @@ import models.mlp as mlps
 class Block(nn.Module):
     def __init__(self,
                  embed_dim: int,
-                 num_heads: int,
+                 num_q_heads: int,
+                 num_kv_heads: int,
                  attn_dropout: float,
                  mlp_dropout: float,
                  dropout: float,
@@ -17,8 +18,7 @@ class Block(nn.Module):
                  attn: str,
                  mlp: str,
                  norm: str,
-                 k_compressor: nn.Linear = None,
-                 v_compressor: nn.Linear = None
+                 # kv_compressors: nn.ModuleList | nn.Linear = None
                  ) -> None:
         super().__init__()
         self.attn_norm = getattr(nn, norm)(embed_dim)
@@ -28,11 +28,15 @@ class Block(nn.Module):
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = getattr(mlps, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.attn = getattr(attns, attn)(embed_dim, num_heads, attn_dropout, k_compressor, v_compressor)
+        self.attn = getattr(attns, attn)(embed_dim, num_q_heads, num_kv_heads, attn_dropout)  # , kv_compressors)
 
-    def _attn_block(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+    def _attn_block(self,
+                    x: torch.Tensor,
+                    kv_compressors: nn.ModuleList | nn.Linear = None,
+                    mask: torch.Tensor = None
+                    ) -> torch.Tensor:
         x = self.attn_norm(x)
-        x = self.attn(x, mask)
+        x = self.attn(x, kv_compressors, mask)
         x = self.attn_drop(x)
         return x
 
@@ -42,8 +46,12 @@ class Block(nn.Module):
         x = self.mlp_drop(x)
         return x
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
-        x = x + self._attn_block(x, mask)
+    def forward(self,
+                x: torch.Tensor,
+                kv_compressors: nn.ModuleList | nn.Linear = None,
+                mask: torch.Tensor = None
+                ) -> torch.Tensor:
+        x = x + self._attn_block(x, kv_compressors, mask)
         x = x + self._mlp_block(x)
         return x
 

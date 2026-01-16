@@ -83,13 +83,13 @@ class TabmTrainer:
     def save_model(self):
         os.makedirs(self.cfg.exp_dir, exist_ok=True)
         save_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  #
-        # save_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  #
+        # save_path = os.path.join(self.cfg.runs, 'ens.pt')  #
         torch.save(self.model.state_dict(), save_path)
 
     def load_model(self, load_path=None):
         if load_path is None:
             load_path = os.path.join(self.cfg.exp_dir, "tabm.pt")  # 'ens.pt')  # "tabm.pt")
-            # load_path = os.path.join(self.cfg.exp_dir, 'ens.pt')  # "tabm.pt")
+            # load_path = os.path.join(self.cfg.runs, 'ens.pt')  # "tabm.pt")
         self.model.load_state_dict(torch.load(load_path))
 
     def make_step(self, batch, update_model=True):

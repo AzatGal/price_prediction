@@ -17,7 +17,10 @@ def fit_catboost(train_dataset, val_dataset):
         'Округ',
         'Район'
     ]
-    with open('/Users/azatgalautdinov/PycharmProjects/price_prediction/data/data_transformers/target_processor.pkl', 'rb') as f:
+    with open(
+            '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/data_transformers/target_processor.pkl',
+            'rb'
+    ) as f:
         target_processor = dill.load(f)
     train_target = target_processor.transform(train_dataset[['Стоимость']])
     val_target = target_processor.transform(val_dataset[['Стоимость']])
@@ -45,8 +48,8 @@ def fit_catboost(train_dataset, val_dataset):
         iterations=20_000,
         learning_rate=0.1,
         depth=10,
-        loss_function='Huber:delta=1.0',
-        eval_metric='MAE',
+        # loss_function='MAPE',  # 'Huber:delta=1.0',
+        # eval_metric='MAPE',
         # custom_metric=mape,
         verbose=1000,
         early_stopping_rounds=200,
@@ -59,7 +62,10 @@ def fit_catboost(train_dataset, val_dataset):
         # plot=False  # можно поставить True для визуализации в Jupyter
     )
 
+    model.save_model('price_prediction.cbm')
+
     pred = target_processor.inverse_transform(model.predict(val_pool).reshape(-1, 1))
+
     print('MAPE: ', mean_absolute_percentage_error(label, pred))
 
     feature_importance = sorted(
@@ -78,8 +84,8 @@ if __name__ == '__main__':
     path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets'
     train_dataset = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
     val_dataset = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
-    # fit_catboost(train_dataset, val_dataset)
-    print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
+    fit_catboost(train_dataset, val_dataset)
+    # print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
 
 """
 0:	learn: 0.9611843	test: 0.9574410	best: 0.9574410 (0)	total: 89.4ms	remaining: 29m 47s

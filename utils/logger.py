@@ -15,21 +15,26 @@ def to_json(obj):
         return obj.json
     return obj
 
+
 class Logger:
     def __init__(self, cfg: EasyDict) -> None:
-        self.log_dir = cfg.exp_dir
+        self.log_dir = os.path.join(cfg.exp_dir, 'logs')
         os.makedirs(self.log_dir, exist_ok=True)
 
-        log_format = f"{WHITE}%(message)s{RESET}"
-        logging.basicConfig(
-            level=logging.INFO,
-            format=log_format,
-            handlers=[
-                logging.FileHandler(os.path.join(self.log_dir, "training.log")),
-                logging.StreamHandler()
-            ]
-        )
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.handlers.clear()
+
+        file_formatter = logging.Formatter("%(message)s")
+        console_formatter = logging.Formatter(f"{WHITE}%(message)s{RESET}")
+
+        file_handler = logging.FileHandler(os.path.join(self.log_dir, "training.log"), encoding="utf-8")
+        file_handler.setFormatter(file_formatter)
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(console_formatter)
+
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
 
         self.save_config(cfg)
         self.num_epoch = cfg.num_epoch
@@ -62,7 +67,7 @@ class Logger:
             for k, v in valid.items())
         )
 
-    def plot(self, name_values: str, show: bool = False) -> None:
+    def save_plot(self, name_values: str) -> None:
         steps = []
         metric_dict = {}
 
@@ -76,7 +81,7 @@ class Logger:
                             metric_dict[key] = []
                         metric_dict[key].append(value)
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(16, 12))
         for key, values in metric_dict.items():
             plt.plot(steps, values, label=key)
         plt.xlabel("Epoch")
@@ -88,15 +93,12 @@ class Logger:
         plot_path = os.path.join(self.log_dir, f"{name_values}.png")
         plt.savefig(plot_path)
 
-        if show:
-            plt.show()
-        else:
-            plt.close()
+        plt.close()
 
 
 if __name__ == "__main__":
     config = EasyDict({
-        'exp_dir': "runs/exp_01",
+        'runs': "runs/exp_01",
         "model": "ResNet18",
         "num_epoch": 50,
         "lr": 0.001,
@@ -116,4 +118,4 @@ if __name__ == "__main__":
 
         }, epoch)
 
-    logger.plot('loss')
+    logger.save_plot('loss')
