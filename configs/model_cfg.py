@@ -4,10 +4,10 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_q_heads = 4
-cfg.num_kv_heads = 2
-cfg.embed_dim = 4 * cfg.num_q_heads  # 24
-cfg.num_blocks = 24
+cfg.num_q_heads = 12
+cfg.num_kv_heads = 6
+cfg.embed_dim = 8 * cfg.num_q_heads  # 24
+cfg.num_blocks = 32
 cfg.act = 'SiLU'  # SiLU
 
 cfg.pool = 'mean'  # mean token
@@ -24,7 +24,7 @@ cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
 cfg.kv_compression = 'KV'  # Head KV Layer
 cfg.kv_compression_ratio = 0.01
-cfg.mlp_dim_factor = 1  # 3 / 2
+cfg.mlp_dim_factor = 2  # 3 / 2
 
 cfg.attn = 'Attention'  # Linear
 cfg.mlp = 'GLUMLP'

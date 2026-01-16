@@ -12,8 +12,8 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 16 * 1024  # 16
-cfg.num_epoch = 250
+cfg.batch_size = 128  # 16 * 1024
+cfg.num_epoch = 200
 
 cfg.wu_ratio = 0.05
 cfg.decay_ratio = 0.5
