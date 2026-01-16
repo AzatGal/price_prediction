@@ -44,7 +44,7 @@ class Trainer:
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
-            kwargs['num_workers'] = 4
+            kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
         self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
         self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
