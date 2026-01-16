@@ -28,7 +28,7 @@ cfg.weight_decay = 1e-5
 cfg.loss = 'MSELoss'  # SmoothL1Loss  L1Loss MSELoss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
 
-cfg.accelerator_args = {'mixed_precision': 'fp16'} # , 'cpu': True}
+cfg.accelerator_args = {'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.lr_decay_by_block = 0.95
 # cfg.load_pretrained = os.path.join(ROOT_DIR, 'runs', 'MaskedTableAutoencoder.pt')
