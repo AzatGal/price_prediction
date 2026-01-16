@@ -52,7 +52,7 @@ class Trainer:
     def _prepare_model(self, model_cfg):
         self.model = getattr(models, self.cfg.model)(**model_cfg)
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-        self.optimizer = getattr(torch.optim, cfg.optim)(
+        self.optimizer = getattr(torch.optim, self.cfg.optim)(
             get_param_groups(self.model,
                              self.cfg.lr,
                              self.cfg.weight_decay,
