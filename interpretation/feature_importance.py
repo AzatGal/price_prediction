@@ -17,13 +17,13 @@ from configs.train_cfg import cfg
 
 @torch.no_grad()
 def main():
-    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/16-01_23-47/'
-    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+    path = '/Users/azatgalautdinov/Desktop/price_prediction'
+    with open(os.path.join(path, 'config.json'), 'r') as f: # 'logs',
         model_cfg = json.load(f)['model_cfg']
 
     cfg.model_cfg = model_cfg
-    trainer = Trainer(cfg)
-    trainer.load_model(os.path.join(path, 'PricePrediction.pt'))
+    trainer = Trainer(cfg, False)
+    trainer.load_model(os.path.join(path, 'PricePrediction.pt'), )
     # print(trainer.model.embed.weight.dtype)
 
     def kv_compressor_weights(compressor):

@@ -16,7 +16,7 @@ cfg.batch_size = 1024
 cfg.num_epoch = 300
 
 cfg.wu_ratio = 0.05
-cfg.decay_ratio = 0.75
+cfg.decay_ratio = 0.9
 cfg.lr = 6e-4 * cfg.batch_size / 256  # 1e-3 bs: 8 * 1024
 cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'linear'  # cosine linear
@@ -28,7 +28,7 @@ cfg.weight_decay = 3e-4
 cfg.loss = 'L1Loss'  # SmoothL1Loss  L1Loss MSELoss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
 
-cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
+cfg.accelerator_args = {'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.lr_decay_by_block = 0.95
 # cfg.load_pretrained = os.path.join(ROOT_DIR, 'runs', 'MaskedTableAutoencoder.pt')

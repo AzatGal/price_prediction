@@ -84,10 +84,11 @@ class DataTransformer:
         if target is None:
             if data.ndim < 2:
                 data = np.reshape(data, [1, -1])
-            # if self.apply_offsets:
-            #     data = data - self.offsets
+
             i = len(self.num_cols)
-            # if not self.include_target_in_features:
+            if data.shape[1] < len(self.num_cols + self.cat_cols):
+                data = np.hstack([np.zeros([data.shape[0], 1]), data])
+
             num = self.num_processor.inverse_transform(data[:, :i])
             num[num < 0] = np.nan
             cat = self.cat_processor.inverse_transform(data[:, i:])

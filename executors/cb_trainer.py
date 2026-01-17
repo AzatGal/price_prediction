@@ -46,9 +46,9 @@ def fit_catboost(train_dataset, val_dataset):
 
     model = CatBoostRegressor(
         iterations=20_000,
-        learning_rate=0.1,
+        learning_rate=0.05,
         depth=10,
-        # loss_function='MAPE',  # 'Huber:delta=1.0',
+        loss_function='MAE',  # 'Huber:delta=1.0',
         # eval_metric='MAPE',
         # custom_metric=mape,
         verbose=1000,

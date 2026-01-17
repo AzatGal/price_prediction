@@ -15,11 +15,13 @@ from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_group
 
 
 class Trainer:
-    def __init__(self, cfg):
+    def __init__(self, cfg, log=True):
         set_seed(cfg.seed)
 
-        self.logger = Logger(cfg)
         self.accelerator = Accelerator(**cfg.accelerator_args)
+        if log:
+            self.logger = Logger(cfg)
+            self.logger.print('Training on ' + str(self.accelerator.device))
         self.cfg = cfg
 
         self.best_epoch = -1
@@ -37,7 +39,6 @@ class Trainer:
         self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
 
-        self.logger.print('Training on ' + str(self.accelerator.device))
 
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
@@ -106,7 +107,10 @@ class Trainer:
     def load_model(self, load_path=None, **kwargs):
         if load_path is None:
             load_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
-        self.model.load_state_dict(torch.load(load_path), **kwargs)
+        self.model.load_state_dict(
+            torch.load(load_path, map_location=self.accelerator.device),
+            **kwargs
+        )
 
     def save_checkpoint(self, epoch, save_path=None, **kwargs):
         if save_path is None:
