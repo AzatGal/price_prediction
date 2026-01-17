@@ -11,7 +11,7 @@ from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
 import models.transformers as models
 from utils.logger import Logger
-from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups
+from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, logcosh_loss
 
 
 class Trainer:
