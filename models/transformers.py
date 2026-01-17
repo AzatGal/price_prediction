@@ -81,7 +81,7 @@ class Transformer(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn or 'compressor' in pn:
+                if 'bias' in pn or 'compressor' in pn or 'pos_embed' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=5 ** 0.5)
@@ -349,33 +349,3 @@ if __name__ == '__main__':
     for k, _ in m.named_parameters():
         print(k)
 
-"""
-embed.weight
-embed.pos_embed
-blocks.0.attn_norm.weight
-blocks.0.attn_norm.bias
-blocks.0.mlp_norm.weight
-blocks.0.mlp_norm.bias
-blocks.0.mlp.in_proj.weight
-blocks.0.mlp.out_proj.weight
-blocks.0.attn.qkv_proj.weight
-blocks.0.attn.out_proj.weight
-blocks.1.attn_norm.weight
-blocks.1.attn_norm.bias
-blocks.1.mlp_norm.weight
-blocks.1.mlp_norm.bias
-blocks.1.mlp.in_proj.weight
-blocks.1.mlp.out_proj.weight
-blocks.1.attn.qkv_proj.weight
-blocks.1.attn.out_proj.weight
-blocks.2.attn_norm.weight
-blocks.2.attn_norm.bias
-blocks.2.mlp_norm.weight
-blocks.2.mlp_norm.bias
-blocks.2.mlp.in_proj.weight
-blocks.2.mlp.out_proj.weight
-blocks.2.attn.qkv_proj.weight
-blocks.2.attn.out_proj.weight
-norm.weight
-norm.bias
-"""

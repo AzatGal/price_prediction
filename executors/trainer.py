@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -18,11 +19,13 @@ class Trainer:
         set_seed(cfg.seed)
 
         self.logger = Logger(cfg)
+        self.accelerator = Accelerator(**cfg.accelerator_args)
         self.cfg = cfg
 
         self.best_epoch = -1
         self.best_loss = float('inf')
         self.time_training = 0
+        self.start_epoch = 1
 
         if cfg.task == 'pretrain':
             self.best_metric = 0
@@ -62,7 +65,6 @@ class Trainer:
         self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
                                        self.cfg.lr_decay, self.cfg.lr, self.cfg.lr_decay_factor,
                                        self.cfg.wu_ratio, self.cfg.decay_ratio)
-        self.accelerator = Accelerator(**self.cfg.accelerator_args)
         (
             self.model, self.optimizer, self.train_dataloader,
             self.val_dataloader, self.scheduler
@@ -106,15 +108,34 @@ class Trainer:
             load_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
         self.model.load_state_dict(torch.load(load_path), **kwargs)
 
-    def save_checkpoint(self, save_path=None, **kwargs):
+    def save_checkpoint(self, epoch, save_path=None, **kwargs):
         if save_path is None:
             save_path = os.path.join(self.cfg.exp_dir, "checkpoint")
         self.accelerator.save_state(save_path, **kwargs)
+        with open(os.path.join(save_path, "extra_states.json"), "w") as f:
+            json.dump(
+                {
+                    'epoch': epoch,
+                    'best_epoch': self.best_epoch,
+                    'best_loss': self.best_loss,
+                    'best_metric': self.best_metric,
+                    'time_training': self.time_training
+                },
+                f
+            )
 
     def load_checkpoint(self, load_path=None, **kwargs):
         if load_path is None:
             load_path = os.path.join(self.cfg.exp_dir, "checkpoint")
         self.accelerator.load_state(load_path, **kwargs)
+
+        with open(os.path.join(load_path, "extra_states.json")) as f:
+            extra_states = json.load(f)
+            self.start_epoch = extra_states['epoch'] + 1
+            self.best_epoch = extra_states['best_epoch']
+            self.best_loss = extra_states['best_loss']
+            self.best_metric = extra_states['best_metric']
+            self.time_training = extra_states['time_training']
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
@@ -147,7 +168,7 @@ class Trainer:
         total_samples = 0
 
         t = time.time()
-        for i, batch in enumerate(self.train_dataloader):
+        for batch in self.train_dataloader:
             loss, pred = self.make_step(batch)
             batch_len = len(pred)
             total_samples += batch_len
@@ -173,7 +194,7 @@ class Trainer:
         total_samples = 0
 
         t = time.time()
-        for i, batch in enumerate(self.val_dataloader):
+        for batch in self.val_dataloader:
             loss, pred = self.make_step(batch, False)
             batch_len = len(pred)
             total_samples += batch_len
@@ -190,7 +211,7 @@ class Trainer:
         }
 
     def fit(self):
-        for epoch in range(1, self.cfg.num_epoch + 1):
+        for epoch in range(self.start_epoch, self.cfg.num_epoch + 1):
             train = self.train_epoch()
             valid = self.evaluate()
 
@@ -209,7 +230,7 @@ class Trainer:
                     f"Best | epoch: {self.best_epoch} | metric: "
                     f"{self.best_metric:.5f} | loss: {self.best_loss:.5f}"
                 )
-            self.save_checkpoint()
+            self.save_checkpoint(epoch)
             self.logger.save_plot('loss')
             self.logger.save_plot('metric')
             # print(self.optimizer.param_groups[0]['lr'])

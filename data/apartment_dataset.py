@@ -29,7 +29,7 @@ class ApartmentDataset(Dataset):
             offsets = np.cumsum(data_transformer.num_bins[1:] +
                                 data_transformer.num_cats)
 
-        self.num_samples, self.num_features = self.features.shape
+        self.num_samples = len(self.features)
 
         if task == 'train':
             self.target = torch.as_tensor(

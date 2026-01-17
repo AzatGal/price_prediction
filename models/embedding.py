@@ -19,7 +19,6 @@ class FeatureEmbedding(nn.Module):
             'offsets',
             torch.tensor([0] + num_embed_features[:-1]).cumsum(0)
         )
-
         self.add_first_token = add_first_token
         self.mask_idx = sum(num_embed_features)
         self.seq_len = len(num_embed_features) + add_first_token
@@ -33,7 +32,13 @@ class FeatureEmbedding(nn.Module):
         assert torch.all(x < self.num_embed_features)
         x = x + self.offsets
         if self.add_first_token:
-            x = torch.cat([torch.tensor([[self.mask_idx]] * x.size(0)), x], dim=1)
+            x = torch.cat(
+                [
+                    torch.tensor([[self.mask_idx]] * x.size(0)),
+                    x
+                ],
+                dim=1
+            )
         if mask is not None:
             x = x.masked_fill(mask, self.mask_idx)
 

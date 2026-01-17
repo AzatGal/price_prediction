@@ -12,12 +12,12 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 128  # 16 * 1024
-cfg.num_epoch = 200
+cfg.batch_size = 256
+cfg.num_epoch = 400
 
 cfg.wu_ratio = 0.05
 cfg.decay_ratio = 0.5
-cfg.lr = 6e-5 * (cfg.batch_size / 256) ** 0.5  # 1e-3 bs: 8 * 1024
+cfg.lr = 1e-3 * cfg.batch_size / 256  # 1e-3 bs: 8 * 1024
 cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'cosine'  # cosine linear
 
@@ -28,7 +28,7 @@ cfg.weight_decay = 1e-5
 cfg.loss = 'MSELoss'  # SmoothL1Loss  L1Loss MSELoss
 cfg.loss_args = {}  # 'reduction': 'batchmean'}
 
-cfg.accelerator_args = {'mixed_precision': 'fp16'}  # , 'cpu': True}
+cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.lr_decay_by_block = 0.95
 # cfg.load_pretrained = os.path.join(ROOT_DIR, 'runs', 'MaskedTableAutoencoder.pt')

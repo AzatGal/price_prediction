@@ -106,7 +106,6 @@ class Attention(nn.Module):
                 kv_compressors: nn.ModuleList | nn.Linear = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
-        # mask - не стандартная маска внимания, а маска видимых токенов у mae
         B, T, C = x.shape
         qkv = self.qkv_proj(x).split(self.split_size, 2)
         qkv = [
@@ -115,6 +114,7 @@ class Attention(nn.Module):
         ]
         if kv_compressors is not None:
             if mask is not None:
+                # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
                 mask = mask.unsqueeze(1).repeat(-1, self.num_kv_heads, -1)
                 qkv = [qkv[0]] + [self._reshape_by_mask(x, mask) for x in qkv[1:]]
             if isinstance(kv_compressors, nn.ModuleList):

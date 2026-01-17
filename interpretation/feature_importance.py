@@ -1,6 +1,11 @@
+import os
+
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+
+import json
 
 from sklearn.metrics.pairwise import cosine_similarity
 import seaborn as sns
@@ -12,23 +17,32 @@ from configs.train_cfg import cfg
 
 @torch.no_grad()
 def main():
-    # print(cfg)
+    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/16-01_23-47/'
+    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+        model_cfg = json.load(f)['model_cfg']
+
+    cfg.model_cfg = model_cfg
     trainer = Trainer(cfg)
-    trainer.load_model('/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/15-01_22-57/PricePrediction.pt')
+    trainer.load_model(os.path.join(path, 'PricePrediction.pt'))
     # print(trainer.model.embed.weight.dtype)
 
-    def kv_weights(block):
-        kv = [x.weight.abs().sum(dim=0) for x in block.attn.kv_compressors]
-        return sum(kv)
+    def kv_compressor_weights(compressor):
+        if isinstance(compressor, nn.ModuleList):
+            return sum([x.weight.abs().sum(dim=0).cpu().numpy() for x in compressor])
+        elif isinstance(compressor, nn.Linear):
+            return compressor.weight.abs().sum(dim=0).cpu().numpy()
+        raise NotImplementedError
 
-    w = [kv_weights(block) for block in trainer.model.blocks]
-    ws = w[0]
-    for i in range(1, len(w)):
-        ws = ws + w[i]
-    ids = torch.argsort(ws).numpy()[::-1]
+    w = np.sum(
+        [kv_compressor_weights(compressor)
+         for compressor in trainer.model.kv_compressors],
+        axis=0
+    )
+
+    ids = np.argsort(w)[::-1]
     features = (cfg.data_cfg.data_transformer.num_cols +
                 cfg.data_cfg.data_transformer.cat_cols)
-    print(ws.numpy()[ids])
+    print(w[ids])
     print(np.array(features[0 if cfg.data_cfg.include_target else 1:])[ids])
 
 
