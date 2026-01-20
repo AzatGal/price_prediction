@@ -7,7 +7,7 @@ cfg = EasyDict()
 cfg.num_q_heads = 24
 cfg.num_kv_heads = 12
 cfg.embed_dim = 16 * cfg.num_q_heads
-cfg.num_blocks = 50  # 32
+cfg.num_blocks = 45  # 32
 cfg.act = 'ReLU'  # SiLU
 
 cfg.pool = 'mean'  # mean token
