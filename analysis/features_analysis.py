@@ -18,13 +18,13 @@ from configs.train_cfg import cfg
 @torch.no_grad()
 def main():
     path = '/Users/azatgalautdinov/Desktop/price_prediction'
-    with open(os.path.join(path, 'config.json'), 'r') as f: # 'logs',
+    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
         model_cfg = json.load(f)['model_cfg']
 
     cfg.model_cfg = model_cfg
     trainer = Trainer(cfg, False)
-    trainer.load_model(os.path.join(path, 'PricePrediction.pt'), )
-    # print(trainer.model.embed.weight.dtype)
+    trainer.load_model(os.path.join(path, 'PricePrediction.pt'))
+    embed = trainer.model.embed
 
     def kv_compressor_weights(compressor):
         if isinstance(compressor, nn.ModuleList):
@@ -33,18 +33,13 @@ def main():
             return compressor.weight.abs().sum(dim=0).cpu().numpy()
         raise NotImplementedError
 
-    w = np.sum(
-        [kv_compressor_weights(compressor)
-         for compressor in trainer.model.kv_compressors],
-        axis=0
-    )
+
 
     ids = np.argsort(w)[::-1]
     features = (cfg.data_cfg.data_transformer.num_cols +
                 cfg.data_cfg.data_transformer.cat_cols)
     print(w[ids])
     print(np.array(features[0 if cfg.data_cfg.include_target else 1:])[ids])
-
 
 
 if __name__ == '__main__':

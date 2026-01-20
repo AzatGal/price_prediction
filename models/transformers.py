@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.embedding import FeatureEmbedding
-from models.block import Block
+from models.modules.embedding import FeatureEmbedding
+from models.modules.block import Block
 
 
 class Transformer(nn.Module):

@@ -11,7 +11,7 @@ from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
 import models.transformers as models
 from utils.logger import Logger
-from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, logcosh_loss
+from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, logcosh_loss, LogCoshLoss
 
 
 class Trainer:
@@ -55,7 +55,8 @@ class Trainer:
 
     def _prepare_model(self, model_cfg):
         self.model = getattr(models, self.cfg.model)(**model_cfg)
-        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+        self.criterion = LogCoshLoss(**self.cfg.loss_args) if self.cfg.loss == 'LogCoshLoss' \
+            else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
             get_param_groups(self.model,
                              self.cfg.lr,
@@ -153,6 +154,7 @@ class Trainer:
                 raise NotImplementedError()
             # print(pred.shape)
             # print(batch['target'].shape)
+            # loss = logcosh_loss(pred, batch['target'])
             loss = self.criterion(pred, batch['target'])
 
         if update_model:

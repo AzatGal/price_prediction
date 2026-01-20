@@ -34,7 +34,7 @@ class FeatureEmbedding(nn.Module):
         if self.add_first_token:
             x = torch.cat(
                 [
-                    torch.tensor([[self.mask_idx]] * x.size(0)),
+                    torch.tensor([[self.mask_idx]] * x.size(0), device=x.device),
                     x
                 ],
                 dim=1

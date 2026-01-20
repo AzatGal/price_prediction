@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-import models.attention as attns
-import models.mlp as mlps
+import models.modules.attention as attns
+import models.modules.mlp as mlps
 
 
 class Block(nn.Module):

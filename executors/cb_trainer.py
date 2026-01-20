@@ -46,15 +46,17 @@ def fit_catboost(train_dataset, val_dataset):
 
     model = CatBoostRegressor(
         iterations=20_000,
-        learning_rate=0.05,
+        learning_rate=0.1,
         depth=10,
-        loss_function='MAE',  # 'Huber:delta=1.0',
+        # loss_function='LogCosh',  # Huber:delta=2 LogCosh MAE
+        grow_policy='Depthwise',  # Lossguide Depthwise
         # eval_metric='MAPE',
         # custom_metric=mape,
         verbose=1000,
-        early_stopping_rounds=200,
+        early_stopping_rounds=100,
         random_seed=42,
-        l2_leaf_reg=1
+        # bagging_temperature=1,
+        # l2_leaf_reg=1
     ).fit(
         train_pool,
         eval_set=val_pool,

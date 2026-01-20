@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
 from utils.logger import Logger
-from utils.utils import set_seed, get_scheduler, mape, get_param_groups
+from utils.utils import set_seed, get_scheduler, mape, get_param_groups, LogCoshLoss
 
 
 class TabmTrainer:
@@ -52,7 +52,8 @@ class TabmTrainer:
 
     def _prepare_model(self, model_cfg):
         self.model = tabm.TabM.make(**model_cfg)
-        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+        self.criterion = LogCoshLoss(**self.cfg.loss_args) if self.cfg.loss == 'LogCoshLoss' \
+            else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
             self.model.parameters(),
             lr=self.cfg.lr,
@@ -232,9 +233,9 @@ class TabmTrainer:
 if __name__ == "__main__":
     from configs.train_cfg import cfg
 
-    cfg.num_epoch = 60
+    cfg.num_epoch = 200
     cfg.weight_decay = 0
-    cfg.lr = 5e-3
+    cfg.lr = 2e-3
     cfg.model = 'TabM'
     cfg.batch_size = 64
 

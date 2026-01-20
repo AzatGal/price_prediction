@@ -2,6 +2,8 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+
+
 # import torch.nn.functional as F
 
 
@@ -150,8 +152,28 @@ def mape(pred: torch.Tensor, label: torch.Tensor, epsilon: float = 1e-8) -> floa
     ).mean().item()
 
 
-def logcosh_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    return torch.cosh(pred - target).log().mean()
+def logcosh_loss(pred: torch.Tensor, target: torch.Tensor, reduction: str = "mean") -> torch.Tensor:
+    # x = pred - target
+    # loss = x * x.tanh()
+    loss = torch.cosh(pred - target).log()
+    if reduction == 'mean':
+        return loss.mean()
+    elif reduction == 'sum':
+        return loss.sum()
+    elif reduction == 'none':
+        return loss
+    else:
+        raise NotImplementedError
+
+
+class LogCoshLoss(nn.modules.loss._Loss):
+    __constants__ = ["reduction"]
+
+    def __init__(self, size_average=None, reduce=None, reduction: str = "mean") -> None:
+        super().__init__(size_average, reduce, reduction)
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return logcosh_loss(input, target, reduction=self.reduction)
 
 
 if __name__ == '__main__':
@@ -161,4 +183,3 @@ if __name__ == '__main__':
     for epoch in range(12):
         print(epoch, opt.param_groups[0]['lr'])
         scheduler.step()
-

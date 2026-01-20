@@ -29,10 +29,15 @@ def main():
     model = trainer.model
     dt = trainer.data_transformer
 
-    i = 4
-    df = pd.read_csv('/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets/valid.csv')
+    i = 9
+    df = pd.read_csv('/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets/test.csv')
+
+    # print(df[['Стоимость', 'Этаж', 'Этажей в доме', 'Площадь кухни']].corr())
+
     print(df.iloc[i])
-    x = torch.as_tensor(dt.transform(df)[i, 1:]).unsqueeze(0).to(device=model.embed.weight.device)
+    x = (torch.as_tensor(dt.transform(df)[i, 1:])
+         .unsqueeze(0)
+         .to(device=model.embed.weight.device))
     # print(x)
     print('Предсказанная цена: ', int(
         dt.inverse_transform(
@@ -40,23 +45,6 @@ def main():
             target='num'
         )[0][0]
     ))
-
-    # print(
-    #     trainer.valid_data[i]['features']
-    # )
-    # # стоимость
-    # print(
-    #     trainer.valid_data[i]['label']
-    # )
-    # df = trainer.data_transformer.inverse_transform(trainer.valid_data[i]['features'], numpy=False)
-    # # 1 колонная стоимость - фиктивная тут
-    # print(df[df.columns[1:]])
-    # print(
-    #     trainer.data_transformer.inverse_transform(
-    #         trainer.model(trainer.valid_data[i]['features'].unsqueeze(0).to(device='mps')).cpu(),
-    #         target='num'
-    #     )
-    # )
 
 
 if __name__ == '__main__':
