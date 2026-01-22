@@ -4,9 +4,9 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_q_heads = 16
-cfg.num_kv_heads = 8
-cfg.embed_dim = 8 * cfg.num_q_heads
+cfg.num_q_heads = 12
+cfg.num_kv_heads = 6
+cfg.embed_dim = 10 * cfg.num_q_heads
 cfg.num_blocks = 60  # 32
 cfg.act = 'ReLU'  # SiLU
 
@@ -20,13 +20,13 @@ cfg.num_embed_features = (
 )
 
 cfg.attn_dropout = 0.0
-cfg.mlp_dropout = 0.2
-cfg.dropout = 0.2
+cfg.mlp_dropout = 0.1
+cfg.dropout = 0.1
 cfg.kv_compression = 'Head'  # Head KV Layer
 cfg.kv_compression_ratio = 0.01
-cfg.mlp_dim_factor = 1
+cfg.mlp_dim_factor = 2
 
 cfg.attn = 'Attention'  # Linear
-cfg.mlp = 'GLUMLP'  # GLUMLP MLP
+cfg.mlp = 'MLP'  # GLUMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm
 

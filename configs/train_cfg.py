@@ -15,7 +15,7 @@ cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
 cfg.batch_size = 1024
 cfg.num_epoch = 400
 
-cfg.wu_ratio = 0.075
+cfg.wu_ratio = 0.1
 cfg.decay_ratio = 0.75
 cfg.lr = 6e-4 * cfg.batch_size / 256  # 1e-3 bs: 8 * 1024
 cfg.lr_decay_factor = 1e-2
