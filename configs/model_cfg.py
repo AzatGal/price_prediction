@@ -24,9 +24,9 @@ cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
 cfg.kv_compression = 'Head'  # Head KV Layer
 cfg.kv_compression_ratio = 0.01
-cfg.mlp_dim_factor = 4
+cfg.mlp_dim_factor = 2
 
 cfg.attn = 'Attention'  # Linear
-cfg.mlp = 'MLP'  # GLUMLP MLP
+cfg.mlp = 'GLUMLP'  # GLUMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm
 
