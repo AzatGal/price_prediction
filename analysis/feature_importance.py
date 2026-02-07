@@ -17,7 +17,7 @@ from configs.train_cfg import cfg
 
 @torch.no_grad()
 def main():
-    path = '/Users/azatgalautdinov/Desktop/price_prediction'
+    path = '/Users/azatgalautdinov/Desktop/price_prediction/v2'
     with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
         model_cfg = json.load(f)['model_cfg']
 
@@ -36,8 +36,10 @@ def main():
 
     if isinstance(model.kv_compressors, nn.ModuleList):
         w = np.sum(
-            [kv_compressor_weights(compressor)
-             for compressor in model.kv_compressors],
+            [
+                kv_compressor_weights(compressor)
+                for i, compressor in enumerate(model.kv_compressors)
+            ],
             axis=0
         )
     elif isinstance(model.kv_compressors, nn.Linear):

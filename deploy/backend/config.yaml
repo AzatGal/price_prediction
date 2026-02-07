@@ -1,0 +1,59 @@
+features:
+  area:
+    type: float
+    min: 10
+    max: 500
+    default: 50
+    label: "Площадь (м²)"
+
+  floor:
+    type: int
+    min: 1
+    max: 50
+    default: 5
+    label: "Этаж"
+
+  total_floors:
+    type: int
+    min: 1
+    max: 50
+    default: 9
+    label: "Этажей в доме"
+
+  year_built:
+    type: int
+    min: 1900
+    max: 2024
+    default: 2000
+    label: "Год постройки"
+
+  rooms:
+    type: int
+    min: 1
+    max: 10
+    default: 2
+    label: "Количество комнат"
+
+  district:
+    type: categorical
+    options: ["Центральный", "Северный", "Южный", "Западный", "Восточный"]
+    default: "Центральный"
+    label: "Район"
+
+  house_type:
+    type: categorical
+    options: ["Кирпичный", "Панельный", "Монолитный", "Блочный", "Деревянный"]
+    default: "Кирпичный"
+    label: "Тип дома"
+
+  metro_distance:
+    type: float
+    min: 0
+    max: 20
+    default: 1.5
+    label: "Расстояние до метро (км)"
+
+model:
+  hidden_size: 128
+  dropout: 0.2
+  confidence_interval: 0.95
