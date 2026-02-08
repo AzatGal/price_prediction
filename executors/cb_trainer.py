@@ -17,17 +17,17 @@ def fit_catboost(train_dataset, val_dataset):
         'Округ',
         'Район'
     ]
-    with open(
-            '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/data_transformers/target_processor.pkl',
-            'rb'
-    ) as f:
-        target_processor = dill.load(f)
-    train_target = target_processor.transform(train_dataset[['Стоимость']])
-    val_target = target_processor.transform(val_dataset[['Стоимость']])
+    # with open(
+    #         '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/data_transformers/target_processor.pkl',
+    #         'rb'
+    # ) as f:
+    #     target_processor = dill.load(f)
+    # train_target = target_processor.transform(train_dataset[['Стоимость']])
+    # val_target = target_processor.transform(val_dataset[['Стоимость']])
     label = val_dataset[['Стоимость']]
 
-    # train_target = train_dataset[['Стоимость']]  # target_processor.transform()
-    # val_target = val_dataset[['Стоимость']]  # target_processor.transform()
+    train_target = train_dataset[['Стоимость']]  # target_processor.transform()
+    val_target = val_dataset[['Стоимость']]  # target_processor.transform()
 
     train_dataset = train_dataset.drop(columns=['Стоимость'])
     train_dataset[cat_features] = train_dataset[cat_features].fillna('Нет значения')
@@ -45,18 +45,30 @@ def fit_catboost(train_dataset, val_dataset):
     #     return mean_absolute_percentage_error(label, pred)
 
     model = CatBoostRegressor(
-        iterations=20_000,
-        learning_rate=0.1,
+        iterations=50_000,
+        learning_rate=0.01,
         depth=10,
-        loss_function='Huber:delta=8',  # Huber:delta=2 LogCosh MAE
+        # loss_function='MAE',  #
+        # loss_function='LogCosh',  # Huber:delta=2 LogCosh MAE
         grow_policy='Depthwise',  # Lossguide Depthwise
-        eval_metric='MAE',
+        # eval_metric='MAE',
+        eval_metric='MAPE',
         # custom_metric=mape,
         verbose=1000,
-        early_stopping_rounds=100,
-        random_seed=42,
+        early_stopping_rounds=200,
+        random_seed=0,
+
+        min_data_in_leaf=5,
+
+        # colsample_bylevel=0.8,
+        # random_strength=2,
+
+        # bootstrap_type='Bernoulli',  # или 'Bayesian'
+        # subsample=0.8,
+        # bootstrap_type='Bayesian',
         # bagging_temperature=1,
-        # l2_leaf_reg=1
+
+        # l2_leaf_reg=7
     ).fit(
         train_pool,
         eval_set=val_pool,
@@ -66,7 +78,8 @@ def fit_catboost(train_dataset, val_dataset):
 
     # model.save_model('price_prediction.cbm')
 
-    pred = target_processor.inverse_transform(model.predict(val_pool).reshape(-1, 1))
+    # pred = target_processor.inverse_transform(model.predict(val_pool).reshape(-1, 1))
+    pred = model.predict(val_pool).reshape(-1, 1)
 
     print('MAPE: ', mean_absolute_percentage_error(label, pred))
 
@@ -90,6 +103,40 @@ if __name__ == '__main__':
     # print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
 
 """
+0:	learn: 0.5155935	test: 0.5206424	best: 0.5206424 (0)	total: 119ms	remaining: 39m 40s
+1000:	learn: 0.0254431	test: 0.0509380	best: 0.0509380 (1000)	total: 26s	remaining: 8m 13s
+2000:	learn: 0.0145858	test: 0.0485388	best: 0.0485388 (2000)	total: 50.5s	remaining: 7m 34s
+3000:	learn: 0.0096810	test: 0.0480051	best: 0.0480034 (2994)	total: 1m 16s	remaining: 7m 14s
+Stopped by overfitting detector  (100 iterations wait)
+
+bestTest = 0.04792813249
+bestIteration = 3436
+
+Shrink model to first 3437 iterations.
+MAPE:  0.0479281324862245
+                       Признак   Важность
+0                Общая площадь  33.870934
+1                        Район  28.869621
+2                        Округ  21.410866
+3          Расстояние до метро   3.689283
+4                Этажей в доме   2.142493
+5              Высота потолков   1.327035
+6                     Парковка   1.324097
+7            Количество комнат   1.153187
+8                  Тип продажи   1.013147
+9                Жилая площадь   1.009204
+10                        Этаж   0.816558
+11               Площадь кухни   0.717099
+12  Кол-во раздельных санузлов   0.642872
+13                 Вид из окон   0.639653
+14                    Тип дома   0.599767
+15      Лифт грузовой (кол-во)   0.335248
+16  Лифт пассажирский (кол-во)   0.322975
+17              Объект продажи   0.100367
+18                Мусоропровод   0.015592
+
+Process finished with exit code 0
+
 Huber:delta=8
 0:	learn: 0.7027768	test: 0.6971142	best: 0.6971142 (0)	total: 107ms	remaining: 35m 46s
 1000:	learn: 0.0398214	test: 0.0865541	best: 0.0865541 (1000)	total: 26.2s	remaining: 8m 16s

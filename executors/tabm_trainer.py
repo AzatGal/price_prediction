@@ -234,15 +234,17 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
 
     cfg.num_epoch = 200
-    cfg.weight_decay = 0
+    cfg.weight_decay = 3e-4
     cfg.lr = 2e-3
     cfg.model = 'TabM'
     cfg.batch_size = 64
 
+    cfg.loss = 'L1Loss'
+
     cfg.model_cfg = EasyDict(
         cat_cardinalities=cfg.model_cfg.num_embed_features,
         d_out=1,
-        arch_type='tabm-mini'
+        # arch_type='tabm-mini'
         # d_in,
         # n_blocks,
         # d_block,
@@ -254,3 +256,8 @@ if __name__ == "__main__":
     trainer = TabmTrainer(cfg)
     # trainer.overfitting_on_batch()
     trainer.fit()
+
+
+"""
+best 08-02_14-13
+"""

@@ -69,6 +69,7 @@ def get_param_groups(model: nn.Module,
         decay = set()
         no_decay = set()
     else:
+        raise NotImplementedError
         groups = [
             {
                 'no_decay': set(),
@@ -122,11 +123,11 @@ def get_param_groups(model: nn.Module,
         t = len(groups) - 1
         for i, pg in enumerate(groups):
             if i == 0:
-                inter = (pg['no_decay'] & pg['decay'])
-                union = (pg['no_decay'] | pg['decay'])
+                inter = pg['no_decay'] & pg['decay']
+                union = pg['no_decay'] | pg['decay']
             else:
-                inter &= (pg['no_decay'] & pg['decay'])
-                union |= (pg['no_decay'] | pg['decay'])
+                inter &= pg['no_decay'] & pg['decay']
+                union |= pg['no_decay'] | pg['decay']
 
             res.extend([
                 {"params": [param_dict[pn] for pn in sorted(list(pg['decay']))],
