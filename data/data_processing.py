@@ -154,8 +154,18 @@ if __name__ == '__main__':
     import pandas as pd
     from configs.data_cfg import cfg
     dt = cfg.data_transformer
-    # [7, 2, 2, 4, 5, 4, 50, 46, 153]
-    print(sum(dt.num_bins + dt.num_cats))
+
+    t = dt.cat_processor.categories_.copy()
+    for i, (col, cats) in enumerate(zip(dt.cat_cols, dt.cat_processor.categories_)):
+        t[i][pd.isna(pd.Series(cats))] = 'other'
+
+    print(t)
+    # for col, cats in zip(dt.cat_cols, dt.cat_processor.categories_):
+    #     print(col, pd.isna(pd.Series(cats)).any())
+    #
+    # for col, cats in zip(dt.num_cols, dt.num_processor.bin_edges_):
+    #     print(col, np.any(cats < 0))
+
     # df = pd.read_csv(
     #     '/data/datasets/test.csv'
     #     )

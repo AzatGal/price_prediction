@@ -138,7 +138,7 @@ class TabmTrainer:
             target = batch['target'].repeat(1, pred.size(1))
             # print(pred.shape)
             # print(target.shape)
-            loss = self.criterion(pred, target)
+            loss = self.criterion(pred, target) ** 0.5
 
         if update_model:
             self.accelerator.backward(loss)
@@ -149,7 +149,7 @@ class TabmTrainer:
             self.scheduler.step()
 
         pred = pred.mean(1)
-        return loss.item(), pred.detach()
+        return loss.item() ** 2, pred.detach()
 
     def train_epoch(self):
         self.model.train()
@@ -171,7 +171,7 @@ class TabmTrainer:
         self.time_training += t
 
         return {
-            'loss': total_loss,
+            'loss': total_loss ** 0.5,
             'metric': total_metric,
             'time': t
         }
@@ -195,7 +195,7 @@ class TabmTrainer:
         total_loss /= total_samples
         total_metric /= total_samples
         return {
-            'loss': total_loss,
+            'loss': total_loss ** 0.5,
             'metric': total_metric,
             'time': t
         }
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     cfg.model = 'TabM'
     cfg.batch_size = 64
 
-    cfg.loss = 'L1Loss'
+    cfg.loss = 'MSELoss'
 
     cfg.model_cfg = EasyDict(
         cat_cardinalities=cfg.model_cfg.num_embed_features,

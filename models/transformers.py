@@ -235,7 +235,7 @@ class MaskedTableAutoencoder(MaskedTransformer):
         return x, mask
 
 
-class MaskedTableModeling(MaskedTransformer):
+class MaskedTableModeler(MaskedTransformer):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
@@ -282,7 +282,7 @@ class MaskedTableModeling(MaskedTransformer):
         return x, mask
 
 
-class PricePrediction(Transformer):
+class TablePredictor(Transformer):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
