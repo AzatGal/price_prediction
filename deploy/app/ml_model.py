@@ -52,12 +52,15 @@ class PricePredictor:
             feature = dict(
                 key=self.features_keys[i - 1],
                 name=self.data_transformer.num_cols[i],
-                type='number',
             )
             if 'площадь' in self.data_transformer.num_cols[i].lower():
                 feature['unit'] = 'м²'
-            if 'высота' in self.data_transformer.num_cols[i].lower():
+                feature['type'] = 'float'
+            elif 'высота' in self.data_transformer.num_cols[i].lower():
                 feature['unit'] = 'м'
+                feature['type'] = 'float'
+            else:
+                feature['type'] = 'integer'
             if np.any(self.data_transformer.num_processor.bin_edges_[i] < 0):
                 feature['required'] = False
                 feature['min'] = int(self.data_transformer.num_processor.bin_edges_[i][1])

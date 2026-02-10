@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadFeatures();
     setupNavigation();
     setupForms();
-    
+
     if (authToken) {
         await loadCurrentUser();
     }
@@ -97,13 +97,13 @@ function updateUIForAuth() {
 // ===== Navigation =====
 function setupNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
-    
+
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const section = link.dataset.section;
             showSection(section);
-            
+
             // Update active state
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
@@ -142,7 +142,7 @@ function renderFormFields() {
             input = document.createElement('select');
             input.className = 'form-control';
             input.required = feature.required;
-            
+
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
             defaultOption.textContent = 'Выберите...';
@@ -157,6 +157,9 @@ function renderFormFields() {
         } else {
             input = document.createElement('input');
             input.type = 'number';
+            if (feature.type === 'float') {
+                input.step = '0.01'  //feature.step;
+            }
             input.className = 'form-control';
             input.required = feature.required;
             if (feature.min !== undefined) input.min = feature.min;
@@ -174,7 +177,7 @@ function renderFormFields() {
 function populateFilterDistricts() {
     const select = document.getElementById('filterDistrict');
     const districtFeature = featuresConfig.find(f => f.key === 'district');
-    
+
     if (districtFeature) {
         districtFeature.options.forEach(opt => {
             const option = document.createElement('option');
@@ -189,10 +192,10 @@ function populateFilterDistricts() {
 function setupForms() {
     // Prediction form
     document.getElementById('predictionForm').addEventListener('submit', handlePrediction);
-    
+
     // Auth form
     document.getElementById('authForm').addEventListener('submit', handleAuth);
-    
+
     // Edit form
     document.getElementById('editForm').addEventListener('submit', handleEdit);
 }
@@ -245,7 +248,7 @@ function displayResult(result) {
     };
 
     document.getElementById('predictedPrice').textContent = formatPrice(result.predicted_price);
-    document.getElementById('priceRange').textContent = 
+    document.getElementById('priceRange').textContent =
         `${formatPrice(result.lower_bound)} - ${formatPrice(result.upper_bound)}`;
     document.getElementById('confidence').textContent = result.confidence;
     document.getElementById('errorMargin').textContent = result.error_margin;
@@ -256,7 +259,7 @@ function displayResult(result) {
 
 function renderPriceChart(result) {
     const ctx = document.getElementById('priceChart').getContext('2d');
-    
+
     if (priceChart) {
         priceChart.destroy();
     }
@@ -371,7 +374,7 @@ async function handleAuth(e) {
             showToast('Добро пожаловать!', 'success');
         } else {
             const email = document.getElementById('authEmail').value;
-            
+
             await api('/api/auth/register', {
                 method: 'POST',
                 body: { username, email, password }
@@ -400,7 +403,7 @@ async function loadHistory() {
 
     try {
         const params = new URLSearchParams();
-        
+
         const dateFrom = document.getElementById('filterDateFrom').value;
         const dateTo = document.getElementById('filterDateTo').value;
         const district = document.getElementById('filterDistrict').value;
@@ -486,9 +489,9 @@ function resetFilters() {
 // ===== Edit =====
 function showEditModal(id, inputDataEncoded) {
     const inputData = JSON.parse(decodeURIComponent(inputDataEncoded));
-    
+
     document.getElementById('editId').value = id;
-    
+
     // Render edit form fields
     const container = document.getElementById('editFormFields');
     container.innerHTML = '';
@@ -505,7 +508,7 @@ function showEditModal(id, inputDataEncoded) {
         if (feature.type === 'select') {
             input = document.createElement('select');
             input.className = 'form-control';
-            
+
             feature.options.forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt;
@@ -516,6 +519,9 @@ function showEditModal(id, inputDataEncoded) {
         } else {
             input = document.createElement('input');
             input.type = 'number';
+            if (feature.type === 'float') {
+                input.step = '0.01'  //feature.step;
+            }
             input.className = 'form-control';
             input.value = inputData[feature.key] || '';
             if (feature.min !== undefined) input.min = feature.min;
@@ -691,10 +697,10 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
-    const icon = type === 'success' ? 'check-circle' : 
+
+    const icon = type === 'success' ? 'check-circle' :
                  type === 'error' ? 'exclamation-circle' : 'info-circle';
-    
+
     toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
     container.appendChild(toast);
 
