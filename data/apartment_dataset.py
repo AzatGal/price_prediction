@@ -20,14 +20,8 @@ class ApartmentDataset(Dataset):
             data_transformer.transform(df)
         )
 
-        if include_target:
-            self.features = features
-            offsets = np.cumsum(data_transformer.num_bins +
-                                data_transformer.num_cats)
-        else:
-            self.features = features[:, 1:]
-            offsets = np.cumsum(data_transformer.num_bins[1:] +
-                                data_transformer.num_cats)
+        first_feature_idx = int(not include_target)
+        self.features = features[:, first_feature_idx:]
 
         self.num_samples = len(self.features)
 
@@ -38,10 +32,9 @@ class ApartmentDataset(Dataset):
             self.label = torch.as_tensor(df[['Стоимость']].values)
         elif task == 'pretrain':
             self.label = self.features
-            num_bins = data_transformer.num_bins[
-                0 if include_target else 1:
-            ]
+            num_bins = data_transformer.num_bins[first_feature_idx:]
             num_cats = data_transformer.num_cats
+            offsets = np.cumsum(num_bins + num_cats)
 
             num_classes = sum(num_bins + num_cats)
             num_bins_len = len(num_bins)

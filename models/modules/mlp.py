@@ -24,7 +24,7 @@ class MLP(nn.Module):
         return x
 
 
-class GLUMLP(nn.Module):
+class GatedMLP(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  dim_factor: float,

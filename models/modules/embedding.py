@@ -24,7 +24,7 @@ class FeatureEmbedding(nn.Module):
         self.seq_len = len(num_embed_features) + add_first_token
 
         self.weight = nn.Parameter(torch.empty(self.mask_idx + 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.empty(self.seq_len, embed_dim))
+        self.bias = nn.Parameter(torch.empty(self.seq_len, embed_dim))
 
         self.dropout = nn.Dropout(dropout)
 
@@ -43,7 +43,7 @@ class FeatureEmbedding(nn.Module):
             x = x.masked_fill(mask, self.mask_idx)
 
         x = F.embedding(x, self.weight)
-        x = x + self.pos_embed
+        x = x + self.bias
         x = self.dropout(x)
         return x
 

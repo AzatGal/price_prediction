@@ -5,6 +5,7 @@ from typing import Dict, List
 from easydict import EasyDict
 
 from data.data_processing import DataTransformer
+from deploy.app.schemas import PredictionInput
 from models.transformers import TablePredictor
 
 
@@ -18,6 +19,7 @@ class PricePredictor:
                  error_margin: float,
                  inflation: float
                  ) -> None:
+        self.first_feature_idx = int(not model_cfg.mask_first_token)
         self.model = TablePredictor(**model_cfg)
         self.model.load_state_dict(torch.load(model_path, map_location='cpu'))
         self.features_keys = features_keys
@@ -26,10 +28,10 @@ class PricePredictor:
         self.inflation = inflation
 
     @torch.no_grad()
-    def predict(self, data: pd.DataFrame) -> Dict:
+    def predict(self, data: PredictionInput) -> Dict:
         features = torch.as_tensor(
-            self.data_transformer.transform(data)
-        )[:, 1:]
+            self.data_transformer.transform(data.to_dataframe())
+        )[:, self.first_feature_idx:]
         # print(features)
         pred = self.model(features).numpy()
         price = self.data_transformer.inverse_transform(pred, target='num')
@@ -48,11 +50,15 @@ class PricePredictor:
 
     def get_feature_list(self) -> List[Dict]:
         features = []
-        for i in range(1, len(self.data_transformer.num_cols)):
+        n_num_cols = len(self.data_transformer.num_cols)
+        n_cat_cols = len(self.data_transformer.cat_cols)
+
+        for i in range(1, n_num_cols):
             feature = dict(
                 key=self.features_keys[i - 1],
                 name=self.data_transformer.num_cols[i],
             )
+
             if 'площадь' in self.data_transformer.num_cols[i].lower():
                 feature['unit'] = 'м²'
                 feature['type'] = 'float'
@@ -61,28 +67,37 @@ class PricePredictor:
                 feature['type'] = 'float'
             else:
                 feature['type'] = 'integer'
-            if np.any(self.data_transformer.num_processor.bin_edges_[i] < 0):
+
+            if self.data_transformer.num_processor.bin_edges_[i][0] < 0:
                 feature['required'] = False
-                feature['min'] = int(self.data_transformer.num_processor.bin_edges_[i][1])
+                feature['min'] = int(self.data_transformer.num_processor.bin_edges_[i][2])
             else:
                 feature['required'] = True
                 feature['min'] = int(self.data_transformer.num_processor.bin_edges_[i][0])
+
             features.append(feature)
-        for i in range(len(self.data_transformer.cat_cols)):
+
+        for i in range(n_cat_cols):
             feature = dict(
-                key=self.features_keys[len(self.data_transformer.num_cols) + i - 1],
+                key=self.features_keys[n_num_cols + i - 1],
                 name=self.data_transformer.cat_cols[i],
                 type='select',
             )
             options = self.data_transformer.cat_processor.categories_[i]
-            mask = pd.isna(pd.Series(options))
+            mask = pd.isna(options)
+
             if mask.any():
                 options[mask] = 'Другое'
                 feature['required'] = False
             else:
                 feature['required'] = True
+
             feature['options'] = options.tolist()
+            if i > n_cat_cols - 3:
+                feature['options'].append('Другое')
+
             features.append(feature)
+
         return features
 
 

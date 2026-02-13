@@ -39,7 +39,6 @@ class Trainer:
         self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
 
-
     def _prepare_data(self, data_cfg):
         self.data_transformer = data_cfg.data_transformer
 

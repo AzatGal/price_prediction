@@ -23,10 +23,12 @@ def main():
     with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
         # только для модели, в data_cfg есть python class
         model_cfg = json.load(f)['model_cfg']
+
+    device = torch.device('cpu')
     cfg.model_cfg = model_cfg
     trainer = Trainer(cfg, False)
     trainer.load_model(os.path.join(path, 'PricePrediction.pt'))
-    model = trainer.model
+    model = trainer.model.to(device=device)
     dt = trainer.data_transformer
 
     i = 9
@@ -37,7 +39,8 @@ def main():
     print(df.iloc[i])
     x = (torch.as_tensor(dt.transform(df)[i, 1:])
          .unsqueeze(0)
-         .to(device=model.embed.weight.device))
+         .to(device=device))
+         # .to(device=model.embed.weight.device))
     # print(x)
     print('Предсказанная цена: ', int(
         dt.inverse_transform(

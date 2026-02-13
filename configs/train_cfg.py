@@ -13,7 +13,7 @@ cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
 cfg.batch_size = 1024
-cfg.num_epoch = 500
+cfg.num_epoch = 600
 
 cfg.wu_ratio = 0.05  # 0.1
 cfg.decay_ratio = 0.85  # 0.75
@@ -26,15 +26,15 @@ cfg.optim_args = {}
 cfg.weight_decay = 3e-4
 
 cfg.loss = 'L1Loss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss
-cfg.loss_args = {} # 'delta': 8}  # 'reduction': 'batchmean'}
+cfg.loss_args = {}  # 'delta': 8}  # 'reduction': 'batchmean'}
 
-cfg.accelerator_args = {'mixed_precision': 'fp16'}  # , 'cpu': True}
+cfg.accelerator_args = {'mixed_precision': 'bf16'}  # , 'cpu': True}
 
 # cfg.lr_decay_by_block = 0.95
 # cfg.load_pretrained = os.path.join(ROOT_DIR, 'runs', 'MaskedTableAutoencoder.pt')
 # MaskedTableAutoencoder MaskedTableModeling
 
-# cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '18-01_23-42', "checkpoint")
+# cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '10-02_23-39', "checkpoint")
 
 cfg.model = 'TablePredictor'
 

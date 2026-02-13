@@ -81,7 +81,7 @@ class Transformer(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn or 'compressor' in pn or 'pos_embed' in pn:
+                if 'bias' in pn or 'compressor' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=5 ** 0.5)
@@ -313,9 +313,11 @@ class TablePredictor(Transformer):
         if mask_first_token:
             self.register_buffer('mask', torch.zeros(1, self.seq_len, dtype=torch.bool))
             self.mask[:, 0] = True
-        self.pp_head = nn.Linear(embed_dim, pred_dim)
+        self.tp_head = nn.Linear(embed_dim, pred_dim)
 
         self.reset_parameters()
+        if pool == 'w_avg':
+            self.w_avg = nn.Parameter(torch.ones(self.seq_len))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.mask_first_token:
@@ -329,15 +331,21 @@ class TablePredictor(Transformer):
                 self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
             )
 
-        if self.pool == 'token':
+        if self.pool == 'cls':
             x = x[:, 0]
-        elif self.pool == 'mean':
+        elif self.pool == 'avg':
             x = x.mean(1)
+        elif self.pool == 'sum':
+            x = x.sum(1)
+        elif self.pool == 'max':
+            x = x.max(1).values
+        elif self.pool == 'w_avg':
+            x = self.w_avg.softmax(0) @ x  # .softmax(0)
         else:
             raise NotImplementedError()
 
         x = self.norm(x)
-        x = self.pp_head(x)
+        x = self.tp_head(x)
         return x
 
 

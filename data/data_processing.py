@@ -155,16 +155,16 @@ if __name__ == '__main__':
     from configs.data_cfg import cfg
     dt = cfg.data_transformer
 
-    t = dt.cat_processor.categories_.copy()
-    for i, (col, cats) in enumerate(zip(dt.cat_cols, dt.cat_processor.categories_)):
-        t[i][pd.isna(pd.Series(cats))] = 'other'
-
-    print(t)
-    # for col, cats in zip(dt.cat_cols, dt.cat_processor.categories_):
-    #     print(col, pd.isna(pd.Series(cats)).any())
+    # t = dt.cat_processor.categories_.copy()
+    # for i, (col, cats) in enumerate(zip(dt.cat_cols, dt.cat_processor.categories_)):
+    #     t[i][pd.isna(cats)] = 'other'
     #
-    # for col, cats in zip(dt.num_cols, dt.num_processor.bin_edges_):
-    #     print(col, np.any(cats < 0))
+    # for col, cats in zip(dt.cat_cols, t):
+    #     print(col)
+    #     print(t)
+
+    for col, edges in zip(dt.num_cols, dt.num_processor.bin_edges_):
+        print(col, edges)
 
     # df = pd.read_csv(
     #     '/data/datasets/test.csv'

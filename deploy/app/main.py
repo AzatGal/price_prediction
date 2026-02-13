@@ -133,22 +133,22 @@ def predict_price(
 ):
     """Предсказание цены и сохранение в историю"""
     # Делаем предсказание
-    input_dict = data.dict()
+    # input_dict = data.dict()
     # result = predictor.predict(input_dict)
-    result = predictor.predict(data.to_dataframe())
+    result = predictor.predict(data)  # .to_dataframe())
     
     # Сохраняем в базу данных
     prediction = Prediction(
         user_id=current_user.id,
-        input_data=input_dict,
+        input_data=data.model_dump(),  # input_dict,
         predicted_price=result['predicted_price'],
         lower_bound=result['lower_bound'],
         upper_bound=result['upper_bound'],
         confidence=result['confidence'],
         error_margin=result['error_margin'],
-        district=input_dict.get('district'),
-        area=input_dict.get('area'),
-        rooms=input_dict.get('rooms')
+        district=data.district,  # input_dict.get('district'),
+        area=data.area,  # input_dict.get('area'),
+        rooms=data.rooms,  # input_dict.get('rooms')
     )
     db.add(prediction)
     db.commit()
