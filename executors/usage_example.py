@@ -19,30 +19,41 @@ from configs.train_cfg import cfg
 @torch.no_grad()
 def main():
     # путь до файла с конфигом и весами модели
-    path = '/Users/azatgalautdinov/Desktop/price_prediction/v2'
-    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
-        # только для модели, в data_cfg есть python class
-        model_cfg = json.load(f)['model_cfg']
+    # path = '/Users/azatgalautdinov/Desktop/price_prediction/v2'
+    # with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+    #     # только для модели, в data_cfg есть python class
+    #     model_cfg = json.load(f)['model_cfg']
+    # cfg.model_cfg = model_cfg
 
-    device = torch.device('cpu')
-    cfg.model_cfg = model_cfg
     trainer = Trainer(cfg, False)
-    trainer.load_model(os.path.join(path, 'PricePrediction.pt'))
-    model = trainer.model.to(device=device)
+    trainer.load_model(os.path.join('/Users/azatgalautdinov/Desktop/price_prediction/best',
+                                    'TablePredictor.pt'))
+
+    # device = torch.device('cpu')
+
+    model = trainer.model  # .to(device=device)
+    # model.load_state_dict(
+    #     torch.load(os.path.join('/Users/azatgalautdinov/Desktop/price_prediction/best',
+    #                             'TablePredictor.pt')
+    #     , map_location=device)
+    # )
+
+    print("dtype: ", next(model.parameters()).dtype,
+          "\ndevice: ", next(model.parameters()).device)
+
     dt = trainer.data_transformer
 
     i = 9
     df = pd.read_csv('/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets/test.csv')
 
-    # print(df[['Стоимость', 'Этаж', 'Этажей в доме', 'Площадь кухни']].corr())
+    print('\n', df.iloc[i])
 
-    print(df.iloc[i])
     x = (torch.as_tensor(dt.transform(df)[i, 1:])
          .unsqueeze(0)
-         .to(device=device))
-         # .to(device=model.embed.weight.device))
+         # .to(device=device))
+         .to(device=next(model.parameters()).device))
     # print(x)
-    print('Предсказанная цена: ', int(
+    print('\nПредсказанная цена: ', int(
         dt.inverse_transform(
             model(x).cpu(),
             target='num'

@@ -58,30 +58,34 @@ class Transformer(nn.Module):
         ])
         self.norm = getattr(nn, norm)(embed_dim)
 
-    @torch.no_grad()
-    def zero_compressors_(self):
-        if self.kv_compressors is not None:
-            if isinstance(self.kv_compressors, nn.Linear):
-                self.kv_compressors.weight.zero_()
-            elif isinstance(self.kv_compressors, nn.ModuleList):
-                for compressor in self.kv_compressors:
-                    if isinstance(compressor, nn.Linear):
-                        self.kv_compressors.weight.zero_()
-                    elif isinstance(compressor, nn.ModuleList):
-                        compressor[0].weight.zero_()
-                        compressor[1].weight.zero_()
-                    else:
-                        raise NotImplementedError()
-            else:
-                raise NotImplementedError()
+    # @torch.no_grad()
+    # def zero_compressors_(self):
+    #     if self.kv_compressors is not None:
+    #         if isinstance(self.kv_compressors, nn.Linear):
+    #             self.kv_compressors.weight.zero_()
+    #         elif isinstance(self.kv_compressors, nn.ModuleList):
+    #             for compressor in self.kv_compressors:
+    #                 if isinstance(compressor, nn.Linear):
+    #                     compressor.weight.zero_()
+    #                 elif isinstance(compressor, nn.ModuleList):
+    #                     compressor[0].weight.zero_()
+    #                     compressor[1].weight.zero_()
+    #                 else:
+    #                     raise NotImplementedError()
+    #         else:
+    #             raise NotImplementedError()
 
     def _get_compressor(self) -> nn.Linear:
-        return nn.Linear(self.seq_len, max(1, int(self.kv_compression_ratio * self.seq_len)), False)
+        return nn.Linear(
+            self.seq_len,
+            max(1, round(self.kv_compression_ratio * self.seq_len)),
+            False
+        )
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn or 'compressor' in pn:
+                if 'bias' in pn:  # or 'compressor' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=5 ** 0.5)
@@ -164,7 +168,7 @@ class MaskedTableAutoencoder(MaskedTransformer):
             self.decoder_kv_compressors = None
         elif kv_compression == 'Head':
             self.decoder_kv_compressors = nn.ModuleList([
-                nn.ModuleList([self._get_compressors(), self._get_compressors()])
+                nn.ModuleList([self._get_compressor(), self._get_compressor()])
                 for _ in range(decoder_num_blocks)
             ])
         elif kv_compression == 'KV':

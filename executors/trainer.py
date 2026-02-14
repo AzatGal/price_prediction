@@ -11,7 +11,7 @@ from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
 import models.transformers as models
 from utils.logger import Logger
-from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, logcosh_loss, LogCoshLoss
+from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, LogCoshLoss
 
 
 class Trainer:
@@ -59,8 +59,7 @@ class Trainer:
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
             get_param_groups(self.model,
                              self.cfg.lr,
-                             self.cfg.weight_decay,
-                             self.cfg.get('lr_decay_by_block')),
+                             self.cfg.weight_decay),
             **self.cfg.optim_args
         )
         self.scheduler = get_scheduler(self.optimizer, len(self.train_dataloader) * self.cfg.num_epoch,
@@ -77,7 +76,7 @@ class Trainer:
         pretrained_path = self.cfg.get('load_pretrained', False)
         if pretrained_path:
             self.load_model(pretrained_path, strict=False)
-            self.model.zero_compressors_()
+            # self.model.zero_compressors_()
             self.logger.print('load_pretrained')
 
         checkpoint_path = self.cfg.get('load_checkpoint', False)
@@ -108,8 +107,9 @@ class Trainer:
         if load_path is None:
             load_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
         self.model.load_state_dict(
-            torch.load(load_path, map_location=self.accelerator.device),
-            **kwargs
+            torch.load(load_path,
+                       map_location=self.accelerator.device,
+                       **kwargs)
         )
 
     def save_checkpoint(self, epoch, save_path=None, **kwargs):
@@ -192,7 +192,7 @@ class Trainer:
         }
 
     @torch.no_grad()
-    def evaluate(self,):
+    def evaluate(self):
         self.model.eval()
         total_loss = 0
         total_metric = 0
@@ -252,7 +252,15 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
     # from configs.pretrain_cfg import cfg
 
-    trainer = Trainer(cfg)
+    # cfg.accelerator_args['cpu'] = True
+    # cfg.batch_size = 16
 
-    # trainer.overfitting_on_batch()
+    trainer = Trainer(cfg)
     trainer.fit()
+
+    # trainer.load_model(
+    #     os.path.join('/Users/azatgalautdinov/Desktop/price_prediction/best',
+    #                  'TablePredictor.pt')
+    # )
+    # print(next(trainer.model.parameters()).dtype)
+    # print(trainer.evaluate())
