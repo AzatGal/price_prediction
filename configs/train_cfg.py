@@ -29,7 +29,7 @@ cfg.weight_decay = 0.1  # 3e-4
 cfg.loss = 'L1Loss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss
 cfg.loss_args = {}  # 'delta': 8}  # 'reduction': 'batchmean'}
 
-cfg.accelerator_args = {'mixed_precision': 'fp16'}  # , 'cpu': True}
+cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '14-02_13-12', "checkpoint")
 
