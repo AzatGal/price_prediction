@@ -45,7 +45,7 @@ def fit_catboost(train_dataset, val_dataset):
     #     return mean_absolute_percentage_error(label, pred)
 
     model = CatBoostRegressor(
-        iterations=50_000,
+        iterations=100_000,
         learning_rate=0.01,
         depth=10,
         # loss_function='MAE',  #
@@ -76,7 +76,7 @@ def fit_catboost(train_dataset, val_dataset):
         # plot=False  # можно поставить True для визуализации в Jupyter
     )
 
-    # model.save_model('price_prediction.cbm')
+    model.save_model('price_prediction.cbm')
 
     # pred = target_processor.inverse_transform(model.predict(val_pool).reshape(-1, 1))
     pred = model.predict(val_pool).reshape(-1, 1)

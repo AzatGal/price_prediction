@@ -229,33 +229,77 @@ class TabmTrainer:
             if step % 100 == 0:
                 self.logger.print(f'[{step}]: loss - {loss:.4f}')
 
+    @torch.no_grad()
+    def test(self):
+        kwargs = {'batch_size': self.cfg.batch_size}
+        if torch.cuda.is_available():
+            kwargs['num_workers'] = 2
+            kwargs['pin_memory'] = True
+        dataloader = DataLoader(
+            ApartmentDataset("test", **self.cfg.data_cfg),
+            shuffle=True, **kwargs
+        )
+        self.model, dataloader = self.accelerator.prepare(self.model, dataloader)
+
+        self.model.eval()
+        total_loss = 0
+        total_metric = 0
+        total_samples = 0
+
+        t = time.time()
+        for batch in dataloader:
+            loss, pred = self.make_step(batch, False)
+            batch_len = len(pred)
+            total_samples += batch_len
+            total_loss += loss * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
+
+        t = time.time() - t
+        total_loss /= total_samples
+        total_metric /= total_samples
+        return {
+            'loss': total_loss,
+            'metric': total_metric,
+            'time': t
+        }
+
 
 if __name__ == "__main__":
     from configs.train_cfg import cfg
 
-    cfg.num_epoch = 200
-    cfg.weight_decay = 3e-4
-    cfg.lr = 2e-3
-    cfg.model = 'TabM'
-    cfg.batch_size = 64
-
-    cfg.loss = 'MSELoss'
-
-    cfg.model_cfg = EasyDict(
-        cat_cardinalities=cfg.model_cfg.num_embed_features,
-        d_out=1,
-        # arch_type='tabm-mini'
-        # d_in,
-        # n_blocks,
-        # d_block,
-        # dropout=0.1,
-        # activation='ReLU',
-        # k=32
-    )
+    cfg.batch_size = 16
+    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/08-02_14-13'
+    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+        cfg.model_cfg = json.load(f)['model_cfg']
 
     trainer = TabmTrainer(cfg)
-    # trainer.overfitting_on_batch()
-    trainer.fit()
+    trainer.load_model(os.path.join(path, 'Tabm.pt'))
+
+    print(trainer.test())
+
+    # cfg.num_epoch = 200
+    # cfg.weight_decay = 3e-4
+    # cfg.lr = 2e-3
+    # cfg.model = 'TabM'
+    # cfg.batch_size = 64
+    #
+    # cfg.loss = 'MSELoss'
+    #
+    # cfg.model_cfg = EasyDict(
+    #     cat_cardinalities=cfg.model_cfg.num_embed_features,
+    #     d_out=1,
+    #     # arch_type='tabm-mini'
+    #     # d_in,
+    #     # n_blocks,
+    #     # d_block,
+    #     # dropout=0.1,
+    #     # activation='ReLU',
+    #     # k=32
+    # )
+    #
+    # trainer = TabmTrainer(cfg)
+    # # trainer.overfitting_on_batch()
+    # trainer.fit()
 
 
 """
