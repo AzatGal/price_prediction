@@ -135,12 +135,13 @@ if __name__ == '__main__':
     trainer = Trainer(cfg, False)
     trainer.load_model(os.path.join(
         # '/Users/azatgalautdinov/Desktop/price_prediction/best',
-        '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/14-02_14-46',
+        # '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/14-02_14-46',
+        '/Users/azatgalautdinov/Downloads',
         'TablePredictor.pt'
     ))
-    model = trainer.model
+    # model = trainer.model
     # get_feature_importance()
-    get_feature_importance_v2()
+    get_feature_importance_v2(trainer.model)
 
 
 """

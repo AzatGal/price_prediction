@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import pandas as pd
 
 import json
 
@@ -13,6 +14,33 @@ import matplotlib.pyplot as plt
 
 from executors.trainer import Trainer
 from configs.train_cfg import cfg
+
+
+def data_analysis():
+    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets/'
+    train = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
+    print(train.info())
+    # valid = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
+    # test = pd.read_csv(os.path.join(path, 'test.csv')).drop(columns=['Unnamed: 0'])
+    # t = len(train) + len(valid) + len(test)
+    # print(t)
+    # print(len(train) / t)
+    # print(len(valid) / t)
+    # print(len(test) / t)
+
+
+def feature_analysis():
+    dt = cfg.data_cfg.data_transformer
+
+    # t = dt.cat_processor.categories_.copy()
+    # for i, (col, cats) in enumerate(zip(dt.cat_cols, dt.cat_processor.categories_)):
+    #     t[i][pd.isna(cats)] = 'other'
+    #
+    for col, cats in zip(dt.cat_cols, dt.cat_processor.categories_):
+        print(col, '\tКатегориальный\t', len(cats))
+
+    for col, edges in zip(dt.num_cols, dt.num_processor.bin_edges_):
+        print(col, '\tНепрерывный\t', len(edges))
 
 
 @torch.no_grad()
@@ -46,6 +74,7 @@ def main():
     print(trainer.optimizer.param_groups[0]['lr'])
 
 
-
 if __name__ == '__main__':
-    main()
+    # main()
+    # data_analysis()
+    feature_analysis()

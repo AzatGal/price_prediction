@@ -13,8 +13,8 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 1024  # 1024
-cfg.num_epoch = 300
+cfg.batch_size = 2048  # 1024
+cfg.num_epoch = 400
 
 cfg.wu_ratio = 0.05  # 0.1
 cfg.decay_ratio = 0.75  # 0.75
@@ -29,7 +29,7 @@ cfg.weight_decay = 0.1  # 3e-4
 cfg.loss = 'L1Loss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss
 cfg.loss_args = {}  # 'delta': 8}  # 'reduction': 'batchmean'}
 
-cfg.accelerator_args = {}  # 'mixed_precision': 'bf16'}  # , 'cpu': True}
+cfg.accelerator_args = {'mixed_precision': 'bf16'}  # , 'cpu': True}
 
 # cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '14-02_13-12', "checkpoint")
 
