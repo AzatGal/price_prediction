@@ -14,7 +14,7 @@ cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
 cfg.batch_size = 1024  # 1024
-cfg.num_epoch = 600
+cfg.num_epoch = 300
 
 cfg.wu_ratio = 0.05  # 0.1
 cfg.decay_ratio = 0.75  # 0.75
