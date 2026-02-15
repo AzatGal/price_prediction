@@ -40,13 +40,13 @@ cfg.num_embed_features = (
     data_cfg.data_transformer.num_cats
 )
 
-cfg.comp_dropout = 0.1
+# cfg.comp_dropout = 0.1
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
 cfg.mlp_dim_factor = 2  # 2 8 / 3
-cfg.comp_dim_factor = 2  # 2 8 / 3
+# cfg.comp_dim_factor = 2  # 2 8 / 3
 
-cfg.compressor = 'GatedCompressor'
+cfg.compressor = 'Compressor'
 cfg.mlp = 'GatedMLP'  # GatedMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 

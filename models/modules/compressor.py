@@ -5,20 +5,18 @@ import torch.nn as nn
 class Compressor(nn.Module):
     def __init__(self,
                  seq_len: int,
-                 dim_factor: float,
-                 act: str,
-                 dropout: float
+                 # dim_factor: float,
+                 # act: str,
+                 # dropout: float
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(seq_len, round(dim_factor * seq_len))
-        self.act = getattr(nn, act)()
-        self.out_proj = nn.Linear(round(dim_factor * seq_len), 1)
-        self.dropout = nn.Dropout(dropout)
+        self.in_proj = nn.Linear(seq_len, seq_len)
+        self.comp_proj = nn.Conv1d(seq_len, 1, 1)
+        self.out_proj = nn.Linear(seq_len, seq_len)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.in_proj(x)
-        x = self.act(x)
-        x = self.dropout(x)
+        x = self.comp_proj(x)
         x = self.out_proj(x)
         return x
 
