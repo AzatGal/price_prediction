@@ -33,11 +33,11 @@ class GatedCompressor(nn.Module):
         super().__init__()
         self.in_proj = nn.Linear(seq_len, 2 * round(dim_factor * seq_len))
         self.act = getattr(nn, act)()
-        self.out_proj = nn.Linear(seq_len, 1)
+        self.out_proj = nn.Linear(round(dim_factor * seq_len), 1)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x, y = self.in_proj(x).chunk(2, dim=1)
+        x, y = self.in_proj(x).chunk(2, dim=-1)
         x = self.act(x) * y
         x = self.dropout(x)
         x = self.out_proj(x)

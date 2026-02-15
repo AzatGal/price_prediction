@@ -3,7 +3,7 @@ import torch.nn as nn
 
 import models.modules.attention as attn_obj
 import models.modules.mlp as mlp_obj
-from models.modules.compressor import GatedCompressor, Compressor
+import models.modules.compressor as compressor_obj
 
 
 class TransformerBlock(nn.Module):
@@ -64,6 +64,7 @@ class CompressorBlock(nn.Module):
                  dropout: float,
                  act: str,
                  mlp_dim_factor: float,
+                 compressor: str,
                  mlp: str,
                  norm: str,
                  ) -> None:
@@ -76,7 +77,7 @@ class CompressorBlock(nn.Module):
 
         self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
         # self.compressor = nn.Linear(seq_len, 1)
-        self.compressor = GatedCompressor(seq_len, 2, act, 0.1)
+        self.compressor = getattr(compressor_obj, compressor)(seq_len, 2, act, 0.1)
 
     def _compressor_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.compressor_norm(x.transpose(1, 2))

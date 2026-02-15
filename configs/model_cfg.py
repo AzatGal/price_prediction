@@ -44,6 +44,7 @@ cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
 cfg.mlp_dim_factor = 2  # 2 8 / 3
 
+cfg.compressor = 'GatedCompressor'
 cfg.mlp = 'GatedMLP'  # GatedMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 
