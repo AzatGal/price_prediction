@@ -359,10 +359,12 @@ class TablePredictorV2(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
+                 comp_dropout: float,
                  mlp_dropout: float,
                  dropout: float,
                  act: str,
                  mlp_dim_factor: float,
+                 comp_dim_factor: float,
                  num_blocks: int,
                  compressor: str,
                  mlp: str,
@@ -380,8 +382,8 @@ class TablePredictorV2(nn.Module):
             self.mask[:, 0] = True
 
         self.blocks = nn.ModuleList([
-            CompressorBlock(embed_dim, self.seq_len, mlp_dropout, dropout,
-                            act, mlp_dim_factor, compressor, mlp, norm)
+            CompressorBlock(embed_dim, self.seq_len, comp_dropout, mlp_dropout, dropout,
+                            act, comp_dim_factor, mlp_dim_factor, compressor, mlp, norm)
             for _ in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim)
