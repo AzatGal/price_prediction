@@ -71,7 +71,7 @@ class CompressorBlock(nn.Module):
                  norm: str,
                  ) -> None:
         super().__init__()
-        self.compressor_norm = getattr(nn, norm)(seq_len)
+        self.compressor_norm = getattr(nn, norm)(embed_dim)
         self.mlp_norm = getattr(nn, norm)(embed_dim)
 
         self.compressor_drop = nn.Dropout(dropout)
