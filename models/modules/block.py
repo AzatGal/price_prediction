@@ -3,6 +3,7 @@ import torch.nn as nn
 
 import models.modules.attention as attn_obj
 import models.modules.mlp as mlp_obj
+from models.modules.compressor import GatedCompressor, Compressor
 
 
 class TransformerBlock(nn.Module):
@@ -18,7 +19,6 @@ class TransformerBlock(nn.Module):
                  attn: str,
                  mlp: str,
                  norm: str,
-                 # kv_compressors: nn.ModuleList | nn.Linear = None
                  ) -> None:
         super().__init__()
         self.attn_norm = getattr(nn, norm)(embed_dim)
@@ -28,7 +28,7 @@ class TransformerBlock(nn.Module):
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.attn = getattr(attn_obj, attn)(embed_dim, num_q_heads, num_kv_heads, attn_dropout)  # , kv_compressors)
+        self.attn = getattr(attn_obj, attn)(embed_dim, num_q_heads, num_kv_heads, attn_dropout)
 
     def _attn_block(self,
                     x: torch.Tensor,
@@ -56,38 +56,32 @@ class TransformerBlock(nn.Module):
         return x
 
 
-class GlobalPoolingBlock(nn.Module):
+class CompressorBlock(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  seq_len: int,
-                 attn_dropout: float,
                  mlp_dropout: float,
                  dropout: float,
                  act: str,
                  mlp_dim_factor: float,
-                 attn: str,
                  mlp: str,
                  norm: str,
-                 # kv_compressors: nn.ModuleList | nn.Linear = None
                  ) -> None:
         super().__init__()
-        self.attn_norm = getattr(nn, norm)(embed_dim)
+        self.compressor_norm = getattr(nn, norm)(embed_dim)
         self.mlp_norm = getattr(nn, norm)(embed_dim)
 
-        self.attn_drop = nn.Dropout(dropout)
+        self.compressor_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.attn = attn_obj.GlobalPooling(embed_dim, seq_len, attn_dropout)
+        self.compressor = nn.Conv1d(seq_len, 1, 1)
+        # self.compressor = Compressor(seq_len, 2, act, 0.1)
 
-    def _attn_block(self,
-                    x: torch.Tensor,
-                    # kv_compressors: nn.ModuleList | nn.Linear = None,
-                    mask: torch.Tensor = None
-                    ) -> torch.Tensor:
-        x = self.attn_norm(x)
-        x = self.attn(x, mask)
-        x = self.attn_drop(x)
+    def _compressor_block(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.compressor_norm(x)
+        x = self.compressor(x)
+        x = self.compressor_drop(x)
         return x
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
@@ -96,12 +90,8 @@ class GlobalPoolingBlock(nn.Module):
         x = self.mlp_drop(x)
         return x
 
-    def forward(self,
-                x: torch.Tensor,
-                # kv_compressors: nn.ModuleList | nn.Linear = None,
-                mask: torch.Tensor = None
-                ) -> torch.Tensor:
-        x = x + self._attn_block(x, mask)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x + self._compressor_block(x)
         x = x + self._mlp_block(x)
         return x
 

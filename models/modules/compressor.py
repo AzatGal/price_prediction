@@ -2,19 +2,18 @@ import torch
 import torch.nn as nn
 
 
-class MLP(nn.Module):
+class Compressor(nn.Module):
     def __init__(self,
-                 embed_dim: int,
+                 seq_len: int,
                  dim_factor: float,
-                 dropout: float,
                  act: str,
-                 bias: bool = False
+                 dropout: float
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(embed_dim, int(dim_factor * embed_dim), bias)
-        self.out_proj = nn.Linear(int(dim_factor * embed_dim), embed_dim, bias)
-        self.dropout = nn.Dropout(dropout)
+        self.in_proj = nn.Conv1d(seq_len, round(dim_factor * seq_len), 1)
         self.act = getattr(nn, act)()
+        self.out_proj = nn.Conv1d(round(dim_factor * seq_len), 1, 1)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.in_proj(x)
@@ -24,22 +23,21 @@ class MLP(nn.Module):
         return x
 
 
-class GatedMLP(nn.Module):
+class GatedCompressor(nn.Module):
     def __init__(self,
-                 embed_dim: int,
+                 seq_len: int,
                  dim_factor: float,
-                 dropout: float,
                  act: str,
-                 bias: bool = False
+                 dropout: float
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(embed_dim, 2 * round(dim_factor * embed_dim), bias)
-        self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
-        self.dropout = nn.Dropout(dropout)
+        self.in_proj = nn.Conv1d(seq_len, 2 * round(dim_factor * seq_len), 1)
         self.act = getattr(nn, act)()
+        self.out_proj = nn.Conv1d(seq_len, 1, 1)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x, y = self.in_proj(x).chunk(2, dim=-1)
+        x, y = self.in_proj(x).chunk(2, dim=1)
         x = self.act(x) * y
         x = self.dropout(x)
         x = self.out_proj(x)

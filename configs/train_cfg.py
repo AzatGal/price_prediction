@@ -24,16 +24,16 @@ cfg.lr_decay = 'linear'  # cosine linear
 
 cfg.optim = 'AdamW'
 cfg.optim_args = {}
-cfg.weight_decay = 0.01  # 3e-4
+cfg.weight_decay = 3e-4
 
 cfg.loss = 'L1Loss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss
 cfg.loss_args = {}  # 'delta': 8}  # 'reduction': 'batchmean'}
 
 cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
-# cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '14-02_13-12', "checkpoint")
+# cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '15-02_13-08', "checkpoint")
 
-cfg.model = 'TablePredictor'
+cfg.model = 'TablePredictorV2'
 
 cfg.task = 'train'
 model_cfg.pred_dim = 1

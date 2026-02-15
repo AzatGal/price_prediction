@@ -8,7 +8,7 @@ class FeatureEmbedding(nn.Module):
                  num_embed_features: list[int],
                  embed_dim: int,
                  dropout: float,
-                 add_first_token: bool,
+                 add_cls_token: bool,
                  ) -> None:
         super().__init__()
         self.register_buffer(
@@ -19,9 +19,9 @@ class FeatureEmbedding(nn.Module):
             'offsets',
             torch.tensor([0] + num_embed_features[:-1]).cumsum(0)
         )
-        self.add_first_token = add_first_token
+        self.add_cls_token = add_cls_token
         self.mask_idx = sum(num_embed_features)
-        self.seq_len = len(num_embed_features) + add_first_token
+        self.seq_len = len(num_embed_features) + add_cls_token
 
         self.weight = nn.Parameter(torch.empty(self.mask_idx + 1, embed_dim))
         self.bias = nn.Parameter(torch.empty(self.seq_len, embed_dim))
@@ -31,7 +31,7 @@ class FeatureEmbedding(nn.Module):
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         assert torch.all(x < self.num_embed_features)
         x = x + self.offsets
-        if self.add_first_token:
+        if self.add_cls_token:
             x = torch.cat(
                 [
                     torch.tensor([[self.mask_idx]] * x.size(0), device=x.device),

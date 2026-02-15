@@ -1,9 +1,11 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from models.modules.embedding import FeatureEmbedding
-from models.modules.block import TransformerBlock
+from models.modules.block import TransformerBlock, CompressorBlock
 
 
 class Transformer(nn.Module):
@@ -23,15 +25,15 @@ class Transformer(nn.Module):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_first_token: bool,
+                 add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__()
-        self.add_first_token = add_first_token
+        self.add_cls_token = add_cls_token
         self.embed = FeatureEmbedding(num_embed_features, embed_dim,
-                                      dropout, add_first_token)
+                                      dropout, add_cls_token)
         self.seq_len = self.embed.seq_len
 
         self.kv_compression_ratio = kv_compression_ratio
@@ -110,14 +112,14 @@ class MaskedTransformer(Transformer):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_first_token: bool,
+                 add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
-                         pool, pred_dim, add_first_token, mask_first_token,
+                         pool, pred_dim, add_cls_token, mask_first_token,
                          kv_compression, kv_compression_ratio)
 
     def get_mask(self, x: torch.Tensor, mask_ratio: float) -> torch.Tensor:
@@ -126,7 +128,7 @@ class MaskedTransformer(Transformer):
         mask = torch.zeros(B, T, device=x.device, dtype=torch.bool)
         mask[:, :int(T * mask_ratio)] = True
         mask = mask.gather(1, noise.argsort(1))
-        if self.add_first_token:
+        if self.add_cls_token:
             mask = torch.cat(
                 [torch.zeros(B, 1, device=x.device, dtype=torch.bool), mask],
                 1
@@ -155,14 +157,14 @@ class MaskedTableAutoencoder(MaskedTransformer):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_first_token: bool,
+                 add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
-                         pool, pred_dim, add_first_token, mask_first_token,
+                         pool, pred_dim, add_cls_token, mask_first_token,
                          kv_compression, kv_compression_ratio)
         if kv_compression is None:
             self.decoder_kv_compressors = None
@@ -230,7 +232,7 @@ class MaskedTableAutoencoder(MaskedTransformer):
                 else self.decoder_kv_compressors
             )
 
-        if self.add_first_token:
+        if self.add_cls_token:
             x = x[:, 1:]
 
         x = x[mask]  # .reshape(x.size(0), -1, x.size(2))
@@ -256,14 +258,14 @@ class MaskedTableModeler(MaskedTransformer):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_first_token: bool,
+                 add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
-                         pool, pred_dim, add_first_token, mask_first_token,
+                         pool, pred_dim, add_cls_token, mask_first_token,
                          kv_compression, kv_compression_ratio)
         self.tm_head = nn.Linear(embed_dim, pred_dim)
 
@@ -286,7 +288,7 @@ class MaskedTableModeler(MaskedTransformer):
         return x, mask
 
 
-class TablePredictor(Transformer):
+class TablePredictorV1(Transformer):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
@@ -303,14 +305,14 @@ class TablePredictor(Transformer):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_first_token: bool,
+                 add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
-                         pool, pred_dim, add_first_token, mask_first_token,
+                         pool, pred_dim, add_cls_token, mask_first_token,
                          kv_compression, kv_compression_ratio)
         self.pool = pool
         self.mask_first_token = mask_first_token
@@ -351,6 +353,64 @@ class TablePredictor(Transformer):
         x = self.norm(x)
         x = self.tp_head(x)
         return x
+
+
+class TablePredictorV2(nn.Module):
+    def __init__(self,
+                 embed_dim: int,
+                 num_embed_features: list[int],
+                 mlp_dropout: float,
+                 dropout: float,
+                 act: str,
+                 mlp_dim_factor: float,
+                 num_blocks: int,
+                 mlp: str,
+                 norm: str,
+                 pred_dim: int,
+                 mask_first_token: bool,
+                 ) -> None:
+        super().__init__()
+        self.embed = FeatureEmbedding(num_embed_features, embed_dim, dropout, False)
+        self.seq_len = self.embed.seq_len
+
+        self.mask_first_token = mask_first_token
+        if mask_first_token:
+            self.register_buffer('mask', torch.zeros(1, self.seq_len, dtype=torch.bool))
+            self.mask[:, 0] = True
+
+        self.blocks = nn.ModuleList([
+            CompressorBlock(embed_dim, self.seq_len, mlp_dropout,
+                            dropout, act, mlp_dim_factor, mlp, norm)
+            for _ in range(num_blocks)
+        ])
+        self.norm = getattr(nn, norm)(embed_dim)
+        self.pred_head = nn.Linear(embed_dim, pred_dim)
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        for pn, p in self.named_parameters():
+            if 'norm' not in pn:
+                if 'bias' in pn or 'compressor' in pn:
+                    nn.init.zeros_(p)
+                elif 'head' in pn:
+                    nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+                else:
+                    nn.init.normal_(p, std=0.02)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.mask_first_token:
+            x = self.embed(x, self.mask)
+        else:
+            x = self.embed(x)
+
+        for block in self.blocks:
+            x = block(x)
+
+        x = self.norm(x.mean(1))
+        x = self.pred_head(x)
+        return x
+
 
 
 if __name__ == '__main__':

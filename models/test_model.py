@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.modules.embedding import FeatureEmbedding
-from models.modules.block import GlobalPoolingBlock
+from models.modules.block import CompressorBlock
 from models.modules.mlp import GatedMLP
 
 
-class TestModel(nn.Module):
+class GlobalPoolTransformer(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
@@ -36,8 +36,8 @@ class TestModel(nn.Module):
         self.seq_len = self.embed.seq_len
 
         self.blocks = nn.ModuleList([
-            GlobalPoolingBlock(embed_dim, self.seq_len, attn_dropout, mlp_dropout, dropout,
-                               act, mlp_dim_factor, attn, mlp, norm)
+            CompressorBlock(embed_dim, self.seq_len, attn_dropout, mlp_dropout,
+                            dropout, act, mlp_dim_factor, attn, mlp, norm)
             for _ in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim)
