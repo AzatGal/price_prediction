@@ -19,7 +19,7 @@ class PricePredictor:
                  error_margin: float,
                  inflation: float
                  ) -> None:
-        self.first_feature_idx = int(not model_cfg.mask_first_token)
+        self.first_feature_idx = 1  # int(not model_cfg.mask_first_token)
         self.model = TablePredictor(**model_cfg)
         self.model.load_state_dict(torch.load(model_path, map_location='cpu'))
         self.features_keys = features_keys
@@ -107,15 +107,20 @@ _predictor = None
 
 def get_predictor() -> PricePredictor:
     """Возвращает singleton экземпляр предиктора"""
+    import json
+    import os
     from configs.data_cfg import cfg as data_cfg
-    from configs.model_cfg import cfg as model_cfg
 
-    model_cfg.pred_dim = 1
+    path = '/Users/azatgalautdinov/Desktop/price_prediction/best'
+    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+        model_cfg = json.load(f)['model_cfg']
+
     global _predictor
+
     if _predictor is None:
         _predictor = PricePredictor(
             model_cfg=model_cfg,
-            model_path='/Users/azatgalautdinov/Desktop/price_prediction/v1/PricePrediction.pt',
+            model_path=os.path.join(path, 'TablePredictor.pt'),
             features_keys=['area', 'living_area', 'kitchen_area', 'floor', 'total_floors',
                            'passenger_elevators', 'cargo_elevators', 'rooms', 'ceiling_height',
                            'separate_bathrooms', 'sale_type', 'object_type', 'garbage_chute',
@@ -123,7 +128,7 @@ def get_predictor() -> PricePredictor:
                            'district', 'neighborhood'],
             # features_keys=list(PredictionInput().dict().keys()),
             data_transformer=data_cfg.data_transformer,
-            inflation=1,
-            error_margin=0.05
+            inflation=1.5,
+            error_margin=0.042
         )
     return _predictor

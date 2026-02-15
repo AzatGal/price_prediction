@@ -80,14 +80,16 @@ class Attention(nn.Module):
         # a = F.dropout(w, self.dropout, self.training) @ v.repeat_interleave(2, dim=1)
         # # print('v', v[0].squeeze())
         # # print('a', a[0].squeeze())
-        # # a = F.scaled_dot_product_attention(
-        # #     *qkv,
-        # #     dropout_p=self.dropout if self.training else 0.0,
-        # #     enable_gqa=True
-        # # )
+
+        a = F.scaled_dot_product_attention(
+            *qkv,
+            dropout_p=self.dropout if self.training else 0.0,
+            enable_gqa=True
+        )
+
         a = self.out_proj(
-            # a
-            qkv[2].repeat_interleave(2, dim=1)
+            a
+            # qkv[2].repeat_interleave(2, dim=1)
             .transpose(1, 2)
             .reshape(B, -1, C)
         )

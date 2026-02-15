@@ -19,15 +19,14 @@ from configs.train_cfg import cfg
 @torch.no_grad()
 def main():
     # путь до файла с конфигом и весами модели
-    # path = '/Users/azatgalautdinov/Desktop/price_prediction/v2'
-    # with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
-    #     # только для модели, в data_cfg есть python class
-    #     model_cfg = json.load(f)['model_cfg']
-    # cfg.model_cfg = model_cfg
+    path = '/Users/azatgalautdinov/Desktop/price_prediction/best'
+    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+        # только для модели, в data_cfg есть python class
+        cfg.model_cfg = json.load(f)['model_cfg']
 
+    cfg.model = 'TablePredictor'
     trainer = Trainer(cfg, False)
-    trainer.load_model(os.path.join('/Users/azatgalautdinov/Desktop/price_prediction/best',
-                                    'TablePredictor.pt'))
+    trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
 
     # device = torch.device('cpu')
 
@@ -48,7 +47,9 @@ def main():
 
     print('\n', df.iloc[i])
 
-    x = (torch.as_tensor(dt.transform(df)[i, 1:])
+    t = dt.transform(df)[i, 1:]
+    print(t)
+    x = (torch.as_tensor(t)
          .unsqueeze(0)
          # .to(device=device))
          .to(device=next(model.parameters()).device))

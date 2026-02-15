@@ -286,15 +286,16 @@ if __name__ == "__main__":
     from configs.train_cfg import cfg
 
     # # cfg.accelerator_args['mps'] = True
-    # cfg.batch_size = 16
-    # path = '/Users/azatgalautdinov/Desktop/price_prediction/best'
-    # with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
-    #     cfg.model_cfg = json.load(f)['model_cfg']
-    #
-    # trainer = Trainer(cfg)
-    # trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
-    #
-    # print(trainer.test())
+    cfg.batch_size = 16
+    cfg.model = 'TablePredictor'
+    path = '/Users/azatgalautdinov/Desktop/price_prediction/best'
+    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+        cfg.model_cfg = json.load(f)['model_cfg']
 
     trainer = Trainer(cfg)
-    trainer.fit()
+    trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
+
+    print(trainer.test())
+
+    # trainer = Trainer(cfg)
+    # trainer.fit()

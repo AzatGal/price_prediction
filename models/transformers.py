@@ -288,7 +288,7 @@ class MaskedTableModeler(MaskedTransformer):
         return x, mask
 
 
-class TablePredictorV1(Transformer):
+class TablePredictor(Transformer):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
@@ -305,14 +305,14 @@ class TablePredictorV1(Transformer):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_cls_token: bool,
+                 add_first_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
-                         pool, pred_dim, add_cls_token, mask_first_token,
+                         pool, pred_dim, add_first_token, mask_first_token,
                          kv_compression, kv_compression_ratio)
         self.pool = pool
         self.mask_first_token = mask_first_token
@@ -416,7 +416,6 @@ class TablePredictorV2(nn.Module):
         return x
 
 
-
 if __name__ == '__main__':
     from configs.model_cfg import cfg
     # cfg.pop('include_target')
@@ -425,3 +424,44 @@ if __name__ == '__main__':
     for k, _ in m.named_parameters():
         print(k)
 
+
+
+
+
+""" 
+t1, t2, ...
+
+1 layer
+t1 = t1 + Attention1(Norm1(t1))
+t1 = t1 + MLP1(Norm1(t1))
+
+2 layer
+t1 = t1 + Attention2(Norm2(t1))
+t1 = t1 + MLP2(Norm2(t1))
+
+....
+
+N layer
+
+>...
+
+
+t = GlobalAveragePooling(t1, t2, ...)
+t = Norm(t)
+t = Linear(t)
+
+
+
+
+
+
+
+
+
+x = (1, 33, 6)
+
+(f(x) - t)^2 -> min
+
+
+
+"""

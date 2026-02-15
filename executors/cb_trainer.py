@@ -69,14 +69,16 @@ def fit_catboost(train_dataset, val_dataset):
         # bagging_temperature=1,
 
         # l2_leaf_reg=7
-    ).fit(
-        train_pool,
-        eval_set=val_pool,
-        use_best_model=True,
-        # plot=False  # можно поставить True для визуализации в Jupyter
     )
+    # model.fit(
+    #     train_pool,
+    #     eval_set=val_pool,
+    #     use_best_model=True,
+    #     # plot=False  # можно поставить True для визуализации в Jupyter
+    # )
 
-    model.save_model('price_prediction.cbm')
+    # model.save_model('price_prediction.cbm')
+    model.load_model('price_prediction.cbm')
 
     # pred = target_processor.inverse_transform(model.predict(val_pool).reshape(-1, 1))
     pred = model.predict(val_pool).reshape(-1, 1)
@@ -97,10 +99,37 @@ def fit_catboost(train_dataset, val_dataset):
 
 if __name__ == '__main__':
     path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets'
-    train_dataset = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
-    val_dataset = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
-    fit_catboost(train_dataset, val_dataset)
-    # print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
+
+    # train_dataset = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
+    # val_dataset = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
+    # fit_catboost(train_dataset, val_dataset)
+    # # print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
+
+    cat_features = [
+        'Тип продажи',
+        'Объект продажи',
+        'Мусоропровод',
+        'Парковка',
+        'Тип дома',
+        'Вид из окон',
+        'Расстояние до метро',
+        'Округ',
+        'Район'
+    ]
+    test_dataset = pd.read_csv(os.path.join(path, 'test.csv'))
+    test_target = test_dataset['Стоимость']
+    test_dataset[cat_features] = test_dataset[cat_features].fillna('Нет значения')
+
+    test_pool = Pool(test_dataset.drop(columns=['Стоимость', 'Unnamed: 0']),
+                     test_target, cat_features=cat_features)
+
+    model = CatBoostRegressor()
+    model.load_model('price_prediction.cbm')
+    pred = model.predict(test_pool).reshape(-1, 1)
+
+    print('MAPE: ', mean_absolute_percentage_error(test_target, pred))
+
+
 
 """
 0:	learn: 0.5155935	test: 0.5206424	best: 0.5206424 (0)	total: 119ms	remaining: 39m 40s
