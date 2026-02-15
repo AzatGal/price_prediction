@@ -30,7 +30,7 @@ cfg = EasyDict()
 # cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 
 
-cfg.embed_dim = 192  # 192  # 160  # 8 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
+cfg.embed_dim = 160  # 192  # 160  # 8 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
 cfg.num_blocks = 40  # 10 24 40
 cfg.act = 'ReLU'  # SiLU
 
@@ -46,7 +46,7 @@ cfg.dropout = 0.1
 cfg.mlp_dim_factor = 2  # 2 8 / 3
 # cfg.comp_dim_factor = 2  # 2 8 / 3
 
-cfg.compressor = 'Compressor'
+# cfg.compressor = 'Compressor'
 cfg.mlp = 'GatedMLP'  # GatedMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 
