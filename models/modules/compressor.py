@@ -10,9 +10,9 @@ class Compressor(nn.Module):
                  dropout: float
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Conv1d(seq_len, round(dim_factor * seq_len), 1)
+        self.in_proj = nn.Linear(seq_len, round(dim_factor * seq_len))
         self.act = getattr(nn, act)()
-        self.out_proj = nn.Conv1d(round(dim_factor * seq_len), 1, 1)
+        self.out_proj = nn.Linear(round(dim_factor * seq_len), 1)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -31,9 +31,9 @@ class GatedCompressor(nn.Module):
                  dropout: float
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Conv1d(seq_len, 2 * round(dim_factor * seq_len), 1)
+        self.in_proj = nn.Linear(seq_len, 2 * round(dim_factor * seq_len))
         self.act = getattr(nn, act)()
-        self.out_proj = nn.Conv1d(seq_len, 1, 1)
+        self.out_proj = nn.Linear(seq_len, 1)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

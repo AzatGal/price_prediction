@@ -75,8 +75,8 @@ class CompressorBlock(nn.Module):
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.compressor = nn.Linear(seq_len, 1)
-        # self.compressor = Compressor(seq_len, 2, act, 0.1)
+        # self.compressor = nn.Linear(seq_len, 1)
+        self.compressor = GatedCompressor(seq_len, 2, act, 0.1)
 
     def _compressor_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.compressor_norm(x.transpose(1, 2))
