@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from models.modules.embedding import FeatureEmbedding
 from models.modules.block import TransformerBlock, CompressorBlock
+from models.modules.mlp import GatedMLP
 
 
 class Transformer(nn.Module):
@@ -87,7 +88,7 @@ class Transformer(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn:  # or 'compressor' in pn:
+                if 'bias' in pn or 'compressor' in pn or 'qkv' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=5 ** 0.5)
@@ -305,14 +306,14 @@ class TablePredictor(Transformer):
                  norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_first_token: bool,
+                 add_cls_token: bool,  # add_first_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
-                         pool, pred_dim, add_first_token, mask_first_token,
+                         pool, pred_dim, add_cls_token, mask_first_token,
                          kv_compression, kv_compression_ratio)
         self.pool = pool
         self.mask_first_token = mask_first_token
@@ -366,7 +367,7 @@ class TablePredictorV2(nn.Module):
                  mlp_dim_factor: float,
                  # comp_dim_factor: float,
                  num_blocks: int,
-                 compressor: str,
+                 # compressor: str,
                  mlp: str,
                  norm: str,
                  pred_dim: int,
@@ -382,8 +383,9 @@ class TablePredictorV2(nn.Module):
             self.mask[:, 0] = True
 
         self.blocks = nn.ModuleList([
-            CompressorBlock(embed_dim, self.seq_len, mlp_dropout, dropout,
-                            act, mlp_dim_factor, compressor, mlp, norm)
+            CompressorBlock(embed_dim, self.seq_len, mlp_dropout,
+                            dropout, act, mlp_dim_factor, mlp, norm)
+            # GatedMLP(embed_dim, mlp_dim_factor, mlp_dropout, act)
             for _ in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim)

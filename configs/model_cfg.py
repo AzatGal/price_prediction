@@ -6,8 +6,8 @@ cfg = EasyDict()
 
 # cfg.num_q_heads = 2  # 16
 # cfg.num_kv_heads = 1  # 4
-# cfg.embed_dim = 160  # 8 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
-# cfg.num_blocks = 40  # 10 24 40
+# cfg.embed_dim = 16  # 8 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
+# cfg.num_blocks = 4  # 10 24 40
 # cfg.act = 'ReLU'  # SiLU
 #
 # cfg.pool = 'avg'  # avg cls sum
@@ -22,7 +22,7 @@ cfg = EasyDict()
 # cfg.mlp_dropout = 0.1
 # cfg.dropout = 0.1
 # cfg.kv_compression = 'Head'  # Head KV Layer
-# cfg.kv_compression_ratio = 0.15  # 0.01
+# cfg.kv_compression_ratio = 0.01  # 0.01
 # cfg.mlp_dim_factor = 2  # 2 8 / 3
 #
 # cfg.attn = 'Attention'  # Linear
@@ -46,7 +46,7 @@ cfg.dropout = 0.1
 cfg.mlp_dim_factor = 2  # 2 8 / 3
 # cfg.comp_dim_factor = 2  # 2 8 / 3
 
-cfg.compressor = 'Compressor'
+# cfg.compressor = 'Compressor'
 cfg.mlp = 'GatedMLP'  # GatedMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 

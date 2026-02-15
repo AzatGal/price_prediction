@@ -43,8 +43,9 @@ def feature_analysis():
         print(col, '\tНепрерывный\t', len(edges))
 
 
+@torch.no_grad()
 def main():
-    path = '/Users/azatgalautdinov/Desktop/price_prediction/best'
+    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/15-02_21-59'
     with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
         model_cfg = json.load(f)['model_cfg']
 
@@ -53,7 +54,25 @@ def main():
     trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
     model = trainer.model
 
-    print(model.kv_compressors[0][1].weight)
+    model(torch.zeros(1, 19, dtype=torch.long, device=next(model.parameters()).device))
+
+    # print(model.blocks[0].attn.qkv_proj.weight)
+    # print(model.kv_compressors[0][0].weight)
+    # print(model.kv_compressors[0][1].weight)
+
+    # k1 = model.kv_compressors[0][0].weight
+    # v1 = model.kv_compressors[0][1].weight
+    #
+    # trainer.load_model('/Users/azatgalautdinov/PycharmProjects/price_prediction/executors/test.pt')
+    # model = trainer.model
+    #
+    # k2 = model.kv_compressors[0][0].weight
+    # v2 = model.kv_compressors[0][1].weight
+    #
+    # print(k1 - k2)
+    # print(v1 - v2)
+
+
     # cfg.load_checkpoint = '/Users/azatgalautdinov/Desktop/price_prediction/best/checkpoint'
     # trainer = Trainer(cfg)
     # print(trainer.optimizer.param_groups[0]['lr'])

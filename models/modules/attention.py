@@ -50,6 +50,7 @@ class Attention(nn.Module):
                 ) -> torch.Tensor:
         B, T, C = x.shape
         qkv = self.qkv_proj(x).split(self.split_size, 2)
+        # print('v', qkv[2])
         qkv = [
             x.reshape(B, T, -1, self.head_dim).transpose(1, 2)
             for x in qkv
@@ -70,22 +71,22 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        # q, k, v = qkv
-        # # print(q.shape)
-        # # print(k.repeat(1, 2, 1, 1).transpose(2, 3).shape)
-        # w = (q @ k.repeat_interleave(2, dim=1).transpose(2, 3)) / math.sqrt(self.head_dim)
-        # # print('w', w[0].squeeze())
-        # w = F.softmax(w, dim=-1)
-        # # print('sm', w[0].squeeze())
-        # a = F.dropout(w, self.dropout, self.training) @ v.repeat_interleave(2, dim=1)
-        # # print('v', v[0].squeeze())
-        # # print('a', a[0].squeeze())
+        q, k, v = qkv
+        # print(q.shape)
+        # print(k.repeat(1, 2, 1, 1).transpose(2, 3).shape)
+        w = (q @ k.repeat_interleave(2, dim=1).transpose(2, 3)) / math.sqrt(self.head_dim)
+        print('w', w[0].squeeze())
+        w = F.softmax(w, dim=-1)
+        print('sm', w[0].squeeze())
+        a = F.dropout(w, self.dropout, self.training) @ v.repeat_interleave(2, dim=1)
+        print('v', v[0].squeeze())
+        print('a', a[0].squeeze())
 
-        a = F.scaled_dot_product_attention(
-            *qkv,
-            dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True
-        )
+        # a = F.scaled_dot_product_attention(
+        #     *qkv,
+        #     dropout_p=self.dropout if self.training else 0.0,
+        #     enable_gqa=True
+        # )
 
         a = self.out_proj(
             a
