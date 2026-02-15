@@ -367,7 +367,7 @@ class TablePredictorV2(nn.Module):
                  mlp_dim_factor: float,
                  # comp_dim_factor: float,
                  num_blocks: int,
-                 # compressor: str,
+                 compressor: str,
                  mlp: str,
                  norm: str,
                  pred_dim: int,
@@ -384,7 +384,7 @@ class TablePredictorV2(nn.Module):
 
         self.blocks = nn.ModuleList([
             CompressorBlock(embed_dim, self.seq_len, mlp_dropout,
-                            dropout, act, mlp_dim_factor, mlp, norm)
+                            dropout, act, mlp_dim_factor, compressor, mlp, norm)
             # GatedMLP(embed_dim, mlp_dim_factor, mlp_dropout, act)
             for _ in range(num_blocks)
         ])

@@ -11,13 +11,13 @@ class Compressor(nn.Module):
                  # dropout: float
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(embed_dim, embed_dim)
+        # self.in_proj = nn.Linear(embed_dim, embed_dim)
         self.comp_proj = nn.Conv1d(seq_len, 1, 1)
         # self.comp_proj = nn.Linear(seq_len, 1)
         self.out_proj = nn.Linear(embed_dim, embed_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.in_proj(x)
+        # x = self.in_proj(x)
         x = self.comp_proj(x)
         x = self.out_proj(x)
         return x
