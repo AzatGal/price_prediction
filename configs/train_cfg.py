@@ -13,12 +13,12 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 1024  # 2048 1024
+cfg.batch_size = 2048  # 2048 1024
 cfg.num_epoch = 600
 
 cfg.wu_ratio = 0.05  # 0.1
 cfg.decay_ratio = 0.85  # 0.75
-cfg.lr = 6e-4 * cfg.batch_size / 256  # math.sqrt()  # 6e-4
+cfg.lr = 5e-4 * math.sqrt(cfg.batch_size / 256)  # math.sqrt()  # 6e-4
 cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'linear'  # cosine linear
 

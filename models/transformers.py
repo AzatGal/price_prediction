@@ -319,7 +319,7 @@ class TablePredictorV1(Transformer):
         if mask_first_token:
             self.register_buffer('mask', torch.zeros(1, self.seq_len, dtype=torch.bool))
             self.mask[:, 0] = True
-        self.tp_head = nn.Linear(embed_dim, pred_dim)
+        self.pred_head = nn.Linear(embed_dim, pred_dim)
 
         self.reset_parameters()
         if pool == 'w_avg':
@@ -351,7 +351,7 @@ class TablePredictorV1(Transformer):
             raise NotImplementedError()
 
         x = self.norm(x)
-        x = self.tp_head(x)
+        x = self.pred_head(x)
         return x
 
 
@@ -407,7 +407,8 @@ class TablePredictorV2(nn.Module):
         for block in self.blocks:
             x = block(x)
 
-        x = self.norm(x.mean(1))
+        x = x.mean(1)
+        x = self.norm(x)
         x = self.pred_head(x)
         return x
 
