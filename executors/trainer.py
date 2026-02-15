@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from data.apartment_dataset import ApartmentDataset
 import models.transformers as models
+from models.test_model import TestModel
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, LogCoshLoss
 
@@ -53,7 +54,8 @@ class Trainer:
         self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        self.model = getattr(models, self.cfg.model)(**model_cfg)
+        self.model = TestModel(**model_cfg)
+        # self.model = getattr(models, self.cfg.model)(**model_cfg)
         self.criterion = LogCoshLoss(**self.cfg.loss_args) if self.cfg.loss == 'LogCoshLoss' \
             else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
@@ -292,7 +294,9 @@ if __name__ == "__main__":
         cfg.model_cfg = json.load(f)['model_cfg']
 
     trainer = Trainer(cfg)
-    # trainer.fit()
     trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
 
     print(trainer.test())
+
+    # trainer = Trainer(cfg)
+    # trainer.fit()

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.modules.embedding import FeatureEmbedding
-from models.modules.block import Block
+from models.modules.block import TransformerBlock
 
 
 class Transformer(nn.Module):
@@ -52,8 +52,8 @@ class Transformer(nn.Module):
             raise NotImplementedError()
 
         self.blocks = nn.ModuleList([
-            Block(embed_dim, num_q_heads, num_kv_heads, attn_dropout, mlp_dropout,
-                  dropout, act, mlp_dim_factor, attn, mlp, norm)
+            TransformerBlock(embed_dim, num_q_heads, num_kv_heads, attn_dropout, mlp_dropout,
+                             dropout, act, mlp_dim_factor, attn, mlp, norm)
             for _ in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim)
@@ -183,8 +183,8 @@ class MaskedTableAutoencoder(MaskedTransformer):
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim)
         self.decoder_pos_embed = nn.Parameter(torch.empty(self.seq_len, decoder_embed_dim))
         self.decoder_blocks = nn.ModuleList([
-            Block(decoder_embed_dim, decoder_num_q_heads, decoder_num_kv_heads, attn_dropout,
-                  mlp_dropout, dropout, act, mlp_dim_factor, attn, mlp, norm)
+            TransformerBlock(decoder_embed_dim, decoder_num_q_heads, decoder_num_kv_heads, attn_dropout,
+                             mlp_dropout, dropout, act, mlp_dim_factor, attn, mlp, norm)
             for _ in range(decoder_num_blocks)
         ])
         self.decoder_norm = getattr(nn, norm)(decoder_embed_dim)
