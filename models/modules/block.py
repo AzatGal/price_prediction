@@ -66,25 +66,25 @@ class CompressorBlock(nn.Module):
                  act: str,
                  # comp_dim_factor: float,
                  mlp_dim_factor: float,
-                 # compressor: str,
+                 compressor: str,
                  mlp: str,
                  norm: str,
                  ) -> None:
         super().__init__()
-        self.compressor_norm = getattr(nn, norm)(seq_len)
+        self.compressor_norm = getattr(nn, norm)(embed_dim)
         self.mlp_norm = getattr(nn, norm)(embed_dim)
 
         self.compressor_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)
 
         self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, mlp_dropout, act)
-        self.compressor = nn.Linear(seq_len, 1)
+        # self.compressor = nn.Linear(seq_len, 1)
 
-        # self.compressor = getattr(compressor_obj, compressor)(embed_dim, seq_len)  # comp_dim_factor, act, comp_dropout
+        self.compressor = getattr(compressor_obj, compressor)(embed_dim, seq_len)  # comp_dim_factor, act, comp_dropout
 
     def _compressor_block(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.compressor_norm(x.transpose(1, 2))
-        x = self.compressor(x).transpose(1, 2)
+        x = self.compressor_norm(x)
+        x = self.compressor(x)  # .transpose(1, 2)
         x = self.compressor_drop(x)
         return x
 
