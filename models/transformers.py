@@ -380,8 +380,8 @@ class TablePredictorV2(nn.Module):
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
-            if 'norm' not in pn or 'comp_proj' in pn:
-                if 'bias' in pn:
+            if 'norm' not in pn:
+                if 'bias' in pn or 'comp_proj' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
