@@ -29,7 +29,8 @@ class Transformer(nn.Module):
                  add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
-                 kv_compression_ratio: float = None,
+                 kv_compression_dim: int = None,
+                 # kv_compression_ratio: int = None,
                  ) -> None:
         super().__init__()
         self.add_cls_token = add_cls_token
@@ -37,7 +38,8 @@ class Transformer(nn.Module):
                                       dropout, add_cls_token)
         self.seq_len = self.embed.seq_len
 
-        self.kv_compression_ratio = kv_compression_ratio
+        self.kv_compression_dim = kv_compression_dim
+        # self.kv_compression_ratio = kv_compression_ratio
         if kv_compression is None:
             self.kv_compressors = None
         elif kv_compression == 'Head':
@@ -61,37 +63,21 @@ class Transformer(nn.Module):
         ])
         self.norm = getattr(nn, norm)(embed_dim)
 
-    # @torch.no_grad()
-    # def zero_compressors_(self):
-    #     if self.kv_compressors is not None:
-    #         if isinstance(self.kv_compressors, nn.Linear):
-    #             self.kv_compressors.weight.zero_()
-    #         elif isinstance(self.kv_compressors, nn.ModuleList):
-    #             for compressor in self.kv_compressors:
-    #                 if isinstance(compressor, nn.Linear):
-    #                     compressor.weight.zero_()
-    #                 elif isinstance(compressor, nn.ModuleList):
-    #                     compressor[0].weight.zero_()
-    #                     compressor[1].weight.zero_()
-    #                 else:
-    #                     raise NotImplementedError()
-    #         else:
-    #             raise NotImplementedError()
-
     def _get_compressor(self) -> nn.Linear:
         return nn.Linear(
             self.seq_len,
-            max(1, round(self.kv_compression_ratio * self.seq_len)),
+            # 1,
+            self.kv_compression_dim,
             False
         )
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn:  # or 'compressor' in pn or 'qkv' in pn
+                if 'bias' in pn:  # or 'compressor' in pn or 'qkv' in pn or 'out_proj' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
-                    nn.init.kaiming_uniform_(p, a=5 ** 0.5)
+                    nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 else:
                     nn.init.normal_(p, std=0.02)
 
@@ -116,12 +102,12 @@ class MaskedTransformer(Transformer):
                  add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
-                 kv_compression_ratio: float = None,
+                 kv_compression_dim: int = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
                          pool, pred_dim, add_cls_token, mask_first_token,
-                         kv_compression, kv_compression_ratio)
+                         kv_compression, kv_compression_dim)
 
     def get_mask(self, x: torch.Tensor, mask_ratio: float) -> torch.Tensor:
         B, T = x.shape
@@ -161,12 +147,12 @@ class MaskedTableAutoencoder(MaskedTransformer):
                  add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
-                 kv_compression_ratio: float = None
+                 kv_compression_dim: int = None
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
                          pool, pred_dim, add_cls_token, mask_first_token,
-                         kv_compression, kv_compression_ratio)
+                         kv_compression, kv_compression_dim)
         if kv_compression is None:
             self.decoder_kv_compressors = None
         elif kv_compression == 'Head':
@@ -262,12 +248,12 @@ class MaskedTableModeler(MaskedTransformer):
                  add_cls_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
-                 kv_compression_ratio: float = None,
+                 kv_compression_dim: int = None,
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
                          pool, pred_dim, add_cls_token, mask_first_token,
-                         kv_compression, kv_compression_ratio)
+                         kv_compression, kv_compression_dim)
         self.tm_head = nn.Linear(embed_dim, pred_dim)
 
         self.reset_parameters()
@@ -309,12 +295,13 @@ class TablePredictor(Transformer):
                  add_cls_token: bool,  # add_first_token: bool,
                  mask_first_token: bool,
                  kv_compression: str = None,
-                 kv_compression_ratio: float = None,
+                 kv_compression_dim: int = None,
+                 # kv_compression_ratio = None
                  ) -> None:
         super().__init__(embed_dim, num_embed_features, num_q_heads, num_kv_heads, attn_dropout,
                          mlp_dropout, dropout, act, mlp_dim_factor, num_blocks, attn, mlp, norm,
                          pool, pred_dim, add_cls_token, mask_first_token,
-                         kv_compression, kv_compression_ratio)
+                         kv_compression, kv_compression_dim)  # kv_compression_ratio)  #
         self.pool = pool
         self.mask_first_token = mask_first_token
         if mask_first_token:
@@ -347,7 +334,7 @@ class TablePredictor(Transformer):
         elif self.pool == 'max':
             x = x.max(1).values
         elif self.pool == 'w_avg':
-            x = self.w_avg.softmax(0) @ x  # .softmax(0)
+            x = self.w_avg.softmax(0) @ x
         else:
             raise NotImplementedError()
 
@@ -360,12 +347,10 @@ class TablePredictorV2(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  num_embed_features: list[int],
-                 # comp_dropout: float,
                  mlp_dropout: float,
                  dropout: float,
                  act: str,
                  mlp_dim_factor: float,
-                 # comp_dim_factor: float,
                  num_blocks: int,
                  compressor: str,
                  mlp: str,
@@ -383,8 +368,8 @@ class TablePredictorV2(nn.Module):
             self.mask[:, 0] = True
 
         self.blocks = nn.ModuleList([
-            CompressorBlock(embed_dim, self.seq_len, mlp_dropout,
-                            dropout, act, mlp_dim_factor, compressor, mlp, norm)
+            CompressorBlock(embed_dim, self.seq_len, mlp_dropout, dropout,
+                            act, mlp_dim_factor, compressor, mlp, norm)
             # GatedMLP(embed_dim, mlp_dim_factor, mlp_dropout, act)
             for _ in range(num_blocks)
         ])
@@ -396,7 +381,7 @@ class TablePredictorV2(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn or 'compressor' in pn:
+                if 'bias' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
@@ -420,15 +405,12 @@ class TablePredictorV2(nn.Module):
 
 if __name__ == '__main__':
     from configs.model_cfg import cfg
+
     # cfg.pop('include_target')
     m = Transformer(**cfg, pred_dim=1)
     o = m.configure_optimizer(0.1, 0.1)
     for k, _ in m.named_parameters():
         print(k)
-
-
-
-
 
 """ 
 t1, t2, ...

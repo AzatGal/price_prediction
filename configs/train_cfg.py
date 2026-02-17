@@ -19,7 +19,7 @@ cfg.num_epoch = 600
 cfg.wu_ratio = 0.05  # 0.1
 cfg.decay_ratio = 0.85  # 0.75
 cfg.lr = 6e-4 * cfg.batch_size / 256  # math.sqrt()  # 6e-4
-cfg.lr_decay_factor = 4e-3
+cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'linear'  # cosine linear
 
 cfg.optim = 'AdamW'
@@ -33,7 +33,7 @@ cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '15-02_13-08', "checkpoint")
 
-cfg.model = 'TablePredictorV2'
+cfg.model = 'TablePredictor'
 
 cfg.task = 'train'
 model_cfg.pred_dim = 1
