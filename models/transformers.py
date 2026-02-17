@@ -380,7 +380,7 @@ class TablePredictorV2(nn.Module):
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
-            if 'norm' not in pn or 'compressor' in pn:
+            if 'norm' not in pn or 'comp_proj' in pn:
                 if 'bias' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
