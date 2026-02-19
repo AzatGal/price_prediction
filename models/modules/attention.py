@@ -75,12 +75,11 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        # r = self.num_q_heads // self.num_kv_heads
-        # qkv[1:] = [
-        #     x.repeat_interleave(r, dim=1)
-        #     for x in qkv[1:]
-        # ]
-        #
+        r = self.num_q_heads // self.num_kv_heads
+        qkv[1:] = [
+            x.repeat_interleave(r, dim=1)
+            for x in qkv[1:]
+        ]
         q, k, v = qkv
         w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         w = F.sigmoid(w)
