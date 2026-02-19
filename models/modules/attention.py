@@ -25,15 +25,13 @@ class Attention(nn.Module):
         self.dropout = dropout
 
         self.split_size = [embed_dim] + [self.head_dim * num_kv_heads] * 2
-        #
+
         self.qkv_proj = nn.Linear(embed_dim, sum(self.split_size), bias)
         # self.q_proj = nn.Linear(embed_dim, embed_dim, bias)
         # self.k_proj = nn.Linear(embed_dim, self.head_dim * num_kv_heads, bias)
         # self.v_proj = nn.Linear(embed_dim, self.head_dim * num_kv_heads, bias)
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
-
-        # self.kv_compressors = kv_compressors
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         B, _, seq_len = mask.shape
@@ -83,13 +81,13 @@ class Attention(nn.Module):
         #     for x in qkv[1:]
         # ]
         #
-        # q, k, v = qkv
-        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
-        # # w = F.sigmoid(w)
+        q, k, v = qkv
+        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        w = F.sigmoid(w)
         # w = F.softmax(w, dim=-1)
-        # # print('w', w)
+        # print('w', w)
         #
-        # a = F.dropout(w, self.dropout, self.training) @ v
+        a = F.dropout(w, self.dropout, self.training) @ v
 
         # a = F.scaled_dot_product_attention(
         #     *qkv,
@@ -99,9 +97,9 @@ class Attention(nn.Module):
         # )
 
         a = self.out_proj(
-            # a
-            qkv[2]
-            .repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
+            a
+            # qkv[2]
+            # .repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
             .transpose(1, 2)
             .reshape(B, -1, C)
         )
