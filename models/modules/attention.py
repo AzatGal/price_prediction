@@ -75,25 +75,27 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        # r = self.num_q_heads // self.num_kv_heads
-        # qkv[1:] = [
-        #     x.repeat_interleave(r, dim=1)
-        #     for x in qkv[1:]
-        # ]
-        # q, k, v = qkv
-        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        r = self.num_q_heads // self.num_kv_heads
+        qkv[1:] = [
+            x.repeat_interleave(r, dim=1)
+            for x in qkv[1:]
+        ]
+        q, k, v = qkv
+        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         # w = F.sigmoid(w)
-        # # w = F.softmax(w, dim=-1)
-        # # print('w', w)
-        # #
-        # a = F.dropout(w, self.dropout, self.training) @ v
+        w = F.softmax(w, dim=-1)
+        print('w', torch.all(w == 0).item())
+        #
+        a = F.dropout(w, self.dropout, self.training) @ v
 
-        a = F.scaled_dot_product_attention(
-            *qkv,
-            # q, k, v,
-            dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True
-        )
+        # print('w', torch.all(w == 0).item())
+
+        # a = F.scaled_dot_product_attention(
+        #     *qkv,
+        #     # q, k, v,
+        #     dropout_p=self.dropout if self.training else 0.0,
+        #     enable_gqa=True
+        # )
 
         a = self.out_proj(
             a
