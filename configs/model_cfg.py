@@ -18,7 +18,7 @@ cfg.num_embed_features = (
     data_cfg.data_transformer.num_cats
 )
 
-cfg.attn_dropout = 0.0
+cfg.attn_dropout = 0.05
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
 cfg.kv_compression = 'Head'  # Head KV Layer
