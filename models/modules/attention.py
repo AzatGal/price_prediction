@@ -75,10 +75,10 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        # qkv[1:] = [
-        #     x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
-        #     for x in qkv[1:]
-        # ]
+        qkv[1:] = [
+            x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
+            for x in qkv[1:]
+        ]
         # q, k, v = qkv
         # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         # w = F.sigmoid(w)
@@ -95,9 +95,9 @@ class Attention(nn.Module):
         #     dropout_p=self.dropout if self.training else 0.0,
         #     enable_gqa=True
         # )
-        print(qkv[2].shape)
+        # print(qkv[2].shape)
         a = qkv[2].repeat(1, 1, T, 1)
-        print(a.shape)
+        # print(a.shape)
 
         a = self.out_proj(
             a
