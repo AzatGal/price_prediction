@@ -19,7 +19,7 @@ from configs.train_cfg import cfg
 @torch.no_grad()
 def main():
     # путь до файла с конфигом и весами модели
-    path = '/Users/azatgalautdinov/Desktop/price_prediction/best'
+    path = '/Users/azatgalautdinov/Desktop/price_prediction/transformer'
     with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
         # только для модели, в data_cfg есть python class
         cfg.model_cfg = json.load(f)['model_cfg']

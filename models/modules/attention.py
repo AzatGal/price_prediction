@@ -75,11 +75,10 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        r = self.num_q_heads // self.num_kv_heads
-        qkv[1:] = [
-            x.repeat_interleave(r, dim=1)
-            for x in qkv[1:]
-        ]
+        # qkv[1:] = [
+        #     x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
+        #     for x in qkv[1:]
+        # ]
         # q, k, v = qkv
         # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         # w = F.sigmoid(w)
@@ -90,12 +89,13 @@ class Attention(nn.Module):
 
         # print('w', torch.all(w == 0).item())
 
-        a = F.scaled_dot_product_attention(
-            *qkv,
-            # q, k, v,
-            dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True
-        )
+        # a = F.scaled_dot_product_attention(
+        #     *qkv,
+        #     # q, k, v,
+        #     dropout_p=self.dropout if self.training else 0.0,
+        #     enable_gqa=True
+        # )
+        a = qkv[2].repeat(1, T)
 
         a = self.out_proj(
             a
