@@ -95,7 +95,7 @@ class Attention(nn.Module):
         #     dropout_p=self.dropout if self.training else 0.0,
         #     enable_gqa=True
         # )
-        a = qkv[2].repeat(1, T, 1)
+        a = qkv[2].repeat(1, T, 1, 1)
 
         a = self.out_proj(
             a
