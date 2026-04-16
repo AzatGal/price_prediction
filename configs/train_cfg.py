@@ -33,7 +33,7 @@ cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '15-02_13-08', "checkpoint")
 
-cfg.model = 'TablePredictorV2'
+cfg.model = 'TablePredictor'
 
 cfg.task = 'train'
 model_cfg.pred_dim = 1

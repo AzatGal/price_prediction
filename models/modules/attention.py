@@ -83,8 +83,8 @@ class Attention(nn.Module):
         q, k, v = qkv
         w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         # w = F.sigmoid(w)
-        w = F.softmax(w, dim=-1)
-        print('w', torch.all(w == 0).item())
+        # print('w', torch.all(w == 0).item())
+        # w = F.softmax(w, dim=-1)
         #
         a = F.dropout(w, self.dropout, self.training) @ v
 
