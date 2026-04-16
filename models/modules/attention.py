@@ -80,22 +80,22 @@ class Attention(nn.Module):
             x.repeat_interleave(r, dim=1)
             for x in qkv[1:]
         ]
-        q, k, v = qkv
-        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        # q, k, v = qkv
+        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         # w = F.sigmoid(w)
         # print('w', torch.all(w == 0).item())
         # w = F.softmax(w, dim=-1)
         #
-        a = F.dropout(w, self.dropout, self.training) @ v
+        # a = F.dropout(w, self.dropout, self.training) @ v
 
         # print('w', torch.all(w == 0).item())
 
-        # a = F.scaled_dot_product_attention(
-        #     *qkv,
-        #     # q, k, v,
-        #     dropout_p=self.dropout if self.training else 0.0,
-        #     enable_gqa=True
-        # )
+        a = F.scaled_dot_product_attention(
+            *qkv,
+            # q, k, v,
+            dropout_p=self.dropout if self.training else 0.0,
+            enable_gqa=True
+        )
 
         a = self.out_proj(
             a
