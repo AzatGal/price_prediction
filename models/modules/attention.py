@@ -92,7 +92,7 @@ class Attention(nn.Module):
             *qkv,
             dropout_p=self.dropout if self.training else 0.0,
             enable_gqa=True,
-            scale=16 / math.sqrt(self.head_dim)
+            scale=64 / math.sqrt(self.head_dim)
         )
         # print(qkv[2].shape)
         # a = qkv[2].repeat(1, 1, T, 1)
