@@ -21,7 +21,7 @@ cfg.num_embed_features = (
 cfg.attn_dropout = 0.0
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
-cfg.kv_compression = 'Head'  # Head KV Layer
+cfg.kv_compression = None  # 'Head'  # Head KV Layer
 cfg.kv_compression_dim = 1  # 0.01
 cfg.mlp_dim_factor = 2  # 2 8 / 3
 
