@@ -79,13 +79,13 @@ class Attention(nn.Module):
             x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
             for x in qkv[1:]
         ]
-        # q, k, v = qkv
-        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
-        # w = F.sigmoid(w)
+        q, k, v = qkv
+        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        w = F.tanh(w)
         # print('w', torch.all(w == 0).item())
         # w = F.softmax(w, dim=-1)
         #
-        # a = F.dropout(w, self.dropout, self.training) @ v
+        a = F.dropout(w, self.dropout, self.training) @ v
 
         # print('w', torch.all(w == 0).item())
 
@@ -96,7 +96,7 @@ class Attention(nn.Module):
         #     enable_gqa=True
         # )
         # print(qkv[2].shape)
-        a = qkv[2].repeat(1, 1, T, 1)
+        # a = qkv[2].repeat(1, 1, T, 1)
         # print(a.shape)
 
         a = self.out_proj(
