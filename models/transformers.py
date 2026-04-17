@@ -74,7 +74,7 @@ class Transformer(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if 'norm' not in pn:
-                if 'bias' in pn:  #  or 'compressor' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
+                if 'bias' in pn or 'compressors' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
