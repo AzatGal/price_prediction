@@ -50,7 +50,6 @@ class Attention(nn.Module):
                 kv_compressors: nn.ModuleList | nn.Linear = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
-
         B, T, C = x.shape
 
         qkv = self.qkv_proj(x).split(self.split_size, 2)
