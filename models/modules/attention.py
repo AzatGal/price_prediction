@@ -60,10 +60,6 @@ class Attention(nn.Module):
             for x in qkv
         ]
 
-        qkv[1:] = [
-            F.relu(x) for x in qkv[1:]
-        ]
-
         if kv_compressors is not None:
             if mask is not None:
                 # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
@@ -79,6 +75,9 @@ class Attention(nn.Module):
                     kv_compressors(x.transpose(2, 3)).transpose(2, 3)
                     for x in qkv[1:]
                 ]
+            qkv[1:] = [
+                F.relu(x) for x in qkv[1:]
+            ]
 
         # qkv[1:] = [
         #     x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
