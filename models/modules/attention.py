@@ -88,14 +88,14 @@ class Attention(nn.Module):
 
         # print('w', torch.all(w == 0).item())
 
-        # a = F.scaled_dot_product_attention(
-        #     *qkv,
-        #     dropout_p=self.dropout if self.training else 0.0,
-        #     enable_gqa=True,
-        #     # scale=1024 / math.sqrt(self.head_dim)
-        # )
+        a = F.scaled_dot_product_attention(
+            *qkv,
+            dropout_p=self.dropout if self.training else 0.0,
+            enable_gqa=True,
+            # scale=1024 / math.sqrt(self.head_dim)
+        )
         # print(qkv[2].shape)
-        a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
+        # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
         # print(a.shape)
 
         a = self.out_proj(
