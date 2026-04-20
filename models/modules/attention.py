@@ -53,8 +53,6 @@ class Attention(nn.Module):
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
         B, T, C = x.shape
-        # self.m = self.m.repeat(B, 1, C)
-        x[self.m.repeat(B, 1, C)] = x[self.m.repeat(B, 1, C)] * self.m.repeat(B, 1, C)
 
         qkv = self.qkv_proj(x).split(self.split_size, 2)
         qkv = [
@@ -92,15 +90,14 @@ class Attention(nn.Module):
 
         # print('w', torch.all(w == 0).item())
 
-        a = F.scaled_dot_product_attention(
-            *qkv,
-            dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True,
-            scale=64 / math.sqrt(self.head_dim)
-        )
-        # print(qkv[2].shape)
+        # a = F.scaled_dot_product_attention(
+        #     *qkv,
+        #     dropout_p=self.dropout if self.training else 0.0,
+        #     enable_gqa=True,
+        #     # scale=64 / math.sqrt(self.head_dim)
+        # )
         # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
-        # print(a.shape)
+        a = qkv[0] * qkv[2].repeat(1, 1, T, 1)
 
         a = self.out_proj(
             a
