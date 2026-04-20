@@ -53,8 +53,8 @@ class Attention(nn.Module):
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
         B, T, C = x.shape
-        self.m = self.m.repeat(B, 1, C)
-        x[self.m] = x[self.m] * self.m
+        # self.m = self.m.repeat(B, 1, C)
+        x[self.m.repeat(B, 1, C)] = x[self.m.repeat(B, 1, C)] * self.m.repeat(B, 1, C)
 
         qkv = self.qkv_proj(x).split(self.split_size, 2)
         qkv = [
