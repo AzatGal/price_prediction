@@ -97,6 +97,7 @@ class Attention(nn.Module):
         #     # scale=64 / math.sqrt(self.head_dim)
         # )
         # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
+
         a = qkv[0] * qkv[2].repeat(1, 1, T, 1)
 
         a = self.out_proj(
