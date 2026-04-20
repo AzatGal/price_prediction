@@ -7,7 +7,7 @@ cfg = EasyDict()
 cfg.num_q_heads = 4
 cfg.num_kv_heads = 2  # 4
 cfg.embed_dim = 4 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
-cfg.num_blocks = 120  # 10 24 40
+cfg.num_blocks = 160  # 10 24 40
 cfg.act = 'ReLU'  # SiLU
 
 cfg.pool = 'avg'  # avg cls sum
