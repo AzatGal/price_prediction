@@ -4,13 +4,13 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_q_heads = 16
-cfg.num_kv_heads = 8  # 4
+cfg.num_q_heads = 8
+cfg.num_kv_heads = 4  # 4
 cfg.embed_dim = 10 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
 cfg.num_blocks = 40  # 10 24 40
 cfg.act = 'ReLU'  # SiLU
 
-cfg.pool = 'cls'  # avg cls sum
+cfg.pool = 'avg'  # avg cls sum
 cfg.mask_first_token = False  # True False
 cfg.add_cls_token = cfg.pool == 'cls' and not cfg.mask_first_token
 cfg.num_embed_features = (
