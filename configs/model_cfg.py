@@ -4,10 +4,10 @@ from configs.data_cfg import cfg as data_cfg
 
 cfg = EasyDict()
 
-cfg.num_q_heads = 4
-cfg.num_kv_heads = 2  # 4
-cfg.embed_dim = 8 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
-cfg.num_blocks = 80  # 10 24 40
+cfg.num_q_heads = 16
+cfg.num_kv_heads = 8  # 4
+cfg.embed_dim = 10 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
+cfg.num_blocks = 40  # 10 24 40
 cfg.act = 'ReLU'  # SiLU
 
 cfg.pool = 'avg'  # avg cls sum
