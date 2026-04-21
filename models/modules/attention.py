@@ -33,7 +33,15 @@ class Attention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        # self.k_biases = nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
+        self.compressor = nn.Sequential(*[
+            nn.Linear(19, 8),
+            nn.ReLU(),
+            nn.Linear(8, 1),
+            nn.ReLU(),
+            nn.Linear(1, 8),
+            nn.ReLU(),
+            nn.Linear(8, 19),
+        ])
         # self.v_biases = nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -97,15 +105,18 @@ class Attention(nn.Module):
 
         # print('w', torch.all(w == 0).item())
 
-        a = F.scaled_dot_product_attention(
-            *qkv,
-            dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True,
-            # scale=64 / math.sqrt(self.head_dim)
-        )
-        # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
-
+        # a = F.scaled_dot_product_attention(
+        #     *qkv,
+        #     dropout_p=self.dropout if self.training else 0.0,
+        #     enable_gqa=True,
+        #     # scale=64 / math.sqrt(self.head_dim)
+        # )
+        # # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
+        #
         # a = qkv[0] * qkv[2].repeat(1, 1, T, 1)
+
+        t = self.compressor(qkv[2].transpose(2, 3)).transpose(2, 3)
+        a = qkv[0] * t  # .repeat(1, 1, T, 1)
 
         a = self.out_proj(
             a
