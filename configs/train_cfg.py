@@ -18,7 +18,7 @@ cfg.num_epoch = 600
 
 cfg.wu_ratio = 0.05  # 0.1
 cfg.decay_ratio = 0.85  # 0.75
-cfg.lr = 1e-4 * cfg.batch_size / 256  # math.sqrt()  # 6e-4
+cfg.lr = 6e-4 * cfg.batch_size / 256  # math.sqrt()  # 6e-4
 cfg.lr_decay_factor = 1e-2
 cfg.lr_decay = 'linear'  # cosine linear
 
