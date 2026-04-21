@@ -54,16 +54,16 @@ class Attention(nn.Module):
                 ) -> torch.Tensor:
         B, T, C = x.shape
 
-        qkv = F.relu(self.qkv_proj(x)).split(self.split_size, 2)
+        qkv = self.qkv_proj(x).split(self.split_size, 2)
         qkv = [
             x.reshape(B, T, -1, self.head_dim).transpose(1, 2)
             for x in qkv
         ]
 
         if kv_compressors is not None:
-            # qkv[1:] = [
-            #     F.relu(x) for x in qkv[1:]
-            # ]
+            qkv[1:] = [
+                F.relu(x) for x in qkv[1:]
+            ]
             if mask is not None:
                 # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
                 mask = mask.unsqueeze(1).repeat(-1, self.num_kv_heads, -1)
