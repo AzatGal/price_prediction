@@ -13,7 +13,7 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 1024  # 2048 1024
+cfg.batch_size = 4*1024  # 2048 1024
 cfg.num_epoch = 600
 
 cfg.wu_ratio = 0.05  # 0.1
@@ -24,7 +24,7 @@ cfg.lr_decay = 'linear'  # cosine linear
 
 cfg.optim = 'AdamW'
 cfg.optim_args = {}
-cfg.weight_decay = 0.1
+cfg.weight_decay = 0.001
 
 cfg.loss = 'L1Loss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss
 cfg.loss_args = {}  # 'delta': 8}  # 'reduction': 'batchmean'}
