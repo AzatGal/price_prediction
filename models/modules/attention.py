@@ -33,7 +33,10 @@ class Attention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        self.m = torch.rand(1, 19, 1) < 0.9  # ).float()
+        self.kv_biases = [
+            nn.Parameter(torch.zeros(1, 19, 1, self.head_dim)),
+            nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
+        ]
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         B, _, seq_len = mask.shape
@@ -62,7 +65,7 @@ class Attention(nn.Module):
 
         if kv_compressors is not None:
             qkv[1:] = [
-                F.relu(x) for x in qkv[1:]
+                F.relu(x + biases) for biases, x in zip(self.kv_biases, qkv[1:])
             ]
             if mask is not None:
                 # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
