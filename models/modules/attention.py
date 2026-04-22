@@ -72,9 +72,9 @@ class Attention(nn.Module):
         if kv_compressors is not None:
             # qkv[1] = qkv[1] + self.k_biases
             # qkv[2] = qkv[2] + self.v_biases
-            qkv[1:] = [
-                F.relu(x) for x in qkv[1:]
-            ]
+            # qkv[1:] = [
+            #     F.relu(x) for x in qkv[1:]
+            # ]
 
             if mask is not None:
                 # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
@@ -95,13 +95,13 @@ class Attention(nn.Module):
             x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
             for x in qkv[1:]
         ]
-        # q, k, v = qkv
-        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        q, k, v = qkv
+        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         #
-        # w = F.relu(w)
+        w = F.relu(w)
         # # w = F.softmax(w, dim=-1)
         #
-        # a = F.dropout(w, self.dropout, self.training) @ v
+        a = F.dropout(w, self.dropout, self.training) @ v
 
         # print('w', torch.all(w == 0).item())
 
@@ -119,8 +119,8 @@ class Attention(nn.Module):
         # a = qkv[0] * t  # .repeat(1, 1, T, 1)
 
         a = self.out_proj(
-            # a
-            qkv[2]
+            a
+            # qkv[2]
             # .repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
             .transpose(1, 2)
             .reshape(B, -1, C)
