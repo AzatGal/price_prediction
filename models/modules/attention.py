@@ -33,15 +33,15 @@ class Attention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        self.compressor = nn.Sequential(*[
-            nn.Linear(19, 8),
-            nn.ReLU(),
-            nn.Linear(8, 1),
-            nn.ReLU(),
-            nn.Linear(1, 8),
-            nn.ReLU(),
-            nn.Linear(8, 19),
-        ])
+        # self.compressor = nn.Sequential(*[
+        #     nn.Linear(19, 8),
+        #     nn.ReLU(),
+        #     nn.Linear(8, 1),
+        #     nn.ReLU(),
+        #     nn.Linear(1, 8),
+        #     nn.ReLU(),
+        #     nn.Linear(8, 19),
+        # ])
         # self.v_biases = nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -91,10 +91,10 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        qkv[1:] = [
-            x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
-            for x in qkv[1:]
-        ]
+        # qkv[1:] = [
+        #     x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
+        #     for x in qkv[1:]
+        # ]
         # q, k, v = qkv
         # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
         #
