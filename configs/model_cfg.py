@@ -6,7 +6,7 @@ cfg = EasyDict()
 
 cfg.num_q_heads = 16
 cfg.num_kv_heads = 8  # 4
-cfg.embed_dim = 10 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
+cfg.embed_dim = 16 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
 cfg.num_blocks = 20  # 10 24 40
 cfg.act = 'ReLU'  # SiLU
 
