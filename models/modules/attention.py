@@ -104,7 +104,7 @@ class Attention(nn.Module):
         # w = w * mask
         # a = F.dropout(w, self.dropout, self.training) @ v
 
-        a = mask @ v
+        a = w @ v
 
         # a = F.scaled_dot_product_attention(
         #     *qkv,
