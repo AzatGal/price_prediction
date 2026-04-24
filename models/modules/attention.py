@@ -72,6 +72,7 @@ class Attention(nn.Module):
         if kv_compressors is not None:
             # qkv[1] = qkv[1] + self.k_biases
             # qkv[2] = qkv[2] + self.v_biases
+            qkv[1] = F.relu(qkv[1])
             # qkv[1:] = [
             #     F.relu(x) for x in qkv[1:]
             # ]
