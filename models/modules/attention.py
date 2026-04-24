@@ -101,13 +101,13 @@ class Attention(nn.Module):
         q, k, v = qkv
         w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
 
-        w = F.sigmoid(w)  # > 0.5).float()
+        w = F.sigmoid(w).repeat(1, 1, 1, T)  # > 0.5).float()
 
         # w = F.softmax(w, dim=-1)
         # w = w * mask
-        # a = F.dropout(w, self.dropout, self.training) @ v
+        a = F.dropout(w, self.dropout, self.training) @ v
 
-        a = w.repeat(1, 1, 1, T) @ v
+        # a = w.repeat(1, 1, 1, T) @ v
 
         # a = F.scaled_dot_product_attention(
         #     *qkv,
