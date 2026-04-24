@@ -33,15 +33,9 @@ class Attention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        # self.compressor = nn.Sequential(*[
-        #     nn.Linear(19, 8),
-        #     nn.ReLU(),
-        #     nn.Linear(8, 1),
-        #     nn.ReLU(),
-        #     nn.Linear(1, 8),
-        #     nn.ReLU(),
-        #     nn.Linear(8, 19),
-        # ])
+        self.compressor = nn.Linear(19, 4)
+        self.uncompressor = nn.Linear(4, 19)
+
         # self.v_biases = nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
 
     def _reshape_by_mask(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -61,6 +55,9 @@ class Attention(nn.Module):
                 kv_compressors: nn.ModuleList | nn.Linear = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
+        x = self.compressor(
+            x.transpose(1, 2)
+        ).transpose(1, 2)
         B, T, C = x.shape
 
         qkv = self.qkv_proj(x).split(self.split_size, 2)
@@ -72,7 +69,7 @@ class Attention(nn.Module):
         if kv_compressors is not None:
             # qkv[1] = qkv[1] + self.k_biases
             # qkv[2] = qkv[2] + self.v_biases
-            qkv[1] = F.relu(qkv[1])
+            # qkv[1] = F.relu(qkv[1])
             # qkv[1:] = [
             #     F.relu(x) for x in qkv[1:]
             # ]
@@ -82,39 +79,36 @@ class Attention(nn.Module):
                 mask = mask.unsqueeze(1).repeat(-1, self.num_kv_heads, -1)
                 qkv[1:] = [self._reshape_by_mask(x, mask) for x in qkv[1:]]
             if isinstance(kv_compressors, nn.ModuleList):
-                qkv[1] = kv_compressors[0](qkv[1].transpose(2, 3)).transpose(2, 3)
-                # qkv[1:] = [
-                #     kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
-                #     for i, x in enumerate(qkv[1:])
-                # ]
+                # qkv[1] = kv_compressors[0](qkv[1].transpose(2, 3)).transpose(2, 3)
+                qkv[1:] = [
+                    kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
+                    for i, x in enumerate(qkv[1:])
+                ]
             else:
-                qkv[1] = kv_compressors(qkv[1].transpose(2, 3)).transpose(2, 3)
-                # qkv[1:] = [
-                #     kv_compressors(x.transpose(2, 3)).transpose(2, 3)
-                #     for x in qkv[1:]
-                # ]
+                # qkv[1] = kv_compressors(qkv[1].transpose(2, 3)).transpose(2, 3)
+                qkv[1:] = [
+                    kv_compressors(x.transpose(2, 3)).transpose(2, 3)
+                    for x in qkv[1:]
+                ]
 
-        qkv[1:] = [
-            x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
-            for x in qkv[1:]
-        ]
-        q, k, v = qkv
-        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
-
-        w = F.sigmoid(w).repeat(1, 1, 1, T)  # > 0.5).float()
-
-        # w = F.softmax(w, dim=-1)
-        # w = w * mask
-        a = F.dropout(w, self.dropout, self.training) @ v
+        # qkv[1:] = [
+        #     x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
+        #     for x in qkv[1:]
+        # ]
+        # q, k, v = qkv
+        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        #
+        # w = F.sigmoid(w).repeat(1, 1, 1, T)  # > 0.5).float()
+        # a = F.dropout(w, self.dropout, self.training) @ v
 
         # a = w.repeat(1, 1, 1, T) @ v
 
-        # a = F.scaled_dot_product_attention(
-        #     *qkv,
-        #     dropout_p=self.dropout if self.training else 0.0,
-        #     enable_gqa=True,
-        #     # scale=64 / math.sqrt(self.head_dim)
-        # )
+        a = F.scaled_dot_product_attention(
+            *qkv,
+            dropout_p=self.dropout if self.training else 0.0,
+            enable_gqa=True,
+            # scale=64 / math.sqrt(self.head_dim)
+        )
         # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
 
         # a = qkv[0] * qkv[2].repeat(1, 1, T, 1)
@@ -129,6 +123,9 @@ class Attention(nn.Module):
             .transpose(1, 2)
             .reshape(B, -1, C)
         )
+        a = self.uncompressor(
+            a.transpose(1, 2)
+        ).transpose(1, 2)
         return a
 
 
