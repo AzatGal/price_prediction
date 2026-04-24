@@ -10,7 +10,7 @@ cfg.embed_dim = 16 * cfg.num_q_heads  # 8 10 * cfg.num_q_heads
 cfg.num_blocks = 20  # 10 24 40
 cfg.act = 'ReLU'  # SiLU
 
-cfg.pool = 'cls'  # avg cls sum w_avg
+cfg.pool = 'avg'  # avg cls sum w_avg
 cfg.mask_first_token = False  # True False
 cfg.add_cls_token = cfg.pool == 'cls' and not cfg.mask_first_token
 cfg.num_embed_features = (
