@@ -33,8 +33,8 @@ class Attention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        self.compressor = nn.Linear(19, 4)
-        self.uncompressor = nn.Linear(4, 19)
+        self.compressor = nn.Linear(19, 6)
+        self.uncompressor = nn.Linear(6, 19)
 
         # self.v_biases = nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
 
