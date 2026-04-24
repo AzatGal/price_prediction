@@ -98,7 +98,7 @@ class Attention(nn.Module):
         q, k, v = qkv
         w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
 
-        mask = F.sigmoid(w) > 0.5
+        w = (F.sigmoid(w) > 0.5).float()
 
         # w = F.softmax(w, dim=-1)
         # w = w * mask
