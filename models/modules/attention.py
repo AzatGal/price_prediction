@@ -81,15 +81,17 @@ class Attention(nn.Module):
                 mask = mask.unsqueeze(1).repeat(-1, self.num_kv_heads, -1)
                 qkv[1:] = [self._reshape_by_mask(x, mask) for x in qkv[1:]]
             if isinstance(kv_compressors, nn.ModuleList):
-                qkv[1:] = [
-                    kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
-                    for i, x in enumerate(qkv[1:])
-                ]
+                qkv[1] = kv_compressors[0](x.transpose(2, 3)).transpose(2, 3)
+                # qkv[1:] = [
+                #     kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
+                #     for i, x in enumerate(qkv[1:])
+                # ]
             else:
-                qkv[1:] = [
-                    kv_compressors(x.transpose(2, 3)).transpose(2, 3)
-                    for x in qkv[1:]
-                ]
+                qkv[1] = kv_compressors(x.transpose(2, 3)).transpose(2, 3)
+                # qkv[1:] = [
+                #     kv_compressors(x.transpose(2, 3)).transpose(2, 3)
+                #     for x in qkv[1:]
+                # ]
 
         qkv[1:] = [
             x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
@@ -104,7 +106,7 @@ class Attention(nn.Module):
         # w = w * mask
         # a = F.dropout(w, self.dropout, self.training) @ v
 
-        a = w @ v
+        a = w.repeat(1, 1, 1, T) @ v
 
         # a = F.scaled_dot_product_attention(
         #     *qkv,
