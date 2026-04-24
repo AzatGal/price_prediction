@@ -91,28 +91,29 @@ class Attention(nn.Module):
                     for x in qkv[1:]
                 ]
 
-        # qkv[1:] = [
-        #     x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
-        #     for x in qkv[1:]
-        # ]
-        # q, k, v = qkv
-        # w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
-        #
-        # w = F.relu(w)
+        qkv[1:] = [
+            x.repeat_interleave(self.num_q_heads // self.num_kv_heads, dim=1)
+            for x in qkv[1:]
+        ]
+        q, k, v = qkv
+        w = (q @ k.transpose(2, 3)) / math.sqrt(self.head_dim)
+
+        mask = F.sigmoid(w) > 0.5
+
         # w = F.softmax(w, dim=-1)
-        #
+        # w = w * mask
         # a = F.dropout(w, self.dropout, self.training) @ v
 
-        # print('w', torch.all(w == 0).item())
+        a = mask @ v
 
-        a = F.scaled_dot_product_attention(
-            *qkv,
-            dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True,
-            # scale=64 / math.sqrt(self.head_dim)
-        )
+        # a = F.scaled_dot_product_attention(
+        #     *qkv,
+        #     dropout_p=self.dropout if self.training else 0.0,
+        #     enable_gqa=True,
+        #     # scale=64 / math.sqrt(self.head_dim)
+        # )
         # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
-        #
+
         # a = qkv[0] * qkv[2].repeat(1, 1, T, 1)
 
         # t = self.compressor(qkv[2].transpose(2, 3)).transpose(2, 3)
