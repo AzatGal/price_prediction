@@ -33,8 +33,8 @@ class Attention(nn.Module):
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
-        self.compressor = nn.Linear(19, 6)
-        self.uncompressor = nn.Linear(6, 19)
+        # self.compressor = nn.Linear(19, 6)
+        # self.uncompressor = nn.Linear(6, 19)
 
         # self.v_biases = nn.Parameter(torch.zeros(1, 19, 1, self.head_dim))
 
@@ -55,9 +55,9 @@ class Attention(nn.Module):
                 kv_compressors: nn.ModuleList | nn.Linear = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
-        x = self.compressor(
-            x.transpose(1, 2)
-        ).transpose(1, 2)
+        # x = self.compressor(
+        #     x.transpose(1, 2)
+        # ).transpose(1, 2)
         B, T, C = x.shape
 
         qkv = self.qkv_proj(x).split(self.split_size, 2)
@@ -70,9 +70,9 @@ class Attention(nn.Module):
             # qkv[1] = qkv[1] + self.k_biases
             # qkv[2] = qkv[2] + self.v_biases
             # qkv[1] = F.relu(qkv[1])
-            # qkv[1:] = [
-            #     F.relu(x) for x in qkv[1:]
-            # ]
+            qkv[1:] = [
+                F.relu(x) for x in qkv[1:]
+            ]
 
             if mask is not None:
                 # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
@@ -123,9 +123,9 @@ class Attention(nn.Module):
             .transpose(1, 2)
             .reshape(B, -1, C)
         )
-        a = self.uncompressor(
-            a.transpose(1, 2)
-        ).transpose(1, 2)
+        # a = self.uncompressor(
+        #     a.transpose(1, 2)
+        # ).transpose(1, 2)
         return a
 
 
