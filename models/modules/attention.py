@@ -103,7 +103,7 @@ class Attention(nn.Module):
 
         # a = w.repeat(1, 1, 1, T) @ v
 
-        qkv[0] = qkv[0][:, :, :1]
+        # qkv[0] = qkv[0][:, :, :1]
 
         a = F.scaled_dot_product_attention(
             *qkv,
@@ -126,13 +126,13 @@ class Attention(nn.Module):
             .reshape(B, -1, C)
         )
 
-        a = torch.cat(
-            [
-                a,
-                torch.zeros(B, T - 1, C, device=a.device)
-            ],
-            dim=1
-        )
+        # a = torch.cat(
+        #     [
+        #         a,
+        #         torch.zeros(B, T - 1, C, device=a.device)
+        #     ],
+        #     dim=1
+        # )
 
         # a = self.uncompressor(
         #     a.transpose(1, 2)
