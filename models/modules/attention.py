@@ -103,6 +103,8 @@ class Attention(nn.Module):
 
         # a = w.repeat(1, 1, 1, T) @ v
 
+        qkv[0] = qkv[0][:, :, :1]
+
         a = F.scaled_dot_product_attention(
             *qkv,
             dropout_p=self.dropout if self.training else 0.0,
@@ -123,6 +125,9 @@ class Attention(nn.Module):
             .transpose(1, 2)
             .reshape(B, -1, C)
         )
+
+        a = torch.cat([a, torch.zeros(B, T - 1, C)], dim=1)
+
         # a = self.uncompressor(
         #     a.transpose(1, 2)
         # ).transpose(1, 2)
