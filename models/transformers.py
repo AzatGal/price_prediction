@@ -64,17 +64,17 @@ class Transformer(nn.Module):
         self.norm = getattr(nn, norm)(embed_dim)
 
     def _get_compressor(self) -> nn.Module:
-        # return nn.Linear(
-        #     self.seq_len,
-        #     # 1,
-        #     self.kv_compression_dim,
-        #     False
-        # )
-        return nn.Conv1d(
+        return nn.Linear(
             self.seq_len,
+            # 1,
             self.kv_compression_dim,
-            self.seq_len
+            False
         )
+        # return nn.Conv1d(
+        #     self.seq_len,
+        #     self.kv_compression_dim,
+        #     self.seq_len
+        # )
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
