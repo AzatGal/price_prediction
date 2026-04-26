@@ -70,9 +70,9 @@ class Attention(nn.Module):
             # qkv[1] = qkv[1] + self.k_biases
             # qkv[2] = qkv[2] + self.v_biases
             # qkv[1] = F.relu(qkv[1])
-            qkv[1:] = [
-                F.relu(x) for x in qkv[1:]
-            ]
+            # qkv[1:] = [
+            #     F.relu(x) for x in qkv[1:]
+            # ]
 
             if mask is not None:
                 # mask - не стандартная маска внимания, а маска видимых токенов у MaskedTableAutoencoder
@@ -81,13 +81,13 @@ class Attention(nn.Module):
             if isinstance(kv_compressors, nn.ModuleList):
                 # qkv[1] = kv_compressors[0](qkv[1].transpose(2, 3)).transpose(2, 3)
                 qkv[1:] = [
-                    kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
+                    kv_compressors[i](x)  # .transpose(2, 3)).transpose(2, 3)
                     for i, x in enumerate(qkv[1:])
                 ]
             else:
                 # qkv[1] = kv_compressors(qkv[1].transpose(2, 3)).transpose(2, 3)
                 qkv[1:] = [
-                    kv_compressors(x.transpose(2, 3)).transpose(2, 3)
+                    kv_compressors(x)  # .transpose(2, 3)).transpose(2, 3)
                     for x in qkv[1:]
                 ]
 
@@ -109,7 +109,7 @@ class Attention(nn.Module):
             *qkv,
             dropout_p=self.dropout if self.training else 0.0,
             enable_gqa=True,
-            scale=10 / math.sqrt(self.head_dim)
+            # scale=10 / math.sqrt(self.head_dim)
         )
         # a = F.dropout(qkv[2].repeat(1, 1, T, 1), self.dropout, self.training)
 
