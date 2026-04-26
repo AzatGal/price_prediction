@@ -28,8 +28,8 @@ class Attention(nn.Module):
 
         # self.qkv_proj = nn.Linear(embed_dim, sum(self.split_size), bias)
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias)
-        self.k_proj = nn.Conv1d(19, 1, 19)
-        self.v_proj = nn.Conv1d(19, 1, 19)
+        self.k_proj = nn.Conv1d(19, 19, embed_dim)
+        self.v_proj = nn.Conv1d(19, 19, embed_dim)
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
@@ -60,9 +60,17 @@ class Attention(nn.Module):
         # ).transpose(1, 2)
         B, T, C = x.shape
 
-        q = self.q_proj(x).reshape(B, T, -1, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).reshape(B, 1, -1, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).reshape(B, 1, -1, self.head_dim).transpose(1, 2)
+        q = (self.q_proj(x)
+             .reshape(B, T, -1, self.head_dim)
+             .transpose(1, 2))
+        k = (self.k_proj(x.transpose(1, 2))
+             .transpose(1, 2)
+             .reshape(B, 1, -1, self.head_dim)
+             .transpose(1, 2))
+        v = (self.v_proj(x.transpose(1, 2))
+             .transpose(1, 2)
+             .reshape(B, 1, -1, self.head_dim)
+             .transpose(1, 2))
         # qkv = self.qkv_proj(x).split(self.split_size, 2)
         # qkv = [
         #     x.reshape(B, T, -1, self.head_dim).transpose(1, 2)
