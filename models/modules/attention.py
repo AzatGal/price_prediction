@@ -28,8 +28,8 @@ class Attention(nn.Module):
 
         # self.qkv_proj = nn.Linear(embed_dim, sum(self.split_size), bias)
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias)
-        self.k_proj = nn.Conv1d(19, 4, embed_dim)
-        self.v_proj = nn.Conv1d(19, 4, embed_dim)
+        self.k_proj = nn.Conv1d(19, 4*embed_dim, embed_dim)
+        self.v_proj = nn.Conv1d(19, 4*embed_dim, embed_dim)
 
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
