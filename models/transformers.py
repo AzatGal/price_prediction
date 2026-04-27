@@ -500,7 +500,7 @@ class TransformerEnsemble(nn.Module):
             x = self.embed(x, self.mask)
         else:
             x = self.embed(x)
-        x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
+        # x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
 
         for i, block in enumerate(self.blocks):
             x = block(
