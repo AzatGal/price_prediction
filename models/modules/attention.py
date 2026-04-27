@@ -163,7 +163,7 @@ class AttentionEnsemble(nn.Module):
 
         self.k = k
         self.embed_dim = embed_dim
-        self.head_dim = embed_dim // k
+        # self.head_dim = embed_dim // k
         self.dropout = dropout
 
         self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
@@ -177,7 +177,12 @@ class AttentionEnsemble(nn.Module):
                 kv_compressors: nn.ModuleList | nn.Module = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
-        qkv = list(self.qkv_proj(x).split(self.embed_dim, -1))
+        B, _, T, C = x.shape
+        qkv = self.qkv_proj(x).split(self.embed_dim, -1)
+        qkv = [
+            x.reshape(B, self.k, T, self.k // 2, -1).transpose(2, 3)
+            for x in qkv
+        ]
 
         if kv_compressors is not None:
             # qkv[1:] = [
@@ -202,7 +207,7 @@ class AttentionEnsemble(nn.Module):
             # scale=10 / math.sqrt(self.head_dim)
         )
 
-        a = self.out_proj(a)
+        a = self.out_proj(a.transpose(2, 3).reshape(B, self.k, T, C))
         return a
 
 
