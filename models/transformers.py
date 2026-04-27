@@ -471,9 +471,9 @@ class TransformerEnsemble(nn.Module):
             for _ in range(num_blocks)
         ])
 
-        # self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
         # self.pred_head = nn.Linear(embed_dim, pred_dim)
-        self.norm = RMSNormEnsemble(embed_dim, k)
+        # self.norm = RMSNormEnsemble(embed_dim, k)
         self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
 
         self.pool = pool
@@ -490,7 +490,7 @@ class TransformerEnsemble(nn.Module):
             self.seq_len,
             self.kv_compression_dim,
             self.k,
-            False
+            # False
         )
 
     def reset_parameters(self) -> None:

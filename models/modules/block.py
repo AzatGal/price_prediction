@@ -71,10 +71,10 @@ class TransformerBlockEnsemble(nn.Module):
                  norm: str,
                  ) -> None:
         super().__init__()
-        # self.attn_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
-        # self.mlp_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
-        self.attn_norm = RMSNormEnsemble(embed_dim, k)
-        self.mlp_norm = RMSNormEnsemble(embed_dim, k)
+        self.attn_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        self.mlp_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        # self.attn_norm = RMSNormEnsemble(embed_dim, k)
+        # self.mlp_norm = RMSNormEnsemble(embed_dim, k)
 
         self.attn_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)
