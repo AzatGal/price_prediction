@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+# import torch.nn.functional as F
 
 
 class RMSNormEnsemble(nn.Module):
@@ -10,4 +10,5 @@ class RMSNormEnsemble(nn.Module):
         self.weight = nn.Parameter(torch.ones(k, 1, dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # print(x.shape)
         return self.norm(x) * self.weight

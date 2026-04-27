@@ -531,7 +531,7 @@ class TransformerEnsemble(nn.Module):
         else:
             raise NotImplementedError()
 
-        x = self.norm(x).unsqueeze(2)
+        x = self.norm(x.unsqueeze(2))
         x = self.pred_head(x)
         return x
 
