@@ -86,18 +86,13 @@ class FeatureEmbeddingEnsemble(nn.Module):
         x = x.reshape(x.size(0), self.k, -1)
 
         if self.add_cls_token:
-            x = torch.cat(
-                [
-                    torch.tensor(
-                        [
-                            [self.mask_idx + i * (self.mask_idx + 1)] for i in range(self.k)
-                        ] * x.size(0),
-                        device=x.device
-                    ),
-                    x
-                ],
-                dim=2
+            cls_tokens = torch.tensor(
+                [[
+                    [self.mask_idx + i * (self.mask_idx + 1)] for i in range(self.k)
+                ]] * x.size(0),
+                device=x.device
             )
+            x = torch.cat([cls_tokens, x], dim=2)
         if mask is not None:
             x = x.masked_fill(mask, self.mask_idx)
 
