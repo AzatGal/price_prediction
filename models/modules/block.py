@@ -4,6 +4,7 @@ import torch.nn as nn
 import models.modules.attention as attn_obj
 import models.modules.mlp as mlp_obj
 import models.modules.compressor as compressor_obj
+from models.modules.norm import RMSNormEnsemble
 
 
 class TransformerBlock(nn.Module):
@@ -70,8 +71,10 @@ class TransformerBlockEnsemble(nn.Module):
                  norm: str,
                  ) -> None:
         super().__init__()
-        self.attn_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
-        self.mlp_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        # self.attn_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        # self.mlp_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        self.attn_norm = RMSNormEnsemble(embed_dim, k)
+        self.mlp_norm = RMSNormEnsemble(embed_dim, k)
 
         self.attn_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)

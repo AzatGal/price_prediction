@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from models.modules.embedding import FeatureEmbedding, FeatureEmbeddingEnsemble
 from models.modules.block import TransformerBlock, CompressorBlock, TransformerBlockEnsemble
 from models.modules.mlp import LinearEnsemble
+from models.modules.norm import RMSNormEnsemble
 
 
 # from models.modules.mlp import GatedMLP
@@ -436,10 +437,10 @@ class TransformerEnsemble(nn.Module):
         super().__init__()
         self.k = k
         self.add_cls_token = add_cls_token
-        # self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
-        #                                       dropout, add_cls_token)
-        self.embed = FeatureEmbedding(num_embed_features, embed_dim,
-                                      dropout, add_cls_token)
+        self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
+                                              dropout, add_cls_token)
+        # self.embed = FeatureEmbedding(num_embed_features, embed_dim,
+        #                               dropout, add_cls_token)
 
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
@@ -469,9 +470,11 @@ class TransformerEnsemble(nn.Module):
                                      dropout, act, mlp_dim_factor, attn, mlp, norm)
             for _ in range(num_blocks)
         ])
-        self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
-        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
+
+        # self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
         # self.pred_head = nn.Linear(embed_dim, pred_dim)
+        self.norm = RMSNormEnsemble(embed_dim, k)
+        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
 
         self.pool = pool
         self.mask_first_token = mask_first_token
@@ -506,12 +509,13 @@ class TransformerEnsemble(nn.Module):
         else:
             x = self.embed(x)
 
-        x = x.unsqueeze(1).repeat(1, self.k, 1, 1)  # * self.embed_proj
+        # x = x.unsqueeze(1).repeat(1, self.k, 1, 1)  # * self.embed_proj
 
         for i, block in enumerate(self.blocks):
             x = block(
                 x,
-                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
+                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList)
+                else self.kv_compressors
             )
 
         if self.pool == 'cls':
