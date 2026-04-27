@@ -470,8 +470,8 @@ class TransformerEnsemble(nn.Module):
             for _ in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
-        # self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
-        self.pred_head = nn.Linear(embed_dim, pred_dim)
+        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
+        # self.pred_head = nn.Linear(embed_dim, pred_dim)
 
         self.pool = pool
         self.mask_first_token = mask_first_token
