@@ -203,7 +203,7 @@ class AttentionEnsemble(nn.Module):
             *qkv,
             # q, k, v,
             dropout_p=self.dropout if self.training else 0.0,
-            enable_gqa=True,
+            # enable_gqa=True,
             # scale=10 / math.sqrt(self.head_dim)
         )
 
