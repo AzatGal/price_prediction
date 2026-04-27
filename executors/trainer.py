@@ -161,9 +161,11 @@ class Trainer:
             if self.accelerator.sync_gradients:
                 self.accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
+            # print(self.model.blocks[0].attn.qkv_proj.weight.grad)
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
+        # print(self.model.blocks[0].attn.qkv_proj.weight.grad)
         return loss.item(), pred.detach()
 
     def train_epoch(self):
@@ -285,20 +287,20 @@ class Trainer:
 if __name__ == "__main__":
     from configs.train_cfg import cfg
 
-    # cfg.accelerator_args['mps'] = True
-    cfg.batch_size = 16
-    cfg.model = 'TablePredictor'
-    path = '/Users/azatgalautdinov/Downloads'
-    # with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
-    #     model_cfg = json.load(f)['model_cfg']
-    #
-    # model_cfg['add_cls_token'] = model_cfg.pop('add_first_token')
-    # cfg.model_cfg = model_cfg
-    trainer = Trainer(cfg)
-    trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
-
-    print(trainer.test())
-
+    # # cfg.accelerator_args['mps'] = True
+    # cfg.batch_size = 16
+    # cfg.model = 'TablePredictor'
+    # path = '/Users/azatgalautdinov/Downloads'
+    # # with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
+    # #     model_cfg = json.load(f)['model_cfg']
+    # #
+    # # model_cfg['add_cls_token'] = model_cfg.pop('add_first_token')
+    # # cfg.model_cfg = model_cfg
     # trainer = Trainer(cfg)
+    # trainer.load_model(os.path.join(path, 'TablePredictor.pt'))
+    #
+    # print(trainer.test())
+
+    trainer = Trainer(cfg)
     # trainer.save_model('./test.pt')
-    # trainer.fit()
+    trainer.fit()
