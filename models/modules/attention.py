@@ -174,6 +174,7 @@ class AttentionEnsemble(nn.Module):
 
     def forward(self,
                 x: torch.Tensor,
+                cls_token_only_attn: bool,
                 kv_compressors: nn.ModuleList | nn.Module = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
@@ -184,6 +185,8 @@ class AttentionEnsemble(nn.Module):
         #     for x in qkv
         # ]
 
+        if cls_token_only_attn:
+            qkv[0] = qkv[0][:, :, :1]
         if kv_compressors is not None:
             # qkv[1:] = [
             #     F.relu(x) for x in qkv[1:]

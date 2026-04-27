@@ -490,7 +490,7 @@ class TransformerEnsemble(nn.Module):
             self.seq_len,
             self.kv_compression_dim,
             self.k,
-            # False
+            False
         )
 
     def reset_parameters(self) -> None:
@@ -514,8 +514,8 @@ class TransformerEnsemble(nn.Module):
         for i, block in enumerate(self.blocks):
             x = block(
                 x,
-                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList)
-                else self.kv_compressors
+                (i == len(self.blocks) - 1) and (self.mask_first_token or self.add_cls_token),
+                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
             )
 
         if self.pool == 'cls':

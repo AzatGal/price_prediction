@@ -84,11 +84,12 @@ class TransformerBlockEnsemble(nn.Module):
 
     def _attn_block(self,
                     x: torch.Tensor,
+                    cls_token_only_attn: bool,
                     kv_compressors: nn.ModuleList | nn.Linear = None,
                     mask: torch.Tensor = None
                     ) -> torch.Tensor:
         x = self.attn_norm(x)
-        x = self.attn(x, kv_compressors, mask)
+        x = self.attn(x, cls_token_only_attn, kv_compressors, mask)
         x = self.attn_drop(x)
         return x
 
@@ -100,10 +101,11 @@ class TransformerBlockEnsemble(nn.Module):
 
     def forward(self,
                 x: torch.Tensor,
+                cls_token_only_attn: bool,
                 kv_compressors: nn.ModuleList | nn.Linear = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
-        x = x + self._attn_block(x, kv_compressors, mask)
+        x = x + self._attn_block(x, cls_token_only_attn, kv_compressors, mask)
         x = x + self._mlp_block(x)
         return x
 
