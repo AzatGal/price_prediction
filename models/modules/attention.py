@@ -178,7 +178,7 @@ class AttentionEnsemble(nn.Module):
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
         # B, _, T, C = x.shape
-        qkv = self.qkv_proj(x).split(self.embed_dim, -1)
+        qkv = list(self.qkv_proj(x).split(self.embed_dim, -1))
         # qkv = [
         #     x.reshape(B, self.k, T, self.k // 2, -1).transpose(2, 3)
         #     for x in qkv
