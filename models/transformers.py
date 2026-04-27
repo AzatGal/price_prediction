@@ -465,8 +465,7 @@ class TransformerEnsemble(nn.Module):
             for _ in range(num_blocks)
         ])
         self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
-        # self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
-        self.pred_head = nn.Linear(embed_dim, pred_dim)
+        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
 
         self.pool = pool
         self.mask_first_token = mask_first_token
@@ -500,7 +499,6 @@ class TransformerEnsemble(nn.Module):
             x = self.embed(x, self.mask)
         else:
             x = self.embed(x)
-        # x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
 
         for i, block in enumerate(self.blocks):
             x = block(
@@ -521,7 +519,7 @@ class TransformerEnsemble(nn.Module):
         else:
             raise NotImplementedError()
 
-        x = self.norm(x)
+        x = self.norm(x).unsqueeze(2)
         x = self.pred_head(x)
         return x
 

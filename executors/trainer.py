@@ -153,9 +153,6 @@ class Trainer:
             else:
                 raise NotImplementedError()
 
-            # loss = logcosh_loss(pred, batch['target'])
-            # print(pred.shape)
-            # print(batch['target'].shape)
             loss = self.criterion(pred, batch['target'])
 
         if update_model:
