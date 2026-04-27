@@ -166,23 +166,23 @@ class AttentionEnsemble(nn.Module):
         # self.head_dim = embed_dim // k
         self.dropout = dropout
 
-        self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
-        self.out_proj = LinearEnsemble(embed_dim, embed_dim, k, bias)
+        # self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
+        # self.out_proj = LinearEnsemble(embed_dim, embed_dim, k, bias)
 
-        # self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
-        # self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
+        self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
+        self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
     def forward(self,
                 x: torch.Tensor,
                 kv_compressors: nn.ModuleList | nn.Module = None,
                 mask: torch.Tensor = None
                 ) -> torch.Tensor:
-        B, _, T, C = x.shape
+        # B, _, T, C = x.shape
         qkv = self.qkv_proj(x).split(self.embed_dim, -1)
-        qkv = [
-            x.reshape(B, self.k, T, self.k // 2, -1).transpose(2, 3)
-            for x in qkv
-        ]
+        # qkv = [
+        #     x.reshape(B, self.k, T, self.k // 2, -1).transpose(2, 3)
+        #     for x in qkv
+        # ]
 
         if kv_compressors is not None:
             # qkv[1:] = [
@@ -207,7 +207,11 @@ class AttentionEnsemble(nn.Module):
             # scale=10 / math.sqrt(self.head_dim)
         )
 
-        a = self.out_proj(a.transpose(2, 3).reshape(B, self.k, T, C))
+        a = self.out_proj(
+            a
+            # .transpose(2, 3)
+            # .reshape(B, self.k, T, C)
+        )
         return a
 
 
