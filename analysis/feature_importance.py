@@ -27,25 +27,37 @@ def get_feature_importance(model):
 
     def kv_compressor_weights(compressor):
         if isinstance(compressor, nn.ModuleList):
-            return sum([x.weight.abs().mean(dim=0).cpu().numpy() for x in compressor])
-            # return sum([x.weight.norm(dim=0).cpu().numpy() for x in compressor])
-        elif isinstance(compressor, nn.Linear):
-            return compressor.weight.abs().mean(dim=0).cpu().numpy()
-            # return compressor.weight.norm(dim=0).cpu().numpy()
-        raise NotImplementedError
+            # for c in compressor:
+            #     print(c.weight.shape)
+            return sum([
+                x.weight[:, 1:].abs().sum(0).sum(1).cpu().numpy() for x in compressor
+            ])
+
+        #     # return sum([x.weight.norm(dim=0).cpu().numpy() for x in compressor])
+        # elif isinstance(compressor, nn.Linear):
+        #     return compressor.weight.abs().mean(dim=0).cpu().numpy()
+        #     # return compressor.weight.norm(dim=0).cpu().numpy()
+        # raise NotImplementedError
 
     if isinstance(model.kv_compressors, nn.ModuleList):
-        w = np.sum(
-            [kv_compressor_weights(compressor)
-             for i, compressor in enumerate(model.kv_compressors)],
-            axis=0
-        )
-    elif isinstance(model.kv_compressors, nn.Linear):
-        w = kv_compressor_weights(model.kv_compressors)
-    else:
-        raise NotImplementedError
+        # w = np.sum(
+        #     [
+        #         kv_compressor_weights(compressor)
+        #         for i, compressor in enumerate(model.kv_compressors)
+        #     ],
+        #     axis=0
+        # )
+        w = sum([
+            kv_compressor_weights(compressor) / (2 ** i)
+            for i, compressor in enumerate(model.kv_compressors)
+        ])
 
-    ids = np.argsort(w)[::-1]
+    # elif isinstance(model.kv_compressors, nn.Linear):
+    #     w = kv_compressor_weights(model.kv_compressors)
+    # else:
+    #     raise NotImplementedError
+
+    ids = np.argsort(-w)
     features = (cfg.data_cfg.data_transformer.num_cols +
                 cfg.data_cfg.data_transformer.cat_cols)
     print(w[ids])
@@ -137,11 +149,11 @@ if __name__ == '__main__':
         # '/Users/azatgalautdinov/Desktop/price_prediction/best',
         # '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/14-02_14-46',
         '/Users/azatgalautdinov/Downloads',
-        'TablePredictor.pt'
+        'TransformerEnsemble.pt'
     ))
     # model = trainer.model
     # get_feature_importance()
-    get_feature_importance_v2(trainer.model)
+    get_feature_importance(trainer.model)
 
 
 """
