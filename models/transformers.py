@@ -474,13 +474,16 @@ class TransformerEnsemble(nn.Module):
         self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
         # self.pred_head = nn.Linear(embed_dim, pred_dim)
         # self.norm = RMSNormEnsemble(embed_dim, k)
-        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
+        self.pred_head = nn.Sequential(
+            getattr(nn, act)(),
+            LinearEnsemble(embed_dim, pred_dim, k)
+        )
 
         self.pool = pool
         self.mask_first_token = mask_first_token
 
         if mask_first_token:
-            self.register_buffer('mask', torch.zeros(1, self.seq_len, dtype=torch.bool))
+            self.register_buffer('mask', torch.zeros(1, k, self.seq_len, dtype=torch.bool))
             self.mask[:, :, 0] = True
 
         self.reset_parameters()
