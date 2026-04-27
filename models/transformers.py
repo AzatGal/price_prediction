@@ -436,10 +436,10 @@ class TransformerEnsemble(nn.Module):
         super().__init__()
         self.k = k
         self.add_cls_token = add_cls_token
-        # self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
-        #                                       dropout, add_cls_token)
-        self.embed = FeatureEmbedding(num_embed_features, embed_dim,
-                                      dropout, add_cls_token)
+        self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
+                                              dropout, add_cls_token)
+        # self.embed = FeatureEmbedding(num_embed_features, embed_dim,
+        #                               dropout, add_cls_token)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 

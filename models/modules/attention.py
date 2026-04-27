@@ -169,6 +169,9 @@ class AttentionEnsemble(nn.Module):
         self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
         self.out_proj = LinearEnsemble(embed_dim, embed_dim, k, bias)
 
+        # self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
+        # self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
+
     def forward(self,
                 x: torch.Tensor,
                 kv_compressors: nn.ModuleList | nn.Module = None,
