@@ -86,10 +86,10 @@ class GatedMLPEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.k = k
-        # self.in_proj = nn.Linear(embed_dim, 2 * round(dim_factor * embed_dim), bias)
-        # self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
-        self.in_proj = LinearEnsemble(embed_dim, 2 * round(dim_factor * embed_dim), k, bias)
-        self.out_proj = LinearEnsemble(round(dim_factor * embed_dim), embed_dim, k, bias)
+        self.in_proj = nn.Linear(embed_dim, 2 * round(dim_factor * embed_dim), bias)
+        self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
+        # self.in_proj = LinearEnsemble(embed_dim, 2 * round(dim_factor * embed_dim), k, bias)
+        # self.out_proj = LinearEnsemble(round(dim_factor * embed_dim), embed_dim, k, bias)
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
 
