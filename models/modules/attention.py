@@ -177,9 +177,9 @@ class AttentionEnsemble(nn.Module):
         qkv = list(self.qkv_proj(x).split(self.embed_dim, -1))
 
         if kv_compressors is not None:
-            qkv[1:] = [
-                F.relu(x) for x in qkv[1:]
-            ]
+            # qkv[1:] = [
+            #     F.relu(x) for x in qkv[1:]
+            # ]
             if isinstance(kv_compressors, nn.ModuleList):
                 qkv[1:] = [
                     kv_compressors[i](x.transpose(2, 3)).transpose(2, 3)
