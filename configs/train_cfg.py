@@ -13,7 +13,7 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 1024  # 2048 1024
+cfg.batch_size = 128  # 1024  # 2048 1024
 cfg.num_epoch = 600
 
 cfg.wu_ratio = 0.05  # 0.1
@@ -33,7 +33,7 @@ cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 # cfg.load_checkpoint = os.path.join(ROOT_DIR, 'runs', 'train', '15-02_13-08', "checkpoint")
 
-cfg.model = 'TablePredictor'
+cfg.model = 'TransformerEnsemble'  # TablePredictor'
 
 cfg.task = 'train'
 model_cfg.pred_dim = 1

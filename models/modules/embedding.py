@@ -48,8 +48,71 @@ class FeatureEmbedding(nn.Module):
         return x
 
 
+class FeatureEmbeddingEnsemble(nn.Module):
+    def __init__(self,
+                 num_embed_features: list[int],
+                 embed_dim: int,
+                 k: int,
+                 dropout: float,
+                 add_cls_token: bool,
+                 ) -> None:
+        super().__init__()
+        self.k = k
+        self.register_buffer(
+            'num_embed_features',
+            torch.tensor(num_embed_features)
+        )
+        self.register_buffer(
+            'offsets',
+            torch.tensor([0] + num_embed_features[:-1]).cumsum(0)
+        )
+        self.add_cls_token = add_cls_token
+        self.mask_idx = sum(num_embed_features)
+        self.seq_len = len(num_embed_features) + add_cls_token
+
+        self.offsets = torch.cat([
+            self.offsets + i * (self.mask_idx + 1)
+            for i in range(k)
+        ])
+
+        self.weight = nn.Parameter(torch.empty(k * (self.mask_idx + 1), embed_dim))
+        self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+        assert torch.all(x < self.num_embed_features)
+        x = x.repeat(1, self.k) + self.offsets
+        x = x.reshape(x.size(0), self.k, -1)
+
+        if self.add_cls_token:
+            x = torch.cat(
+                [
+                    torch.tensor(
+                        [
+                            [self.mask_idx + i * (self.mask_idx + 1)] for i in range(self.k)
+                        ] * x.size(0),
+                        device=x.device
+                    ),
+                    x
+                ],
+                dim=2
+            )
+        if mask is not None:
+            x = x.masked_fill(mask, self.mask_idx)
+
+        x = F.embedding(x, self.weight)
+        x = x + self.bias
+        return self.dropout(x)
+
+
 if __name__ == '__main__':
-    em = FeatureEmbedding([4, 2], 2, '', 0.1)
-    nn.init.normal_(em.weight, std=0.02)
-    em.fill_last_values_features_zero()
-    print(em.weight)
+    em = FeatureEmbeddingEnsemble([4, 2], 7, 2, 0.1, False)
+    # nn.init.normal_(em.weight, std=0.02)
+    # em.fill_last_values_features_zero()
+    t = torch.cat(
+        [torch.randint(0, 4, (3, 1)), torch.randint(0, 2, (3, 1))],
+        dim=-1
+    )
+    print(t)
+    print(em(t).shape)

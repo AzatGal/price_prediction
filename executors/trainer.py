@@ -148,12 +148,14 @@ class Trainer:
                 batch['target'] = batch['target'][mask]
                 batch['label'] = batch['label'][mask]
             elif self.cfg.task == 'train':
-                pred = self.model(batch['features'])
+                pred = self.model(batch['features']).squeeze()
+                batch['target'] = batch['target'].repeat(1, pred.size(1))
             else:
                 raise NotImplementedError()
+
+            # loss = logcosh_loss(pred, batch['target'])
             # print(pred.shape)
             # print(batch['target'].shape)
-            # loss = logcosh_loss(pred, batch['target'])
             loss = self.criterion(pred, batch['target'])
 
         if update_model:
@@ -165,7 +167,7 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        # print(self.model.blocks[0].attn.qkv_proj.weight.grad)
+        pred = pred.mean(1)
         return loss.item(), pred.detach()
 
     def train_epoch(self):

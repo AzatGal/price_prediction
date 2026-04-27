@@ -4,8 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.modules.embedding import FeatureEmbedding
-from models.modules.block import TransformerBlock, CompressorBlock
+from models.modules.embedding import FeatureEmbedding, FeatureEmbeddingEnsemble
+from models.modules.block import TransformerBlock, CompressorBlock, TransformerBlockEnsemble
+from models.modules.mlp import LinearEnsemble
+
+
 # from models.modules.mlp import GatedMLP
 
 
@@ -404,6 +407,117 @@ class TablePredictorV2(nn.Module):
             x = block(x)
 
         x = x.mean(1)
+        x = self.norm(x)
+        x = self.pred_head(x)
+        return x
+
+
+class TransformerEnsemble(nn.Module):
+    def __init__(self,
+                 embed_dim: int,
+                 num_embed_features: list[int],
+                 k: int,
+                 attn_dropout: float,
+                 mlp_dropout: float,
+                 dropout: float,
+                 act: str,
+                 mlp_dim_factor: float,
+                 num_blocks: int,
+                 attn: str,
+                 mlp: str,
+                 norm: str,
+                 pool: str,
+                 pred_dim: int,
+                 add_cls_token: bool,
+                 mask_first_token: bool,
+                 kv_compression: str = None,
+                 kv_compression_dim: int = None,
+                 ) -> None:
+        super().__init__()
+        self.k = k
+        self.add_cls_token = add_cls_token
+        self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
+                                              dropout, add_cls_token)
+        self.seq_len = self.embed.seq_len
+        self.kv_compression_dim = kv_compression_dim
+
+        if kv_compression is None:
+            self.kv_compressors = None
+        elif kv_compression == 'Head':
+            self.kv_compressors = nn.ModuleList([
+                nn.ModuleList([self._get_compressor(), self._get_compressor()])
+                for _ in range(num_blocks)
+            ])
+        elif kv_compression == 'KV':
+            self.kv_compressors = nn.ModuleList([
+                self._get_compressor() for _ in range(num_blocks)
+            ])
+        elif kv_compression == 'Layer':
+            self.kv_compressors = self._get_compressor()
+        else:
+            raise NotImplementedError()
+
+        self.blocks = nn.ModuleList([
+            TransformerBlockEnsemble(embed_dim, k, attn_dropout, mlp_dropout,
+                                     dropout, act, mlp_dim_factor, attn, mlp, norm)
+            for _ in range(num_blocks)
+        ])
+        self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        # self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
+        self.pred_head = nn.Linear(embed_dim, pred_dim)
+
+        self.pool = pool
+        self.mask_first_token = mask_first_token
+
+        if mask_first_token:
+            self.register_buffer('mask', torch.zeros(1, self.seq_len, dtype=torch.bool))
+            self.mask[:, :, 0] = True
+
+        self.reset_parameters()
+
+    def _get_compressor(self) -> nn.Module:
+        return LinearEnsemble(
+            self.seq_len,
+            self.kv_compression_dim,
+            self.k,
+            False
+        )
+
+    def reset_parameters(self) -> None:
+        for pn, p in self.named_parameters():
+            if 'norm' not in pn:
+                if 'bias' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
+                    nn.init.zeros_(p)
+                elif 'head' in pn:
+                    nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+                else:
+                    nn.init.normal_(p, std=0.02)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.mask_first_token:
+            x = self.embed(x, self.mask)
+        else:
+            x = self.embed(x)
+
+        for i, block in enumerate(self.blocks):
+            x = block(
+                x,
+                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
+            )
+
+        if self.pool == 'cls':
+            x = x[:, :, 0]
+        elif self.pool == 'avg':
+            x = x.mean(2)
+        elif self.pool == 'sum':
+            x = x.sum(2)
+        elif self.pool == 'max':
+            x = x.max(2).values
+        # elif self.pool == 'w_avg':
+        #     x = self.w_avg.softmax(0) @ x
+        else:
+            raise NotImplementedError()
+
         x = self.norm(x)
         x = self.pred_head(x)
         return x

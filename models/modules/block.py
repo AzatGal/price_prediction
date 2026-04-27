@@ -56,6 +56,55 @@ class TransformerBlock(nn.Module):
         return x
 
 
+class TransformerBlockEnsemble(nn.Module):
+    def __init__(self,
+                 embed_dim: int,
+                 k: int,
+                 attn_dropout: float,
+                 mlp_dropout: float,
+                 dropout: float,
+                 act: str,
+                 mlp_dim_factor: float,
+                 attn: str,
+                 mlp: str,
+                 norm: str,
+                 ) -> None:
+        super().__init__()
+        self.attn_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        self.mlp_norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+
+        self.attn_drop = nn.Dropout(dropout)
+        self.mlp_drop = nn.Dropout(dropout)
+
+        self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, k, act, mlp_dropout)
+        self.attn = getattr(attn_obj, attn)(embed_dim, k, attn_dropout)
+
+    def _attn_block(self,
+                    x: torch.Tensor,
+                    kv_compressors: nn.ModuleList | nn.Linear = None,
+                    mask: torch.Tensor = None
+                    ) -> torch.Tensor:
+        x = self.attn_norm(x)
+        x = self.attn(x, kv_compressors, mask)
+        x = self.attn_drop(x)
+        return x
+
+    def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.mlp_norm(x)
+        x = self.mlp(x)
+        x = self.mlp_drop(x)
+        return x
+
+    def forward(self,
+                x: torch.Tensor,
+                kv_compressors: nn.ModuleList | nn.Linear = None,
+                mask: torch.Tensor = None
+                ) -> torch.Tensor:
+        x = x + self._attn_block(x, kv_compressors, mask)
+        x = x + self._mlp_block(x)
+        return x
+
+
 class CompressorBlock(nn.Module):
     def __init__(self,
                  embed_dim: int,
