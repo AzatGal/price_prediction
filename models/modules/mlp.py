@@ -83,7 +83,7 @@ class GatedMLPEnsemble(nn.Module):
         super().__init__()
         self.k = k
         hidden_dim = round(dim_factor * embed_dim)
-        self.in_proj = nn.Linear(embed_dim, 2*hidden_dim, bias)
+        self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
         self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
 
         # self.in_r = nn.Parameter(torch.empty(k, 1, embed_dim))

@@ -445,8 +445,10 @@ class TransformerEnsemble(nn.Module):
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
-        # self.embed_proj = LinearEnsemble(embed_dim, embed_dim, k)
-        self.embed_mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, k, act, dropout)
+        self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
+        self.embed_act = getattr(nn, act)()
+        self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
+        # self.embed_mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, k, act, dropout)
 
         if kv_compression is None:
             self.kv_compressors = None
@@ -510,7 +512,10 @@ class TransformerEnsemble(nn.Module):
         else:
             x = self.embed(x)
 
-        x = self.embed_mlp(x.unsqueeze(1).repeat(1, self.k, 1, 1))  # * self.embed_proj
+        x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
+        x, y = self.embed_in_proj(x).chunk(2, dim=-1)  # * self.embed_proj
+        x = self.embed_act(x) * y
+        x = self.embed_out_proj(x)
 
         for i, block in enumerate(self.blocks):
             x = block(
