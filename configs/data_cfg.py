@@ -52,6 +52,15 @@ cfg.cat_cfg['processor'] = OrdinalEncoder(
     df[cfg.cat_cfg['columns']]
 )
 
+cats = [
+    len(c) for c in cfg.cat_cfg['processor'].categories_
+]
+inf_cats = [
+    0 if c is None else len(c) - 1
+    for c in cfg.cat_cfg['processor'].infrequent_categories_
+]
+cfg.n_embed_cat = [i - j for i, j in zip(cats, inf_cats)]
+
 
 cfg.target_cfg = {
     'columns': ['Стоимость'],

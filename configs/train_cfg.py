@@ -41,14 +41,8 @@ cfg.model = 'TransformerEnsemble'  # TablePredictor'
 # data_cfg.task = cfg.task
 
 
-cats = [
-    len(c) for c in data_cfg.cat_cfg['processor'].categories_
-]
-inf_cats = [
-    0 if c is None else len(c) - 1
-    for c in data_cfg.cat_cfg['processor'].infrequent_categories_
-]
-model_cfg['n_embed_cat'] = [i - j for i, j in zip(cats, inf_cats)]
+
+model_cfg['n_embed_cat'] = data_cfg.n_embed_cat
 model_cfg['n_num'] = len(data_cfg.num_cfg['columns'])
 
 cfg.model_cfg = model_cfg

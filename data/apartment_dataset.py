@@ -13,7 +13,8 @@ class ApartmentDataset(Dataset):
                  path,
                  num_cfg,
                  cat_cfg,
-                 target_cfg
+                 target_cfg,
+                 n_embed_cat
                  # data_transformer,
                  # task,
                  # include_target=False,
@@ -31,6 +32,8 @@ class ApartmentDataset(Dataset):
         self.cat = torch.as_tensor(
             cat_cfg['processor'].transform(df[cat_cfg['columns']])
         ).long()
+        for i, c in enumerate(n_embed_cat):
+            self.cat[self.cat[:, i] == -1, i] = c - 1
         self.target = torch.as_tensor(
             target_cfg['processor'].transform(self.label)
         ).float()
