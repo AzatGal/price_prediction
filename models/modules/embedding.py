@@ -82,14 +82,16 @@ class FeatureEmbeddingEnsemble(nn.Module):
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
         assert torch.all(x < self.num_embed_features)
+        batch_size = x.size(0)
+
         x = x.repeat(1, self.k) + self.offsets
-        x = x.reshape(x.size(0), self.k, -1)
+        x = x.reshape(batch_size, self.k, -1)
 
         if self.add_cls_token:
             cls_tokens = torch.tensor(
                 [[
                     [self.mask_idx + i * (self.mask_idx + 1)] for i in range(self.k)
-                ]] * x.size(0),
+                ]] * batch_size,
                 device=x.device
             )
             x = torch.cat([cls_tokens, x], dim=2)
