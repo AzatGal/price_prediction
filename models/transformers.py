@@ -445,10 +445,10 @@ class TransformerEnsemble(nn.Module):
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
-        self.embed_proj = nn.Sequential(
-            LinearEnsemble(embed_dim, embed_dim, k),
-            getattr(nn, act)()
-        )
+        # self.embed_proj = nn.Sequential(
+        #     LinearEnsemble(embed_dim, embed_dim, k),
+        #     getattr(nn, act)()
+        # )
 
         # self.embed_r = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
@@ -509,7 +509,7 @@ class TransformerEnsemble(nn.Module):
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
-            if all(s not in pn for s in ['norm', 'w_avg', '_rank', '_scale']):
+            if all(s not in pn for s in ['embed', 'norm', 'w_avg', '_rank', '_scale']):
                 if 'bias' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
                     nn.init.zeros_(p)
                 elif 'head' in pn:
@@ -524,7 +524,7 @@ class TransformerEnsemble(nn.Module):
             x = self.embed(x)
 
         # x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
-        x = self.embed_proj(x)
+        # x = self.embed_proj(x)
 
         # x = self.embed_r * x
         # x, y = self.embed_in_proj(x).chunk(2, dim=-1)  # * self.embed_proj
