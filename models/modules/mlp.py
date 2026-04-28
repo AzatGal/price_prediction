@@ -55,19 +55,12 @@ class LinearEnsemble(nn.Module):
             bias: bool = True,
     ) -> None:
         super().__init__()
-        self.weight = nn.Parameter(
-            torch.empty(k, in_features, out_features)
-        )  # k,
+        self.weight = nn.Parameter(torch.empty(k, in_features, out_features))  # k,
         self.register_parameter(
-            'bias',
-            nn.Parameter(torch.empty(k, 1, out_features)) if bias else None,
+            'bias', nn.Parameter(torch.empty(k, 1, out_features)) if bias else None,
         )
-        # self.r = nn.Parameter(
-        #     torch.empty(k, 1, in_features)
-        # )
-        # self.s = nn.Parameter(
-        #     torch.empty(k, 1, out_features)
-        # )
+        # self.r = nn.Parameter(torch.empty(k, 1, in_features))
+        # self.s = nn.Parameter(torch.empty(k, 1, out_features))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x = x * self.r
@@ -89,16 +82,26 @@ class GatedMLPEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.k = k
-        self.in_proj = nn.Linear(embed_dim, 2 * round(dim_factor * embed_dim), bias)
+        hidden_dim = 2 * round(dim_factor * embed_dim)
+        self.in_proj = nn.Linear(embed_dim, hidden_dim, bias)
         self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
+
+        self.r = nn.Parameter(torch.empty(k, 1, embed_dim))
+        self.s = nn.Parameter(torch.empty(k, 1, hidden_dim))
+
         # self.in_proj = LinearEnsemble(embed_dim, 2 * round(dim_factor * embed_dim), k, bias)
         # self.out_proj = LinearEnsemble(round(dim_factor * embed_dim), embed_dim, k, bias)
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x, y = self.in_proj(x).chunk(2, dim=-1)
+        x = x * self.r
+        x = self.in_proj(x)
+        x = x * self.s
+
+        x, y = x.chunk(2, dim=-1)
         x = self.act(x) * y
+
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
