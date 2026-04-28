@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from models.modules.embedding import FeatureEmbedding, FeatureEmbeddingEnsemble
 from models.modules.block import TransformerBlock, CompressorBlock, TransformerBlockEnsemble
-from models.modules.mlp import LinearEnsemble
+from models.modules.mlp import LinearEnsemble, GatedMLPEnsemble
 from models.modules.norm import NormEnsemble
 
 
@@ -445,7 +445,8 @@ class TransformerEnsemble(nn.Module):
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
-        self.embed_proj = LinearEnsemble(embed_dim, embed_dim, k)
+        # self.embed_proj = LinearEnsemble(embed_dim, embed_dim, k)
+        self.embed_mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, k, act, dropout)
 
         if kv_compression is None:
             self.kv_compressors = None
@@ -509,7 +510,7 @@ class TransformerEnsemble(nn.Module):
         else:
             x = self.embed(x)
 
-        x = self.embed_proj(x.unsqueeze(1).repeat(1, self.k, 1, 1))  # * self.embed_proj
+        x = self.embed_mlp(x.unsqueeze(1).repeat(1, self.k, 1, 1))  # * self.embed_proj
 
         for i, block in enumerate(self.blocks):
             x = block(
