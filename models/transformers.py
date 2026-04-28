@@ -473,7 +473,7 @@ class TransformerEnsemble(nn.Module):
         # self.pred_head = nn.Linear(embed_dim, pred_dim)
         # self.norm = RMSNormEnsemble(embed_dim, k)
         self.pred_head = nn.Sequential(
-            getattr(nn, act)(),
+            # getattr(nn, act)(),
             LinearEnsemble(embed_dim, pred_dim, k)
         )
 
