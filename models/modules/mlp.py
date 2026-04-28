@@ -86,8 +86,10 @@ class GatedMLPEnsemble(nn.Module):
         self.in_proj = nn.Linear(embed_dim, hidden_dim, bias)
         self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
 
-        self.r = nn.Parameter(torch.empty(k, 1, embed_dim))
-        self.s = nn.Parameter(torch.empty(k, 1, hidden_dim))
+        self.in_r = nn.Parameter(torch.empty(k, 1, embed_dim))
+        self.in_s = nn.Parameter(torch.empty(k, 1, hidden_dim))
+        self.out_r = nn.Parameter(torch.empty(k, 1, embed_dim))
+        self.out_s = nn.Parameter(torch.empty(k, 1, embed_dim))
 
         # self.in_proj = LinearEnsemble(embed_dim, 2 * round(dim_factor * embed_dim), k, bias)
         # self.out_proj = LinearEnsemble(round(dim_factor * embed_dim), embed_dim, k, bias)
@@ -95,13 +97,15 @@ class GatedMLPEnsemble(nn.Module):
         self.act = getattr(nn, act)()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x * self.r
+        x = x * self.in_r
         x = self.in_proj(x)
-        x = x * self.s
+        x = x * self.in_s
 
         x, y = x.chunk(2, dim=-1)
         x = self.act(x) * y
 
         x = self.dropout(x)
+        x = x * self.out_r
         x = self.out_proj(x)
+        x = x * self.out_s
         return x
