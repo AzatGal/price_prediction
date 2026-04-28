@@ -56,8 +56,6 @@ class DataTransformer:
         ]
         self.num_cats = [i - j for i, j in zip(cats, inf_cats)]
         self.num_bins = self.num_processor.n_bins_.tolist()
-        # num_classes = self.num_bins + self.num_cats
-        # self.offsets = np.cumsum([0] + num_classes[:-1])
 
     def fit(self, data):
         self.num_processor.fit(data[self.num_cols].fillna(-1.0))
@@ -70,14 +68,12 @@ class DataTransformer:
             return self.target_processor.transform(data)
         else:
             num = self.num_processor.transform(data[self.num_cols].fillna(-1.0))
-            # if not self.include_target_in_features:
-            #     num = num[:, 1:]
+
             cat = self.cat_processor.transform(data[self.cat_cols])
             for i, c in enumerate(self.num_cats):
                 cat[cat[:, i] == -1, i] = c - 1
             data = np.hstack([num, cat])
-            # if self.apply_offsets:
-            #     data = data + self.offsets
+
             return data.astype(int)
 
     def inverse_transform(self, data, target=None, numpy=True):
@@ -115,9 +111,6 @@ class DataTransformer:
                 return data
             else:
                 return pd.DataFrame(data, columns=self.target_cols)
-
-    # def __json__(self):
-    #     return self._json
 
 
 

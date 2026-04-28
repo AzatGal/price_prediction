@@ -11,7 +11,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cfg = EasyDict()
 
 cfg.seed = 0
-cfg.exp_dir = os.path.join(ROOT_DIR, 'runs', 'train',
+cfg.exp_dir = os.path.join(ROOT_DIR, 'runs',
                            datetime.now().strftime("%d-%m_%H-%M"))
 cfg.batch_size = 1024  # 2048 1024
 cfg.num_epoch = 600
@@ -35,10 +35,21 @@ cfg.accelerator_args = {}  # 'mixed_precision': 'fp16'}  # , 'cpu': True}
 
 cfg.model = 'TransformerEnsemble'  # TablePredictor'
 
-cfg.task = 'train'
-model_cfg.pred_dim = 1
-data_cfg.include_target = model_cfg.mask_first_token
-data_cfg.task = cfg.task
+# cfg.task = 'train'
+# model_cfg.pred_dim = 1
+# data_cfg.include_target = model_cfg.mask_first_token
+# data_cfg.task = cfg.task
+
+
+cats = [
+    len(c) for c in data_cfg.cat_cfg['processor'].categories_
+]
+inf_cats = [
+    0 if c is None else len(c) - 1
+    for c in data_cfg.cat_cfg['processor'].infrequent_categories_
+]
+model_cfg['n_embed_cat'] = [i - j for i, j in zip(cats, inf_cats)]
+model_cfg['n_num'] = len(data_cfg.num_cfg['columns'])
 
 cfg.model_cfg = model_cfg
 cfg.data_cfg = data_cfg

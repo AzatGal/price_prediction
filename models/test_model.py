@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.modules.embedding import FeatureEmbedding
+from models.modules.embedding import FeatureTokenizer
 from models.modules.block import CompressorBlock
 from models.modules.mlp import GatedMLP
 
@@ -31,7 +31,7 @@ class GlobalPoolTransformer(nn.Module):
                  ) -> None:
         super().__init__()
         self.add_first_token = add_first_token
-        self.embed = FeatureEmbedding(num_embed_features, embed_dim,
+        self.embed = FeatureTokenizer(num_embed_features, embed_dim,
                                       dropout, add_first_token)
         self.seq_len = self.embed.seq_len
 

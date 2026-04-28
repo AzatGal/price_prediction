@@ -29,20 +29,22 @@ class Trainer:
         self.time_training = 0
         self.start_epoch = 1
 
-        if cfg.task == 'pretrain':
-            self.best_metric = 0
-        elif cfg.task == 'train':
-            self.best_metric = 1e8
-        else:
-            raise NotImplementedError()
+        # if cfg.task == 'pretrain':
+        #     self.best_metric = 0
+        # elif cfg.task == 'train':
+        self.best_metric = float('inf')
+        # else:
+        #     raise NotImplementedError()
 
         self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
 
     def _prepare_data(self, data_cfg):
-        self.data_transformer = data_cfg.data_transformer
+        # self.data_transformer = data_cfg.data_transformer
+        self.target_processor = data_cfg.target_cfg['processor']
 
         self.train_data = ApartmentDataset("train", **data_cfg)
+        # print(self.train_data[0])
         self.valid_data = ApartmentDataset('valid', **data_cfg)
 
         kwargs = {'batch_size': self.cfg.batch_size}
@@ -53,9 +55,19 @@ class Trainer:
         self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
+        # cats = [
+        #     len(c) for c in self.cfg.data_cfg.cat_cfg['processor'].categories_
+        # ]
+        # inf_cats = [
+        #     0 if c is None else len(c) - 1
+        #     for c in self.cfg.data_cfg.cat_cfg['processor'].infrequent_categories_
+        # ]
+        # model_cfg['n_embed_cat'] = [i - j for i, j in zip(cats, inf_cats)]
+        # model_cfg['n_num'] = len(self.cfg.data_cfg.num_cfg['columns'])
         self.model = getattr(models, self.cfg.model)(**model_cfg)
-        self.criterion = LogCoshLoss(**self.cfg.loss_args) if self.cfg.loss == 'LogCoshLoss' \
-            else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+            # LogCoshLoss(**self.cfg.loss_args)) if self.cfg.loss == 'LogCoshLoss' \
+            # else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
             get_param_groups(self.model,
                              self.cfg.lr,
@@ -73,29 +85,26 @@ class Trainer:
             self.val_dataloader, self.scheduler
         )
 
-        pretrained_path = self.cfg.get('load_pretrained', False)
-        if pretrained_path:
-            self.load_model(pretrained_path, strict=False)
-            # self.model.zero_compressors_()
-            self.logger.print('load_pretrained')
-
-        checkpoint_path = self.cfg.get('load_checkpoint', False)
-        if checkpoint_path:
-            self.load_checkpoint(checkpoint_path)
-            self.logger.print('load_checkpoint')
+        # pretrained_path = self.cfg.get('load_pretrained', False)
+        # if pretrained_path:
+        #     self.load_model(pretrained_path, strict=False)
+        #     self.logger.print('load_pretrained')
+        #
+        # checkpoint_path = self.cfg.get('load_checkpoint', False)
+        # if checkpoint_path:
+        #     self.load_checkpoint(checkpoint_path)
+        #     self.logger.print('load_checkpoint')
 
     def metric(self, pred, label):
         pred = pred.cpu()
         label = label.cpu()
-        if self.cfg.task == 'pretrain':
-            return accuracy(pred, label)
-        elif self.cfg.task == 'train':
-            pred = torch.as_tensor(
-                self.data_transformer.inverse_transform(pred, target='num')
-            )
-            return mape(pred, label)
-        else:
-            raise NotImplementedError()
+        # if self.cfg.task == 'pretrain':
+        #     return accuracy(pred, label)
+        # elif self.cfg.task == 'train':
+        pred = torch.as_tensor(self.target_processor.inverse_transform(pred))
+        return mape(pred, label)
+        # else:
+        #     raise NotImplementedError()
 
     def save_model(self, save_path=None, **kwargs):
         if save_path is None:
@@ -143,15 +152,15 @@ class Trainer:
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            if self.cfg.task == 'pretrain':
-                pred, mask = self.model(batch['features'], self.cfg.mask_ratio)
-                batch['target'] = batch['target'][mask]
-                batch['label'] = batch['label'][mask]
-            elif self.cfg.task == 'train':
-                pred = self.model(batch['features']).squeeze()
-                batch['target'] = batch['target'].repeat(1, pred.size(1))
-            else:
-                raise NotImplementedError()
+            # if self.cfg.task == 'pretrain':
+            #     pred, mask = self.model(batch['features'], self.cfg.mask_ratio)
+            #     batch['target'] = batch['target'][mask]
+            #     batch['label'] = batch['label'][mask]
+            # elif self.cfg.task == 'train':
+            pred = self.model(batch['num'], batch['cat']).squeeze()
+            batch['target'] = batch['target'].repeat(1, pred.size(1))
+            # else:
+            #     raise NotImplementedError()
 
             loss = self.criterion(pred, batch['target'])
 
@@ -164,7 +173,7 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        pred = pred.mean(1)
+        pred = pred.mean(1, keepdim=True)
         return loss.item(), pred.detach()
 
     def train_epoch(self):
@@ -192,7 +201,7 @@ class Trainer:
             'time': t
         }
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def evaluate(self):
         self.model.eval()
         total_loss = 0
@@ -222,10 +231,11 @@ class Trainer:
             valid = self.evaluate()
 
             self.logger.log_metrics(epoch, train, valid)
-            if (
-                    (self.cfg.task == 'train' and valid['metric'] < self.best_metric) or
-                    (self.cfg.task == 'pretrain' and valid['loss'] < self.best_loss)
-            ):
+            # if (
+            #         (self.cfg.task == 'train' and valid['metric'] < self.best_metric) or
+            #         (self.cfg.task == 'pretrain' and valid['loss'] < self.best_loss)
+            # ):
+            if valid['metric'] < self.best_metric:
                 self.logger.print('Best')
                 self.save_model()
                 self.best_metric = valid['metric']

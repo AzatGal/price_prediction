@@ -10,10 +10,10 @@ WHITE = '\033[97m'
 RESET = '\033[0m'
 
 
-def to_json(obj):
-    if hasattr(obj, 'json'):
-        return obj.json
-    return obj
+# def to_json(obj):
+#     if hasattr(obj, 'json'):
+#         return obj.json
+#     return obj
 
 
 class Logger:
@@ -44,7 +44,7 @@ class Logger:
     def save_config(self, cfg: EasyDict) -> None:
         config_path = os.path.join(self.log_dir, "config.json")
         with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(cfg, f, indent=4, ensure_ascii=False, default=to_json)
+            json.dump(cfg, f, indent=4, ensure_ascii=False, default=str)  # to_json)
 
     def print(self, msg: str) -> None:
         self.logger.info(msg)
