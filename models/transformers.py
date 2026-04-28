@@ -437,14 +437,15 @@ class TransformerEnsemble(nn.Module):
         super().__init__()
         self.k = k
         self.add_cls_token = add_cls_token
-        self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
-                                              dropout, add_cls_token)
-        # self.embed = FeatureEmbedding(num_embed_features, embed_dim,
-        #                               dropout, add_cls_token)
+        # self.embed = FeatureEmbeddingEnsemble(num_embed_features, embed_dim, k,
+        #                                       dropout, add_cls_token)
+        self.embed = FeatureEmbedding(num_embed_features, embed_dim,
+                                      dropout, add_cls_token)
 
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
+        self.embed_r = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
         # self.embed_act = getattr(nn, act)()
         # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
@@ -517,7 +518,8 @@ class TransformerEnsemble(nn.Module):
         else:
             x = self.embed(x)
 
-        # x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
+        x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
+        x = self.embed_r * x
         # x, y = self.embed_in_proj(x).chunk(2, dim=-1)  # * self.embed_proj
         # x = self.embed_act(x) * y
         # x = self.embed_out_proj(x)
