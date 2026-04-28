@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from models.modules.embedding import FeatureEmbedding, FeatureEmbeddingEnsemble
 from models.modules.block import TransformerBlock, CompressorBlock, TransformerBlockEnsemble
 from models.modules.mlp import LinearEnsemble
-from models.modules.norm import RMSNormEnsemble
+from models.modules.norm import NormEnsemble
 
 
 # from models.modules.mlp import GatedMLP
@@ -469,11 +469,13 @@ class TransformerEnsemble(nn.Module):
             for _ in range(num_blocks)
         ])
 
-        self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
+        # self.norm = getattr(nn, norm)(embed_dim, elementwise_affine=False)
         # self.pred_head = nn.Linear(embed_dim, pred_dim)
-        # self.norm = RMSNormEnsemble(embed_dim, k)
+        self.norm = NormEnsemble(norm, embed_dim, k)
         self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
 
+        if pool == 'w_avg':
+            self.w_avg = nn.Parameter(torch.zeros(k, 1, self.seq_len))
         self.pool = pool
         self.mask_first_token = mask_first_token
 
@@ -517,19 +519,19 @@ class TransformerEnsemble(nn.Module):
             )
 
         if self.pool == 'cls':
-            x = x[:, :, 0]
+            x = x[:, :, :1]
         elif self.pool == 'avg':
-            x = x.mean(2)
+            x = x.mean(2, keepdim=True)
         elif self.pool == 'sum':
-            x = x.sum(2)
+            x = x.sum(2, keepdim=True)
         elif self.pool == 'max':
-            x = x.max(2).values
-        # elif self.pool == 'w_avg':
-        #     x = self.w_avg.softmax(0) @ x
+            x = x.max(2, keepdim=True).values
+        elif self.pool == 'w_avg':
+            x = self.w_avg.softmax(0) @ x
         else:
             raise NotImplementedError()
 
-        x = self.norm(x.unsqueeze(2))
+        x = self.norm(x)
         x = self.pred_head(x)
         return x
 
