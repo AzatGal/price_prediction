@@ -523,7 +523,7 @@ class TransformerEnsemble(nn.Module):
         else:
             x = self.embed(x)
 
-        x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
+        # x = x.unsqueeze(1).repeat(1, self.k, 1, 1)
         x = self.embed_proj(x)
 
         # x = self.embed_r * x
