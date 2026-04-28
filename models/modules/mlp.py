@@ -82,13 +82,13 @@ class GatedMLPEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.k = k
-        hidden_dim = 2 * round(dim_factor * embed_dim)
-        self.in_proj = nn.Linear(embed_dim, hidden_dim, bias)
-        self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
+        hidden_dim = round(dim_factor * embed_dim)
+        self.in_proj = nn.Linear(embed_dim, 2*hidden_dim, bias)
+        self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
 
         self.in_r = nn.Parameter(torch.empty(k, 1, embed_dim))
-        self.in_s = nn.Parameter(torch.empty(k, 1, hidden_dim))
-        self.out_r = nn.Parameter(torch.empty(k, 1, embed_dim))
+        self.in_s = nn.Parameter(torch.empty(k, 1, 2*hidden_dim))
+        self.out_r = nn.Parameter(torch.empty(k, 1, hidden_dim))
         self.out_s = nn.Parameter(torch.empty(k, 1, embed_dim))
 
         # self.in_proj = LinearEnsemble(embed_dim, 2 * round(dim_factor * embed_dim), k, bias)
@@ -105,6 +105,8 @@ class GatedMLPEnsemble(nn.Module):
         x = self.act(x) * y
 
         x = self.dropout(x)
+        # print('x', x.shape)
+        # print('self.out_r', self.out_r.shape)
         x = x * self.out_r
         x = self.out_proj(x)
         x = x * self.out_s
