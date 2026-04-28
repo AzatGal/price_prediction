@@ -8,7 +8,7 @@ class NormEnsemble(nn.Module):
                  norm: str,
                  normalized_shape: int | tuple[int],
                  k: int,
-                 elementwise_affine: bool = True
+                 elementwise_affine: bool = False
                  ) -> None:
         super().__init__()
         self.norm = getattr(nn, norm)(normalized_shape, elementwise_affine=False)
