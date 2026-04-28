@@ -56,23 +56,23 @@ class LinearEnsemble(nn.Module):
     ) -> None:
         super().__init__()
         self.weight = nn.Parameter(
-            torch.empty(in_features, out_features)
+            torch.empty(k, in_features, out_features)
         )  # k,
         self.register_parameter(
             'bias',
             nn.Parameter(torch.empty(k, 1, out_features)) if bias else None,
         )
-        self.r = nn.Parameter(
-            torch.empty(k, 1, in_features)
-        )
-        self.s = nn.Parameter(
-            torch.empty(k, 1, out_features)
-        )
+        # self.r = nn.Parameter(
+        #     torch.empty(k, 1, in_features)
+        # )
+        # self.s = nn.Parameter(
+        #     torch.empty(k, 1, out_features)
+        # )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x * self.r
+        # x = x * self.r
         x = x @ self.weight
-        x = x * self.s
+        # x = x * self.s
         if self.bias is not None:
             x = x + self.bias
         return x
