@@ -166,11 +166,11 @@ class AttentionEnsemble(nn.Module):
         # self.head_dim = embed_dim // k
         self.dropout = dropout
 
-        self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
-        self.out_proj = LinearEnsemble(embed_dim, embed_dim, k, bias)
+        # self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
+        # self.out_proj = LinearEnsemble(embed_dim, embed_dim, k, bias)
 
-        # self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
-        # self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
+        self.qkv_proj = nn.Linear(embed_dim, 3 * embed_dim, bias)
+        self.out_proj = nn.Linear(embed_dim, embed_dim, bias)
 
     def forward(self,
                 x: torch.Tensor,
