@@ -87,7 +87,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.num_embed = nn.ModuleList([
             rtdl_num_embeddings.PeriodicEmbeddings(
                 n_num, embed_dim,
-                # n_frequencies=2*embed_dim,
+                n_frequencies=2*embed_dim,
                 lite=False
             )
             for _ in range(k)
