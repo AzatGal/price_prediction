@@ -1,3 +1,4 @@
+import rtdl_num_embeddings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -73,9 +74,9 @@ class FeatureTokenizerEnsemble(nn.Module):
         else:
             self.register_parameter('cls_token', None)
 
-        self.num_weight = nn.Parameter(torch.empty(k, n_num, 2 * embed_dim))
-        self.num_bias = nn.Parameter(torch.empty(k, n_num, 2 * embed_dim))
-        self.num_act = getattr(nn, num_act)()
+        # self.num_weight = nn.Parameter(torch.empty(k, n_num, 2 * embed_dim))
+        # self.num_bias = nn.Parameter(torch.empty(k, n_num, 2 * embed_dim))
+        # self.num_act = getattr(nn, num_act)()
 
         self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim))
 
@@ -83,17 +84,26 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
+        self.num_embed = nn.ModuleList([
+            rtdl_num_embeddings.PeriodicEmbeddings(n_num, embed_dim, lite=False)
+            for _ in range(k)
+        ])
+
     def forward(self, num: torch.Tensor, cat: torch.Tensor) -> torch.Tensor:
         assert torch.all(cat < self.n_embed_cat_features)
 
-        num = (
-            num
-            .reshape(-1, 1, self.n_num, 1)
-            .repeat(1, self.k, 1, 1)  # self.num_weight.size(-1))
+        num = torch.cat(
+            [num_embed(num).unsqueeze(1) for num_embed in self.num_embed],
+            dim=1
         )
-        num = num * self.num_weight + self.num_bias
-        x_num_1, x_num_2 = num.chunk(2, -1)
-        num = self.num_act(x_num_1) * x_num_2
+        # num = (
+        #     num
+        #     .reshape(-1, 1, self.n_num, 1)
+        #     .repeat(1, self.k, 1, 1)  # self.num_weight.size(-1))
+        # )
+        # num = num * self.num_weight + self.num_bias
+        # x_num_1, x_num_2 = num.chunk(2, -1)
+        # num = self.num_act(x_num_1) * x_num_2
 
         cat = (
             cat
