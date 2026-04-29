@@ -4,8 +4,8 @@ from easydict import EasyDict
 
 cfg = EasyDict()
 
-cfg.k = 8
-cfg.embed_dim = 16
+cfg.k = 16
+cfg.embed_dim = 32
 cfg.num_blocks = 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1
