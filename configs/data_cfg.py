@@ -105,7 +105,7 @@ cfg = EasyDict(
     n_embed_num=processors.num.steps[1][1].n_bins_.tolist(),
     n_embed_cat=[len(cat) + 1 for cat in cats],
 )
-print(cfg.n_embed_num)
+# print(cfg.n_embed_num)
 # print(processors.num.steps[1][1].bin_edges_)
 
 
