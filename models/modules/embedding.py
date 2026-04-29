@@ -57,6 +57,7 @@ class FeatureTokenizerEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.k = k
+        self.embed_dim = embed_dim
         if add_cls_token:
             self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
         else:
@@ -65,25 +66,26 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
             self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim))
-            self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim))
+            # self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim))
             self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
+            self.register_buffer(
+                'n_embed_num', torch.tensor(n_embed_num)
+            )
             self.register_parameter('num_weight', None)
             n_embed_cat = n_embed_num + n_embed_cat
             # print(n_embed_cat)
 
         self.n_cat = len(n_embed_cat)
         self.register_buffer(
-            'n_embed_cat',
-            torch.tensor(n_embed_cat)
+            'n_embed_cat', torch.tensor(n_embed_cat)
         )
         self.seq_len = self.n_num + self.n_cat + int(add_cls_token)
 
         offsets = torch.tensor([0] + n_embed_cat[:-1]).cumsum(0).unsqueeze(0)
         self.register_buffer(
-            'offsets',
-            torch.cat([offsets + i * sum(n_embed_cat) for i in range(k)])
+            'offsets', torch.cat([offsets + i * sum(n_embed_cat) for i in range(k)])
         )
         self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim))
 
@@ -99,6 +101,28 @@ class FeatureTokenizerEnsemble(nn.Module):
         #     for _ in range(k)
         # ])
 
+    def init_smooth_weights(self,
+                            sigma: float = 1.0,
+                            kernel_size: int = 6,
+                            # **init_kwargs
+                            ) -> None:
+        # nn.init.normal_(self.cat_weight, **init_kwargs)
+
+        half = kernel_size // 2
+        x = torch.arange(-half, half + 1).float()
+        gauss = torch.exp(-x**2 / (2 * sigma**2))
+        gauss = gauss / gauss.sum()
+        kernel = gauss.view(1, 1, -1).repeat(self.embed_dim, 1, 1)
+
+        weight_in = self.cat_weight.t().unsqueeze(0)
+        weight_out = F.conv1d(weight_in, kernel, padding=half,
+                              groups=self.embed_dim)
+        mask = (
+            torch.arange(self.n_embed_cat.sum()) < self.n_embed_num.sum()
+        ).repeat(self.k)
+        # print(mask)
+        self.cat_weight.data[mask] = weight_out.squeeze(0).t()[mask]
+
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         if self.num_weight is None:
             x_cat = torch.cat([x_num, x_cat], dim=1)
@@ -113,7 +137,7 @@ class FeatureTokenizerEnsemble(nn.Module):
                 .reshape(-1, 1, self.n_num, 1)
                 .repeat(1, self.k, 1, 1)
             )
-            x_num = x_num * self.num_weight + self.num_bias
+            x_num = x_num * self.num_weight # + self.num_bias
             x_num_1, x_num_2 = x_num.chunk(2, -1)
             x_num = self.num_act(x_num_1) * x_num_2
 
