@@ -176,7 +176,8 @@ class AttentionEnsemble(nn.Module):
                 cls_token_only_attn: bool,
                 kv_compressors: nn.ModuleList | nn.Module = None,
                 ) -> torch.Tensor:
-        qkv = list(self.qkv_proj(x).split(self.embed_dim, -1))
+        # qkv = list(self.qkv_proj(x).split(self.embed_dim, -1))
+        qkv = [x, x, x]
 
         if cls_token_only_attn:
             qkv[0] = qkv[0][:, :, :1]
@@ -197,7 +198,7 @@ class AttentionEnsemble(nn.Module):
             dropout_p=self.dropout if self.training else 0.0,
         )
 
-        a = self.out_proj(a)
+        # a = self.out_proj(a)
         return a
 
 
