@@ -84,14 +84,14 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-        self.num_embed = nn.ModuleList([
-            rtdl_num_embeddings.PeriodicEmbeddings(
-                n_num, embed_dim,
-                n_frequencies=2*embed_dim,
-                lite=False
-            )
-            for _ in range(k)
-        ])
+        # self.num_embed = nn.ModuleList([
+        #     rtdl_num_embeddings.PeriodicEmbeddings(
+        #         n_num, embed_dim,
+        #         n_frequencies=2*embed_dim,
+        #         lite=False
+        #     )
+        #     for _ in range(k)
+        # ])
 
     def forward(self, num: torch.Tensor, cat: torch.Tensor) -> torch.Tensor:
         assert torch.all(cat < self.n_embed_cat_features)
@@ -100,6 +100,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             [num_embed(num).unsqueeze(1) for num_embed in self.num_embed],
             dim=1
         )
+        # print([num_embed(num).shape for num_embed in self.num_embed])
         # num = (
         #     num
         #     .reshape(-1, 1, self.n_num, 1)
