@@ -9,13 +9,13 @@ from torch.utils.data import Dataset
 
 class ApartmentDataset(Dataset):
     def __init__(self,
-                 num: np.ndarray,
-                 cat: np.ndarray,
+                 x_num: np.ndarray,
+                 x_cat: np.ndarray,
                  target: np.ndarray,
                  label: np.ndarray
                  ) -> None:
-        self.num = torch.as_tensor(num)
-        self.cat = torch.as_tensor(cat)
+        self.x_num = torch.as_tensor(x_num)
+        self.x_cat = torch.as_tensor(x_cat)
         self.target = torch.as_tensor(target)
         self.label = torch.as_tensor(label)
 
@@ -85,8 +85,8 @@ class ApartmentDataset(Dataset):
 
     def __getitem__(self, idx):
         return {
-            'num': self.num[idx],
-            'cat': self.cat[idx],
+            'x_num': self.x_num[idx],
+            'x_cat': self.x_cat[idx],
             'target': self.target[idx],
             'label': self.label[idx]
         }

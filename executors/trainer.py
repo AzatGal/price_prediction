@@ -171,7 +171,7 @@ class Trainer:
             #     batch['target'] = batch['target'][mask]
             #     batch['label'] = batch['label'][mask]
             # elif self.cfg.task == 'train':
-            pred = self.model(batch['num'], batch['cat']).squeeze()
+            pred = self.model(batch['x_num'], batch['x_cat']).squeeze()
             batch['target'] = batch['target'].repeat(1, pred.size(1))
             # else:
             #     raise NotImplementedError()

@@ -71,14 +71,20 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.n_num = 0
             self.register_parameter('num_weight', None)
             n_embed_cat = n_embed_num + n_embed_cat
+            # print(n_embed_cat)
 
         self.n_cat = len(n_embed_cat)
-        self.register_buffer('n_embed_cat_features',
-                             torch.tensor(n_embed_cat))
+        self.register_buffer(
+            'n_embed_cat',
+            torch.tensor(n_embed_cat)
+        )
         self.seq_len = self.n_num + self.n_cat + int(add_cls_token)
 
         offsets = torch.tensor([0] + n_embed_cat[:-1]).cumsum(0).unsqueeze(0)
-        self.register_buffer('offsets', torch.cat([offsets + i * sum(n_embed_cat) for i in range(k)]))
+        self.register_buffer(
+            'offsets',
+            torch.cat([offsets + i * sum(n_embed_cat) for i in range(k)])
+        )
         self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim))
 
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
@@ -93,37 +99,37 @@ class FeatureTokenizerEnsemble(nn.Module):
         #     for _ in range(k)
         # ])
 
-    def forward(self, num: torch.Tensor, cat: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         if self.num_weight is None:
-            cat = torch.cat([num, cat], dim=1)
-            num = None
+            x_cat = torch.cat([x_num, x_cat], dim=1)
+            x_num = None
         else:
-            num = (
-                num
+            x_num = (
+                x_num
                 .reshape(-1, 1, self.n_num, 1)
                 .repeat(1, self.k, 1, 1)
             )
-            num = num * self.num_weight + self.num_bias
-            x_num_1, x_num_2 = num.chunk(2, -1)
-            num = self.num_act(x_num_1) * x_num_2
+            x_num = x_num * self.num_weight + self.num_bias
+            x_num_1, x_num_2 = x_num.chunk(2, -1)
+            x_num = self.num_act(x_num_1) * x_num_2
 
-        assert torch.all(cat < self.n_embed_cat_features)
+        assert torch.all(x_cat < self.n_embed_cat)
 
-        cat = (
-            cat
+        x_cat = (
+            x_cat
             .reshape(-1, 1, self.n_cat)
             .repeat(1, self.k, 1)
         )
-        cat = cat + self.offsets
-        cat = F.embedding(cat, self.cat_weight)
+        x_cat = x_cat + self.offsets
+        x_cat = F.embedding(x_cat, self.cat_weight)
 
         if self.cls_token is None:
-            x = [cat] if num is None else [num, cat]
+            x = [x_cat] if x_num is None else [x_num, x_cat]
         else:
-            if num is None:
-                x = [self.cls_token.repeat(cat.size(0), 1, 1, 1), cat]
+            if x_num is None:
+                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
             else:
-                x = [self.cls_token.repeat(cat.size(0), 1, 1, 1), num, cat]
+                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
 
         x = torch.cat(x, dim=2)
         x = x + self.bias
