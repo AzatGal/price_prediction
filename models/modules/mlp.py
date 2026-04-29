@@ -86,10 +86,10 @@ class GatedMLPEnsemble(nn.Module):
         self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
         self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
 
-        self.in_rank = nn.Parameter(torch.ones(k, 1, embed_dim))
-        self.in_scale = nn.Parameter(torch.ones(k, 1, 2 * hidden_dim))
-        self.out_rank = nn.Parameter(torch.ones(k, 1, hidden_dim))
-        self.out_scale = nn.Parameter(torch.ones(k, 1, embed_dim))
+        self.in_rank = nn.Parameter(torch.ones(k, 20, embed_dim))
+        self.in_scale = nn.Parameter(torch.ones(k, 20, 2 * hidden_dim))
+        self.out_rank = nn.Parameter(torch.ones(k, 20, hidden_dim))
+        self.out_scale = nn.Parameter(torch.ones(k, 20, embed_dim))
 
         # self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
         # self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
