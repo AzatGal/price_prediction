@@ -136,7 +136,7 @@ class TabmTrainer:
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            pred = self.model(batch['num'], batch['cat']).squeeze()
+            pred = self.model(batch['x_num'], batch['x_cat']).squeeze()
             target = batch['target'].repeat(1, pred.size(1))
             # print(pred.shape)
             # print(target.shape)
@@ -278,19 +278,19 @@ if __name__ == "__main__":
     # cfg.loss = 'MSELoss'
 
     cfg.model_cfg = EasyDict(
-        n_num_features=cfg.model_cfg.n_num,
+        n_num_features=cfg.model_cfg.n_embed_num,
         cat_cardinalities=cfg.model_cfg.n_embed_cat,
         d_out=1,
-        # num_embeddings=rtdl_num_embeddings.PeriodicEmbeddings(cfg.model_cfg.n_num, lite=False)
-        num_embeddings=rtdl_num_embeddings.PiecewiseLinearEmbeddings(
-            rtdl_num_embeddings.compute_bins(
-                torch.as_tensor(cfg.data_cfg.datasets.train.num),
-                n_bins=48
-            ),
-            d_embedding=16,
-            activation=True,  # False,
-            version='B',
-        )
+        num_embeddings=rtdl_num_embeddings.PeriodicEmbeddings(cfg.model_cfg.n_embed_num, lite=False)
+        # num_embeddings=rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+        #     rtdl_num_embeddings.compute_bins(
+        #         torch.as_tensor(cfg.data_cfg.datasets.train.x_num),
+        #         n_bins=48
+        #     ),
+        #     d_embedding=16,
+        #     activation=True,  # False,
+        #     version='B',
+        # )
         # arch_type='tabm-mini'
         # d_in,
         # n_blocks,
