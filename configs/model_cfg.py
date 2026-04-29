@@ -4,7 +4,7 @@ from easydict import EasyDict
 
 cfg = EasyDict()
 
-cfg.k = 16
+cfg.k = 2  # 16
 cfg.embed_dim = 32
 cfg.num_blocks = 3
 cfg.act = 'ReLU'  # SiLU
