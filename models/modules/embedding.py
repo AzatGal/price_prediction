@@ -103,25 +103,32 @@ class FeatureTokenizerEnsemble(nn.Module):
 
     def init_smooth_weights(self,
                             sigma: float = 1.0,
-                            kernel_size: int = 6,
+                            kernel_size: int = 5,
                             # **init_kwargs
                             ) -> None:
         # nn.init.normal_(self.cat_weight, **init_kwargs)
 
-        half = kernel_size // 2
-        x = torch.arange(-half, half + 1).float()
-        gauss = torch.exp(-x**2 / (2 * sigma**2))
-        gauss = gauss / gauss.sum()
-        kernel = gauss.view(1, 1, -1).repeat(self.embed_dim, 1, 1)
+        t = self.n_embed_cat.sum()
+        for i in range(len(self.n_embed_num)):
+            for j in range(self.k):
+                mask = (
+                    (torch.arange(self.k * t) < j * t + self.n_embed_num[:i + 1].sum())
+                    &
+                    (torch.arange(self.k * t) >= j * t + self.n_embed_num[:i].sum())
+                )
+                # print(mask)
 
-        weight_in = self.cat_weight.t().unsqueeze(0)
-        weight_out = F.conv1d(weight_in, kernel, padding=half,
-                              groups=self.embed_dim)
-        mask = (
-            torch.arange(self.n_embed_cat.sum()) < self.n_embed_num.sum()
-        ).repeat(self.k)
-        # print(mask)
-        self.cat_weight.data[mask] = weight_out.squeeze(0).t()[mask]
+                half = kernel_size // 2
+                x = torch.arange(-half, half + 1).float()
+                gauss = torch.exp(-x**2 / (2 * sigma**2))
+                gauss = gauss / gauss.sum()
+                kernel = gauss.view(1, 1, -1).repeat(self.embed_dim, 1, 1)
+
+                weight_in = self.cat_weight[mask].t().unsqueeze(0)
+                weight_out = F.conv1d(weight_in, kernel, padding=half,
+                                      groups=self.embed_dim)
+
+                self.cat_weight.data[mask] = weight_out.squeeze(0).t()
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         if self.num_weight is None:
