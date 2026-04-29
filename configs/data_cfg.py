@@ -63,7 +63,7 @@ processors = EasyDict(
         # FunctionTransformer(np.nan_to_num),
         # FunctionTransformer(lambda x: x.astype(np.float32)),
         FunctionTransformer(lambda x: x.fillna(raw_data.train[columns.num].min() - 10)),
-        KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='quantile'), #, subsample=len(raw_data.train)),
+        KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'), #, subsample=len(raw_data.train)),
         FunctionTransformer(lambda x: x.astype(int))
     ),
     cat=make_pipeline(
@@ -72,7 +72,8 @@ processors = EasyDict(
         FunctionTransformer(lambda x: (x + 1).astype(int))
     ),
     target=make_pipeline(
-        PowerTransformer(),
+        # PowerTransformer(),
+        QuantileTransformer(output_distribution='normal'),
         FunctionTransformer(lambda x: x.astype(np.float32))
     )
 )
