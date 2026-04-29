@@ -66,18 +66,18 @@ class Trainer:
         # model_cfg['n_num'] = len(self.cfg.data_cfg.num_cfg['columns'])
         self.model = getattr(models, self.cfg.model)(**model_cfg)
 
-        # self.model.embed.num_embed = nn.ModuleList([
-        #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
-        #         rtdl_num_embeddings.compute_bins(
-        #             torch.as_tensor(self.cfg.data_cfg.datasets.train.num),
-        #             n_bins=100 # 48
-        #         ),
-        #         d_embedding=model_cfg.embed_dim,
-        #         activation=True,  # False,
-        #         version='B',
-        #     )
-        #     for _ in range(model_cfg.k)
-        # ])
+        self.model.embed.num_embed = nn.ModuleList([
+            rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+                rtdl_num_embeddings.compute_bins(
+                    torch.as_tensor(self.cfg.data_cfg.datasets.train.x_num),
+                    n_bins=128 # 48
+                ),
+                d_embedding=model_cfg.embed_dim,
+                activation=True,  # False,
+                version='B',
+            )
+            for _ in range(model_cfg.k)
+        ])
 
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
             # LogCoshLoss(**self.cfg.loss_args)) if self.cfg.loss == 'LogCoshLoss' \

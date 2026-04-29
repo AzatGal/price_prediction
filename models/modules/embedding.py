@@ -90,14 +90,14 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         self.dropout = nn.Dropout(dropout)
 
-        self.num_embed = nn.ModuleList([
-            rtdl_num_embeddings.PeriodicEmbeddings(
-                self.n_num, embed_dim,
-                # n_frequencies=2*embed_dim,
-                lite=False
-            )
-            for _ in range(k)
-        ])
+        # self.num_embed = nn.ModuleList([
+        #     rtdl_num_embeddings.PeriodicEmbeddings(
+        #         self.n_num, embed_dim,
+        #         # n_frequencies=2*embed_dim,
+        #         lite=False
+        #     )
+        #     for _ in range(k)
+        # ])
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         if self.num_weight is None:
