@@ -55,33 +55,22 @@ class Trainer:
         self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        # cats = [
-        #     len(c) for c in self.cfg.data_cfg.cat_cfg['processor'].categories_
-        # ]
-        # inf_cats = [
-        #     0 if c is None else len(c) - 1
-        #     for c in self.cfg.data_cfg.cat_cfg['processor'].infrequent_categories_
-        # ]
-        # model_cfg['n_embed_cat'] = [i - j for i, j in zip(cats, inf_cats)]
-        # model_cfg['n_num'] = len(self.cfg.data_cfg.num_cfg['columns'])
         self.model = getattr(models, self.cfg.model)(**model_cfg)
 
-        self.model.embed.num_embed = nn.ModuleList([
-            rtdl_num_embeddings.PiecewiseLinearEmbeddings(
-                rtdl_num_embeddings.compute_bins(
-                    torch.as_tensor(self.cfg.data_cfg.datasets.train.x_num),
-                    n_bins=128 # 48
-                ),
-                d_embedding=model_cfg.embed_dim,
-                activation=True,  # False,
-                version='B',
-            )
-            for _ in range(model_cfg.k)
-        ])
+        # self.model.embed.num_embed = nn.ModuleList([
+        #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+        #         rtdl_num_embeddings.compute_bins(
+        #             torch.as_tensor(self.cfg.data_cfg.datasets.train.x_num),
+        #             n_bins=128 # 48
+        #         ),
+        #         d_embedding=model_cfg.embed_dim,
+        #         activation=True,  # False,
+        #         version='B',
+        #     )
+        #     for _ in range(model_cfg.k)
+        # ])
 
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
-            # LogCoshLoss(**self.cfg.loss_args)) if self.cfg.loss == 'LogCoshLoss' \
-            # else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
             get_param_groups(self.model,
                              self.cfg.lr,
