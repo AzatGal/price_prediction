@@ -1,72 +1,119 @@
 import os
 
+import numpy as np
 import pandas as pd
 from easydict import EasyDict
-from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, QuantileTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, QuantileTransformer, \
+    FunctionTransformer
 
-from data.data_processing import DataTransformer
+# from data.data_processing import DataTransformer
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-cfg = EasyDict()
-cfg.path = os.path.join(ROOT_DIR, 'data', 'datasets')
+path = os.path.join(ROOT_DIR, 'data', 'datasets')
 
-df = pd.read_csv(os.path.join(cfg.path, "train.csv"))
-
-cfg.num_cfg = {
-    'columns': ['Стоимость',
-                'Общая площадь',
-                'Жилая площадь',
-                'Площадь кухни',
-                'Этаж',
-                'Этажей в доме',
-                'Лифт пассажирский (кол-во)',
-                'Лифт грузовой (кол-во)',
-                'Количество комнат',
-                'Высота потолков',
-                'Кол-во раздельных санузлов'],
-    # 'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'num_processor.pkl')
-}
-cfg.num_cfg['processor'] = QuantileTransformer(output_distribution='normal').fit(
-    df[cfg.num_cfg['columns']].fillna(-1.0)
+columns = EasyDict(
+    num=['Общая площадь',
+         'Жилая площадь',
+         'Площадь кухни',
+         'Этаж',
+         'Этажей в доме',
+         'Лифт пассажирский (кол-во)',
+         'Лифт грузовой (кол-во)',
+         'Количество комнат',
+         'Высота потолков',
+         'Кол-во раздельных санузлов'],
+    cat=['Тип продажи',
+         'Объект продажи',
+         'Мусоропровод',
+         'Парковка',
+         'Тип дома',
+         'Вид из окон',
+         'Расстояние до метро',
+         'Округ',
+         'Район'],
+    target=['Стоимость']
 )
+
+raw_data = EasyDict(
+    train=pd.read_csv(os.path.join(path, "train.csv")),
+    valid=pd.read_csv(os.path.join(path, "valid.csv")),
+    test=pd.read_csv(os.path.join(path, "test.csv"))
+)
+
+cats = [raw_data.train[col].value_counts() for col in columns.cat]
+cats = [cat.index[cat > 26].to_numpy() for cat in cats]
+
+processors = EasyDict(
+    num=make_pipeline(
+        QuantileTransformer(output_distribution='normal'),
+        FunctionTransformer(np.nan_to_num)
+    ),
+    cat=make_pipeline(
+        FunctionTransformer(lambda x: x.astype('str')),
+        OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
+        FunctionTransformer(lambda x: x + 1)
+    ),
+    target=PowerTransformer()
+)
+
+cfg = EasyDict(
+    processors=processors,
+    columns=columns,
+    n_num=len(columns.num),
+    n_embed_cat=[len(cat) + 1 for cat in cats],
+    # raw_data=raw_data,
+    datasets=EasyDict(
+        train=EasyDict(
+            num=processors.num.fit_transform(raw_data.train[columns.num]),
+            cat=processors.cat.fit_transform(raw_data.train[columns.cat]),
+            target=processors.target.fit_transform(raw_data.train[columns.target].to_numpy()),
+            label=raw_data.train[columns.target].to_numpy(),
+        ),
+        valid=EasyDict(
+            num=processors.num.transform(raw_data.valid[columns.num]),
+            cat=processors.cat.transform(raw_data.valid[columns.cat]),
+            target=processors.target.transform(raw_data.valid[columns.target].to_numpy()),
+            label=raw_data.valid[columns.target].to_numpy(),
+        ),
+        test=EasyDict(
+            num=processors.num.fit_transform(raw_data.test[columns.num]),
+            cat=processors.cat.fit_transform(raw_data.test[columns.cat]),
+            target=processors.target.fit_transform(raw_data.test[columns.target].to_numpy()),
+            label=raw_data.test[columns.target].to_numpy(),
+        ),
+    )
+)
+
+
+
+
+# cfg.num_cfg['processor'] = QuantileTransformer(output_distribution='normal').fit(
+#     df[cfg.num_cfg['columns']].fillna(-1.0)
+# )
 # KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),
 
 
-cfg.cat_cfg = {
-    'columns': ['Тип продажи',
-                'Объект продажи',
-                'Мусоропровод',
-                'Парковка',
-                'Тип дома',
-                'Вид из окон',
-                'Расстояние до метро',
-                'Округ',
-                'Район'],
     # 'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'cat_processor.pkl')
-}
-cfg.cat_cfg['processor'] = OrdinalEncoder(
-    encoded_missing_value=-1, handle_unknown='use_encoded_value', min_frequency=26, unknown_value=-1
-).fit(
-    df[cfg.cat_cfg['columns']]
-)
+# cfg.cat_cfg['processor'] = OrdinalEncoder(
+#     encoded_missing_value=-1, handle_unknown='use_encoded_value', min_frequency=26, unknown_value=-1
+# ).fit(
+#     df[cfg.cat_cfg['columns']]
+# )
 
-cats = [
-    len(c) for c in cfg.cat_cfg['processor'].categories_
-]
-inf_cats = [
-    0 if c is None else len(c) - 1
-    for c in cfg.cat_cfg['processor'].infrequent_categories_
-]
-cfg.n_embed_cat = [i - j for i, j in zip(cats, inf_cats)]
+# cats = [
+#     len(c) for c in cfg.cat_cfg['processor'].categories_
+# ]
+# inf_cats = [
+#     0 if c is None else len(c) - 1
+#     for c in cfg.cat_cfg['processor'].infrequent_categories_
+# ]
+# cfg.n_embed_cat = [i - j for i, j in zip(cats, inf_cats)]
 
 
-cfg.target_cfg = {
-    'columns': ['Стоимость'],
-    # 'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'target_processor.pkl')
-}
-cfg.target_cfg['processor'] = PowerTransformer().fit(df[cfg.target_cfg['columns']].to_numpy())
+# cfg.target_cfg['processor'] = PowerTransformer().fit(df[cfg.target_cfg['columns']].to_numpy())
 
 
 # cfg.data_transformer = DataTransformer(

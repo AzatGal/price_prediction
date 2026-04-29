@@ -145,8 +145,10 @@ columns = [
 
 if __name__ == '__main__':
     import pandas as pd
+    from sklearn.preprocessing import OrdinalEncoder
+
     from configs.data_cfg import cfg
-    dt = cfg.data_transformer
+    # dt = cfg.data_transformer
 
     # t = dt.cat_processor.categories_.copy()
     # for i, (col, cats) in enumerate(zip(dt.cat_cols, dt.cat_processor.categories_)):
@@ -156,13 +158,25 @@ if __name__ == '__main__':
     #     print(col)
     #     print(t)
 
-    for col, edges in zip(dt.num_cols, dt.num_processor.bin_edges_):
-        print(col, edges)
+    # for col, edges in zip(dt.num_cols, dt.num_processor.bin_edges_):
+    #     print(col, edges)
 
-    # df = pd.read_csv(
-    #     '/data/datasets/test.csv'
-    #     )
-    # print(df)
-    # print(dt.transform(
-    #     df
-    # ))
+    train_df = pd.read_csv('./datasets/train.csv')
+    # print(train_df[cfg.cat_cfg['columns']])
+    cats = [train_df[col].value_counts() for col in cfg.cat_cfg['columns']]
+    cats = [cat.index[cat > 26].to_numpy() for cat in cats]
+    # print(cats)
+
+    oe = OrdinalEncoder(
+        categories=cats,
+        handle_unknown='use_encoded_value', unknown_value=-1
+    ).fit(train_df[cfg.cat_cfg['columns']].astype(str))
+
+    for i in range(len(cfg.cat_cfg['columns'])):
+        print(len(oe.categories_[i]) == len(cats[i]))
+
+    t = oe.transform(
+        pd.read_csv('./datasets/valid.csv')[cfg.cat_cfg['columns']].astype(str)
+    ) + 1
+
+    print(t.min(axis=0))

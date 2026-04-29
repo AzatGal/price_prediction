@@ -41,11 +41,10 @@ class Trainer:
 
     def _prepare_data(self, data_cfg):
         # self.data_transformer = data_cfg.data_transformer
-        self.target_processor = data_cfg.target_cfg['processor']
+        self.target_processor = data_cfg.processors.target
 
-        self.train_data = ApartmentDataset("train", **data_cfg)
-        # print(self.train_data[0])
-        self.valid_data = ApartmentDataset('valid', **data_cfg)
+        self.train_data = ApartmentDataset(**data_cfg.datasets.train)
+        self.valid_data = ApartmentDataset(**data_cfg.datasets.valid)
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():

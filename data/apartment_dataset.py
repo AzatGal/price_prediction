@@ -9,34 +9,15 @@ from torch.utils.data import Dataset
 
 class ApartmentDataset(Dataset):
     def __init__(self,
-                 dataset_type,
-                 path,
-                 num_cfg,
-                 cat_cfg,
-                 target_cfg,
-                 n_embed_cat
-                 # data_transformer,
-                 # task,
-                 # include_target=False,
+                 num: np.ndarray,
+                 cat: np.ndarray,
+                 target: np.ndarray,
+                 label: np.ndarray
                  ) -> None:
-        df = pd.read_csv(os.path.join(path, f"{dataset_type}.csv"))
-        self.label = df[target_cfg['columns']].to_numpy()
-        # if dataset_type == 'train':
-        #     self.num = torch.as_tensor(num_cfg['processor'].fit_transform(df[num_cfg['columns']])).float()
-        #     self.cat = torch.as_tensor(cat_cfg['processor'].fit_transform(df[cat_cfg['columns']])).long()
-        #     self.target = torch.as_tensor(target_cfg['processor'].fit_transform(self.label)).float()
-        # else:
-        self.num = torch.as_tensor(
-            num_cfg['processor'].transform(df[num_cfg['columns']].fillna(-1.0))
-        ).float()
-        self.cat = torch.as_tensor(
-            cat_cfg['processor'].transform(df[cat_cfg['columns']])
-        ).long()
-        for i, c in enumerate(n_embed_cat):
-            self.cat[self.cat[:, i] == -1, i] = c - 1
-        self.target = torch.as_tensor(
-            target_cfg['processor'].transform(self.label)
-        ).float()
+        self.num = torch.as_tensor(num, dtype=torch.float)
+        self.cat = torch.as_tensor(cat, dtype=torch.long)
+        self.target = torch.as_tensor(target, dtype=torch.float)
+        self.label = torch.as_tensor(label, dtype=torch.float)
 
     #     features = torch.as_tensor(
     #         data_transformer.transform(df)

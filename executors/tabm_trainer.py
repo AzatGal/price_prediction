@@ -2,6 +2,8 @@ import json
 import os
 import time
 
+import pandas as pd
+import rtdl_num_embeddings
 from easydict import EasyDict
 
 # from models.ensembles import PricePredEnsemble
@@ -38,10 +40,11 @@ class TabmTrainer:
         self.logger.print('Training on ' + str(self.accelerator.device))
 
     def _prepare_data(self, data_cfg):
-        self.data_transformer = data_cfg.data_transformer
+        # self.data_transformer = data_cfg.data_transformer
+        self.target_processor = data_cfg.processors.target
 
-        self.train_data = ApartmentDataset("train", **data_cfg)
-        self.valid_data = ApartmentDataset('valid', **data_cfg)
+        self.train_data = ApartmentDataset(**data_cfg.datasets.train)
+        self.valid_data = ApartmentDataset(**data_cfg.datasets.valid)
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
@@ -52,8 +55,7 @@ class TabmTrainer:
 
     def _prepare_model(self, model_cfg):
         self.model = tabm.TabM.make(**model_cfg)
-        self.criterion = LogCoshLoss(**self.cfg.loss_args) if self.cfg.loss == 'LogCoshLoss' \
-            else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
+        self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
             self.model.parameters(),
             lr=self.cfg.lr,
@@ -70,22 +72,22 @@ class TabmTrainer:
             self.model, self.optimizer, self.train_dataloader,
             self.val_dataloader, self.scheduler
         )
-        pretrained_path = self.cfg.get('load_pretrained', False)
-        if pretrained_path:
-            self.load_model(pretrained_path, strict=False)
-            self.model.zero_compressors_()
-            self.logger.print('load_pretrained')
-
-        checkpoint_path = self.cfg.get('load_checkpoint', False)
-        if checkpoint_path:
-            self.load_checkpoint(checkpoint_path)
-            self.logger.print('load_checkpoint')
+        # pretrained_path = self.cfg.get('load_pretrained', False)
+        # if pretrained_path:
+        #     self.load_model(pretrained_path, strict=False)
+        #     self.model.zero_compressors_()
+        #     self.logger.print('load_pretrained')
+        #
+        # checkpoint_path = self.cfg.get('load_checkpoint', False)
+        # if checkpoint_path:
+        #     self.load_checkpoint(checkpoint_path)
+        #     self.logger.print('load_checkpoint')
 
     def metric(self, pred, label):
         pred = pred.cpu()
         label = label.cpu()
         pred = torch.as_tensor(
-            self.data_transformer.inverse_transform(pred, target='num')
+            self.target_processor.inverse_transform(pred)
         )
         return mape(pred, label)
 
@@ -134,11 +136,11 @@ class TabmTrainer:
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            pred = self.model(x_cat=batch['features']).squeeze()
+            pred = self.model(batch['num'], batch['cat']).squeeze()
             target = batch['target'].repeat(1, pred.size(1))
             # print(pred.shape)
             # print(target.shape)
-            loss = self.criterion(pred, target) ** 0.5
+            loss = self.criterion(pred, target)
 
         if update_model:
             self.accelerator.backward(loss)
@@ -148,8 +150,8 @@ class TabmTrainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        pred = pred.mean(1)
-        return loss.item() ** 2, pred.detach()
+        pred = pred.mean(1, keepdim=True)
+        return loss.item(), pred.detach()
 
     def train_epoch(self):
         self.model.train()
@@ -171,7 +173,7 @@ class TabmTrainer:
         self.time_training += t
 
         return {
-            'loss': total_loss ** 0.5,
+            'loss': total_loss,
             'metric': total_metric,
             'time': t
         }
@@ -267,39 +269,40 @@ class TabmTrainer:
 if __name__ == "__main__":
     from configs.train_cfg import cfg
 
-    cfg.batch_size = 16
-    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/runs/train/08-02_14-13'
-    with open(os.path.join(path, 'logs', 'config.json'), 'r') as f:
-        cfg.model_cfg = json.load(f)['model_cfg']
+    cfg.num_epoch = 200
+    cfg.weight_decay = 3e-4
+    cfg.lr = 2e-3
+    cfg.model = 'TabM'
+    cfg.batch_size = 64
+
+    # cfg.loss = 'MSELoss'
+
+    cfg.model_cfg = EasyDict(
+        n_num_features=cfg.model_cfg.n_num,
+        cat_cardinalities=cfg.model_cfg.n_embed_cat,
+        d_out=1,
+        # num_embeddings=rtdl_num_embeddings.PeriodicEmbeddings(cfg.model_cfg.n_num, lite=False)
+        num_embeddings=rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+            rtdl_num_embeddings.compute_bins(
+                torch.as_tensor(cfg.data_cfg.datasets.train.num),
+                n_bins=48
+            ),
+            d_embedding=16,
+            activation=True,  # False,
+            version='B',
+        )
+        # arch_type='tabm-mini'
+        # d_in,
+        # n_blocks,
+        # d_block,
+        # dropout=0.1,
+        # activation='ReLU',
+        # k=32
+    )
 
     trainer = TabmTrainer(cfg)
-    trainer.load_model(os.path.join(path, 'Tabm.pt'))
-
-    print(trainer.test())
-
-    # cfg.num_epoch = 200
-    # cfg.weight_decay = 3e-4
-    # cfg.lr = 2e-3
-    # cfg.model = 'TabM'
-    # cfg.batch_size = 64
-    #
-    # cfg.loss = 'MSELoss'
-    #
-    # cfg.model_cfg = EasyDict(
-    #     cat_cardinalities=cfg.model_cfg.num_embed_features,
-    #     d_out=1,
-    #     # arch_type='tabm-mini'
-    #     # d_in,
-    #     # n_blocks,
-    #     # d_block,
-    #     # dropout=0.1,
-    #     # activation='ReLU',
-    #     # k=32
-    # )
-    #
-    # trainer = TabmTrainer(cfg)
-    # # trainer.overfitting_on_batch()
-    # trainer.fit()
+    # trainer.overfitting_on_batch()
+    trainer.fit()
 
 
 """
