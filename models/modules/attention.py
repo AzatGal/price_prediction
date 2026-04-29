@@ -197,7 +197,7 @@ class AttentionEnsemble(nn.Module):
             dropout_p=self.dropout if self.training else 0.0,
         )
 
-        a = self.out_proj(a)
+        # a = self.out_proj(a)
         return a
 
 
