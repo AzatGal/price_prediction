@@ -413,7 +413,7 @@ from models.modules.norm import NormEnsemble
 class TransformerEnsemble(nn.Module):
     def __init__(self,
                  embed_dim: int,
-                 n_num: int,
+                 n_embed_num: int,
                  n_embed_cat: list[int],
                  k: int,
                  attn_dropout: float,
@@ -434,7 +434,7 @@ class TransformerEnsemble(nn.Module):
         super().__init__()
         self.k = k
         self.add_cls_token = add_cls_token
-        self.embed = FeatureTokenizerEnsemble(embed_dim, n_num, n_embed_cat,
+        self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
                                               k, act, dropout, add_cls_token)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim

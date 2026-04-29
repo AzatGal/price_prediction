@@ -14,10 +14,10 @@ class ApartmentDataset(Dataset):
                  target: np.ndarray,
                  label: np.ndarray
                  ) -> None:
-        self.num = torch.as_tensor(num, dtype=torch.float)
-        self.cat = torch.as_tensor(cat, dtype=torch.long)
-        self.target = torch.as_tensor(target, dtype=torch.float)
-        self.label = torch.as_tensor(label, dtype=torch.float)
+        self.num = torch.as_tensor(num)
+        self.cat = torch.as_tensor(cat)
+        self.target = torch.as_tensor(target)
+        self.label = torch.as_tensor(label)
 
     #     features = torch.as_tensor(
     #         data_transformer.transform(df)

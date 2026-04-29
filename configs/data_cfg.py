@@ -45,25 +45,36 @@ raw_data = EasyDict(
 
 cats = [raw_data.train[col].value_counts() for col in columns.cat]
 cats = [cat.index[cat > 26].to_numpy() for cat in cats]
+n_bins = [
+    min(128, int(0.6 * raw_data.train[col].nunique()))
+    for col in columns.num
+]
+
+# print(n_bins)
 
 processors = EasyDict(
+    # num=KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
     num=make_pipeline(
-        QuantileTransformer(output_distribution='normal'),
-        FunctionTransformer(np.nan_to_num)
+        # QuantileTransformer(output_distribution='normal'),
+        # FunctionTransformer(np.nan_to_num)
+        FunctionTransformer(lambda x: x.fillna(-1)),
+        KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans', subsample=len(raw_data.train)),
+        FunctionTransformer(lambda x: x.astype(int))
     ),
     cat=make_pipeline(
         FunctionTransformer(lambda x: x.astype('str')),
         OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
-        FunctionTransformer(lambda x: x + 1)
+        FunctionTransformer(lambda x: (x + 1).astype(int))
     ),
-    target=PowerTransformer()
+    target=make_pipeline(
+        PowerTransformer(),
+        FunctionTransformer(lambda x: x.astype(np.float32))
+    )
 )
 
 cfg = EasyDict(
     processors=processors,
     columns=columns,
-    n_num=len(columns.num),
-    n_embed_cat=[len(cat) + 1 for cat in cats],
     # raw_data=raw_data,
     datasets=EasyDict(
         train=EasyDict(
@@ -84,7 +95,10 @@ cfg = EasyDict(
             target=processors.target.fit_transform(raw_data.test[columns.target].to_numpy()),
             label=raw_data.test[columns.target].to_numpy(),
         ),
-    )
+    ),
+    # n_num=len(columns.num),
+    n_embed_num=n_bins,
+    n_embed_cat=[len(cat) + 1 for cat in cats],
 )
 
 
