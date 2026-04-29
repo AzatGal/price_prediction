@@ -94,7 +94,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         self.dropout = nn.Dropout(dropout)
 
-        self.norm = NormEnsemble('RMSNorm', embed_dim, k)
+        # self.norm = NormEnsemble('RMSNorm', embed_dim, k)
 
         # self.num_embed = nn.ModuleList([
         #     rtdl_num_embeddings.PeriodicEmbeddings(
@@ -172,7 +172,7 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         x = torch.cat(x, dim=2)
         x = x + self.bias
-        x = self.norm(x)
+        # x = self.norm(x)
         x = self.dropout(x)
         return x
 
