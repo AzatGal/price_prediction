@@ -15,8 +15,8 @@ cfg.pool = 'cls'  # avg cls sum w_avg
 cfg.add_cls_token = cfg.pool == 'cls'
 
 cfg.attn_dropout = 0.0  # 1
-cfg.mlp_dropout = 0.0
-cfg.dropout = 0.0
+cfg.mlp_dropout = 0.1
+cfg.dropout = 0.1
 
 cfg.kv_compression = 'Head'  # Head KV Layer  None
 cfg.kv_compression_dim = 4  # 0.01
