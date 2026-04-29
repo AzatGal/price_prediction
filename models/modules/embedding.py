@@ -48,7 +48,7 @@ import torch.nn.functional as F
 class FeatureTokenizerEnsemble(nn.Module):
     def __init__(self,
                  embed_dim,
-                 n_num: int,
+                 n_embed_num: int | list[int],
                  n_embed_cat: list[int],
                  k: int,
                  num_act: str,
@@ -57,11 +57,11 @@ class FeatureTokenizerEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.k = k
-        self.n_num = n_num
+        self.n_num = n_embed_num if isinstance(n_embed_num, int) else len(n_embed_num)
         self.n_cat = len(n_embed_cat)
         self.register_buffer('n_embed_cat_features',
                              torch.tensor(n_embed_cat))
-        self.seq_len = n_num + self.n_cat + int(add_cls_token)
+        self.seq_len = self.n_num + self.n_cat + int(add_cls_token)
 
         offsets = (torch.tensor([0] + n_embed_cat[:-1])
                    .cumsum(0)
@@ -74,9 +74,9 @@ class FeatureTokenizerEnsemble(nn.Module):
         else:
             self.register_parameter('cls_token', None)
 
-        # self.num_weight = nn.Parameter(torch.empty(k, n_num, 2 * embed_dim))
-        # self.num_bias = nn.Parameter(torch.empty(k, n_num, 2 * embed_dim))
-        # self.num_act = getattr(nn, num_act)()
+        self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim))
+        self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim))
+        self.num_act = getattr(nn, num_act)()
 
         self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim))
 
@@ -96,19 +96,19 @@ class FeatureTokenizerEnsemble(nn.Module):
     def forward(self, num: torch.Tensor, cat: torch.Tensor) -> torch.Tensor:
         assert torch.all(cat < self.n_embed_cat_features)
 
-        num = torch.cat(
-            [num_embed(num).unsqueeze(1) for num_embed in self.num_embed],
-            dim=1
-        )
-        # print([num_embed(num).shape for num_embed in self.num_embed])
-        # num = (
-        #     num
-        #     .reshape(-1, 1, self.n_num, 1)
-        #     .repeat(1, self.k, 1, 1)  # self.num_weight.size(-1))
+        # num = torch.cat(
+        #     [num_embed(num).unsqueeze(1) for num_embed in self.num_embed],
+        #     dim=1
         # )
-        # num = num * self.num_weight + self.num_bias
-        # x_num_1, x_num_2 = num.chunk(2, -1)
-        # num = self.num_act(x_num_1) * x_num_2
+        # print([num_embed(num).shape for num_embed in self.num_embed])
+        num = (
+            num
+            .reshape(-1, 1, self.n_num, 1)
+            .repeat(1, self.k, 1, 1)  # self.num_weight.size(-1))
+        )
+        num = num * self.num_weight + self.num_bias
+        x_num_1, x_num_2 = num.chunk(2, -1)
+        num = self.num_act(x_num_1) * x_num_2
 
         cat = (
             cat
