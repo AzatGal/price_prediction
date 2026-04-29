@@ -2,6 +2,7 @@ import json
 import os
 import time
 
+import rtdl_num_embeddings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -64,6 +65,20 @@ class Trainer:
         # model_cfg['n_embed_cat'] = [i - j for i, j in zip(cats, inf_cats)]
         # model_cfg['n_num'] = len(self.cfg.data_cfg.num_cfg['columns'])
         self.model = getattr(models, self.cfg.model)(**model_cfg)
+
+        # self.model.num_embed = nn.ModuleList([
+        #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+        #         rtdl_num_embeddings.compute_bins(
+        #             torch.as_tensor(cfg.data_cfg.datasets.train.num),
+        #             n_bins=48
+        #         ),
+        #         d_embedding=16,
+        #         activation=True,  # False,
+        #         version='B',
+        #     )
+        #     for _ in range(model_cfg.k)
+        # ])
+
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
             # LogCoshLoss(**self.cfg.loss_args)) if self.cfg.loss == 'LogCoshLoss' \
             # else getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
