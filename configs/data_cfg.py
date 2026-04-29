@@ -59,11 +59,12 @@ warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
 processors = EasyDict(
     num=make_pipeline(
-        # QuantileTransformer(output_distribution='normal'),
-        # FunctionTransformer(np.nan_to_num)
-        FunctionTransformer(lambda x: x.fillna(-1)),
-        KBinsDiscretizer(n_bins=100, encode='ordinal', strategy='kmeans'), #, subsample=len(raw_data.train)),
-        FunctionTransformer(lambda x: x.astype(int))
+        QuantileTransformer(output_distribution='normal'),
+        FunctionTransformer(np.nan_to_num),
+        FunctionTransformer(lambda x: x.astype(np.float32)),
+        # FunctionTransformer(lambda x: x.fillna(-1)),
+        # KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'), #, subsample=len(raw_data.train)),
+        # FunctionTransformer(lambda x: x.astype(int))
     ),
     cat=make_pipeline(
         FunctionTransformer(lambda x: x.astype('str')),
@@ -100,9 +101,8 @@ cfg = EasyDict(
             label=raw_data.test[columns.target].to_numpy(),
         ),
     ),
-    # n_num=len(columns.num),
-    # n_embed_num=n_bins,
-    n_embed_num=processors.num.steps[1][1].n_bins_.tolist(),
+    n_embed_num=len(columns.num),
+    # n_embed_num=processors.num.steps[1][1].n_bins_.tolist(),
     n_embed_cat=[len(cat) + 1 for cat in cats],
 )
 # print(cfg.n_embed_num)
