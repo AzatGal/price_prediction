@@ -69,7 +69,7 @@ class Trainer:
         self.model.embed.num_embed = nn.ModuleList([
             rtdl_num_embeddings.PiecewiseLinearEmbeddings(
                 rtdl_num_embeddings.compute_bins(
-                    torch.as_tensor(cfg.data_cfg.datasets.train.num),
+                    torch.as_tensor(self.cfg.data_cfg.datasets.train.num),
                     n_bins=48
                 ),
                 d_embedding=model_cfg.embed_dim,
