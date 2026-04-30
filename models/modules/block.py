@@ -84,14 +84,14 @@ class TransformerEnsembleBlock(nn.Module):
                     cls_token_only_attn: bool,
                     kv_compressors: nn.ModuleList | nn.Module = None
                     ) -> torch.Tensor:
-        x = self.attn_norm(x)
+        # x = self.attn_norm(x)
         x = self.attn(x, cls_token_only_attn, kv_compressors)
         # x = self.attn_norm(x)
         x = self.attn_drop(x)
         return x
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.mlp_norm(x)
+        # x = self.mlp_norm(x)
         x = self.mlp(x)
         # x = self.mlp_norm(x)
         x = self.mlp_drop(x)

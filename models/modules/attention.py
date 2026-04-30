@@ -184,16 +184,16 @@ class AttentionEnsemble(nn.Module):
         if kv_compressors is not None:
             if isinstance(kv_compressors, nn.ModuleList):
                 qkv[1:] = [
-                    F.rms_norm(kv_compressors[i](
+                    kv_compressors[i](
                         x.transpose(2, 3)
-                    ).transpose(2, 3), [self.embed_dim])
+                    ).transpose(2, 3)
                     for i, x in enumerate(qkv[1:])
                 ]
             else:
                 qkv[1:] = [
-                    F.rms_norm(kv_compressors(
+                    kv_compressors(
                         x.transpose(2, 3)
-                    ).transpose(2, 3), [self.embed_dim])
+                    ).transpose(2, 3)
                     for x in qkv[1:]
                 ]
 
