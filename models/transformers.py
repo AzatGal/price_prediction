@@ -502,7 +502,8 @@ class TransformerEnsemble(nn.Module):
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 else:
-                    nn.init.normal_(p)  # , std=0.02)
+                    # nn.init.normal_(p, std=0.02)
+                    nn.init.kaiming_uniform_(p, a=math.sqrt(5))
         # if self.embed.num_weight is None:
         #     self.embed.init_smooth_weights()
 
