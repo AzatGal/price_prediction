@@ -18,7 +18,7 @@ from configs.train_cfg import cfg
 
 
 def data_analysis():
-    path = '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/datasets/'
+    path = '/data/apartment_dataset/datasets/'
     train = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
     print(train.info())
     # valid = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])

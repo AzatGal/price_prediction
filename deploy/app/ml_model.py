@@ -1,10 +1,9 @@
 import pandas as pd
 import torch
-import numpy as np
 from typing import Dict, List
 from easydict import EasyDict
 
-from data.data_processing import DataTransformer
+from data.apartment_dataset.data_processing import DataTransformer
 from deploy.app.schemas import PredictionInput
 from models.transformers import TablePredictor
 

@@ -14,7 +14,7 @@ from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransfo
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-path = os.path.join(ROOT_DIR, 'data', 'datasets')
+path = os.path.join(ROOT_DIR, 'data', 'datasets', 'apartment_dataset')
 
 columns = EasyDict(
     num=['Общая площадь',
@@ -62,14 +62,14 @@ cfg = EasyDict(
     columns=columns,
     processors=EasyDict(
         num=make_pipeline(
-            QuantileTransformer(output_distribution='normal'),
-            FunctionTransformer(np.nan_to_num),
-            FunctionTransformer(lambda x: x.astype(np.float32)),
-            # FunctionTransformer(
-            #     lambda x: x.fillna(raw_data.train[columns.num].min() - 100)
-            # ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            # KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
-            # FunctionTransformer(lambda x: x.astype(int))
+            # QuantileTransformer(output_distribution='normal'),
+            # FunctionTransformer(np.nan_to_num),
+            # FunctionTransformer(lambda x: x.astype(np.float32)),
+            FunctionTransformer(
+                lambda x: x.fillna(raw_data.train[columns.num].min() - 100)
+            ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
+            FunctionTransformer(lambda x: x.astype(int))
         ),
         cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype('str')),

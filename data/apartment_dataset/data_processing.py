@@ -161,7 +161,7 @@ if __name__ == '__main__':
     # for col, edges in zip(dt.num_cols, dt.num_processor.bin_edges_):
     #     print(col, edges)
 
-    train_df = pd.read_csv('./datasets/train.csv')
+    train_df = pd.read_csv('datasets/train.csv')
     # print(train_df[cfg.cat_cfg['columns']])
     cats = [train_df[col].value_counts() for col in cfg.cat_cfg['columns']]
     cats = [cat.index[cat > 26].to_numpy() for cat in cats]
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         print(len(oe.categories_[i]) == len(cats[i]))
 
     t = oe.transform(
-        pd.read_csv('./datasets/valid.csv')[cfg.cat_cfg['columns']].astype(str)
+        pd.read_csv('datasets/valid.csv')[cfg.cat_cfg['columns']].astype(str)
     ) + 1
 
     print(t.min(axis=0))

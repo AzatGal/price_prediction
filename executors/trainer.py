@@ -2,18 +2,15 @@ import json
 import os
 import time
 
-import rtdl_num_embeddings
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from easydict import EasyDict
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from data.apartment_dataset import ApartmentDataset
+from data.apartment_dataset.apartment_dataset import ApartmentDataset
 import models.transformers as models
 from utils.logger import Logger
-from utils.utils import set_seed, get_scheduler, mape, accuracy, get_param_groups, LogCoshLoss
+from utils.utils import set_seed, get_scheduler, mape, get_param_groups
 
 
 class Trainer:
@@ -55,7 +52,7 @@ class Trainer:
             ),
             data_cfg.raw_data.train[data_cfg.columns.target].to_numpy(),
         )
-        self.valid_dataset = ApartmentDataset(
+        self.val_dataset = ApartmentDataset(
             data_cfg.processors.num.transform(
                 data_cfg.raw_data.valid[data_cfg.columns.num]
             ),
@@ -70,8 +67,8 @@ class Trainer:
 
         self.target_processor = data_cfg.processors.target
 
-        self.cfg.model_cfg.n_embed_num = len(data_cfg.columns.num)
-        # self.cfg.model_cfg.n_embed_num = data_cfg.processors.num.steps[1][1].n_bins_.tolist()
+        # self.cfg.model_cfg.n_embed_num = len(data_cfg.columns.num)
+        self.cfg.model_cfg.n_embed_num = data_cfg.processors.num.steps[1][1].n_bins_.tolist()
         self.cfg.model_cfg.n_embed_cat = [
             len(cat) + 1 for cat in data_cfg.processors.cat.steps[1][1].categories_
         ]
@@ -81,7 +78,7 @@ class Trainer:
             kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
         self.train_dataloader = DataLoader(self.train_dataset, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.valid_dataset, shuffle=False, **kwargs)
+        self.val_dataloader = DataLoader(self.val_dataset, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
         self.model = getattr(models, self.cfg.model)(**model_cfg)
