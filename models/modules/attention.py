@@ -168,30 +168,32 @@ class AttentionEnsemble(nn.Module):
         # self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, bias)
         # self.out_proj = LinearEnsemble(embed_dim, embed_dim, k, bias)
 
-        self.qkv_proj = nn.Linear(embed_dim, 3 * 3 * embed_dim, bias)
-        self.out_proj = nn.Linear(3 * embed_dim, embed_dim, bias)
+        # self.qkv_proj = nn.Linear(embed_dim, 3 * 3 * embed_dim, bias)
+        # self.out_proj = nn.Linear(3 * embed_dim, embed_dim, bias)
 
     def forward(self,
                 x: torch.Tensor,
                 cls_token_only_attn: bool,
                 kv_compressors: nn.ModuleList | nn.Module = None,
                 ) -> torch.Tensor:
-        B, _, T, C = x.shape
-        qkv = list(self.qkv_proj(x).chunk(3, -1))
-        qkv = [
-            x.reshape(B, self.k, T, 3, self.embed_dim).transpose(2, 3)
-            for x in qkv
-        ]
-        # qkv = [x, x, x]
+        # B, _, T, C = x.shape
+        # qkv = list(self.qkv_proj(x).chunk(3, -1))
+        # qkv = [
+        #     x.reshape(B, self.k, T, 3, self.embed_dim).transpose(2, 3)
+        #     for x in qkv
+        # ]
+        qkv = [x, x, x]
 
         if cls_token_only_attn:
-            qkv[0] = qkv[0][:, :, :, :1]
+            qkv[0] = qkv[0][:, :, :1]
         if kv_compressors is not None:
             if isinstance(kv_compressors, nn.ModuleList):
                 qkv[1:] = [
                     kv_compressors[i](
-                        x.transpose(3, 4).transpose(1, 2)  # 2, 3)
-                    ).transpose(1, 2).transpose(3, 4).contiguous()  # 2, 3)
+                        x.transpose(2, 3)
+                        # .transpose(3, 4).transpose(1, 2)  # 2, 3)
+                    ).transpose(2, 3)
+                    # .transpose(1, 2).transpose(3, 4).contiguous()  # 2, 3)
                     for i, x in enumerate(qkv[1:])
                 ]
             else:
@@ -207,11 +209,11 @@ class AttentionEnsemble(nn.Module):
             dropout_p=self.dropout if self.training else 0.0,
         )
 
-        a = self.out_proj(
-            a
-            .transpose(2, 3)
-            .reshape(B, self.k, -1, 3 * self.embed_dim)
-        )
+        # a = self.out_proj(
+        #     a
+        #     .transpose(2, 3)
+        #     .reshape(B, self.k, -1, 3 * self.embed_dim)
+        # )
         return a
 
 
