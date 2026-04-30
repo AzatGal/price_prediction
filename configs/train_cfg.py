@@ -41,8 +41,8 @@ cfg.model = 'TransformerEnsemble'  # TablePredictor'
 # data_cfg.task = cfg.task
 
 
-model_cfg['n_embed_num'] = data_cfg.n_embed_num
-model_cfg['n_embed_cat'] = data_cfg.n_embed_cat
+# model_cfg['n_embed_num'] = data_cfg.n_embed_num
+# model_cfg['n_embed_cat'] = data_cfg.n_embed_cat
 
 cfg.model_cfg = model_cfg
 cfg.data_cfg = data_cfg

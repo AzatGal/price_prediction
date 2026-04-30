@@ -6,6 +6,7 @@ import rtdl_num_embeddings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from easydict import EasyDict
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
@@ -42,17 +43,44 @@ class Trainer:
 
     def _prepare_data(self, data_cfg):
         # self.data_transformer = data_cfg.data_transformer
+        self.train_dataset = ApartmentDataset(
+            data_cfg.processors.num.fit_transform(
+                data_cfg.raw_data.train[data_cfg.columns.num]
+            ),
+            data_cfg.processors.cat.fit_transform(
+                data_cfg.raw_data.train[data_cfg.columns.cat]
+            ),
+            data_cfg.processors.target.fit_transform(
+                data_cfg.raw_data.train[data_cfg.columns.target].to_numpy()
+            ),
+            data_cfg.raw_data.train[data_cfg.columns.target].to_numpy(),
+        )
+        self.valid_dataset = ApartmentDataset(
+            data_cfg.processors.num.transform(
+                data_cfg.raw_data.valid[data_cfg.columns.num]
+            ),
+            data_cfg.processors.cat.transform(
+                data_cfg.raw_data.valid[data_cfg.columns.cat]
+            ),
+            data_cfg.processors.target.transform(
+                data_cfg.raw_data.valid[data_cfg.columns.target].to_numpy()
+            ),
+            data_cfg.raw_data.valid[data_cfg.columns.target].to_numpy(),
+        )
+
         self.target_processor = data_cfg.processors.target
 
-        self.train_data = ApartmentDataset(**data_cfg.datasets.train)
-        self.valid_data = ApartmentDataset(**data_cfg.datasets.valid)
+        self.cfg.model_cfg.n_embed_num = data_cfg.processors.num.steps[1][1].n_bins_.tolist()
+        self.cfg.model_cfg.n_embed_cat = [
+            len(cat) + 1 for cat in data_cfg.processors.cat.steps[1][1].categories_
+        ]
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
             kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
-        self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
+        self.train_dataloader = DataLoader(self.train_dataset, shuffle=True, **kwargs)
+        self.val_dataloader = DataLoader(self.valid_dataset, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
         self.model = getattr(models, self.cfg.model)(**model_cfg)

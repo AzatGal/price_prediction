@@ -57,57 +57,61 @@ cats = [cat.index[cat > 26].to_numpy() for cat in cats]
 warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
-processors = EasyDict(
-    num=make_pipeline(
-        # QuantileTransformer(output_distribution='normal'),
-        # FunctionTransformer(np.nan_to_num),
-        # FunctionTransformer(lambda x: x.astype(np.float32)),
-        FunctionTransformer(
-            lambda x: x.fillna(raw_data.train[columns.num].quantile(0.5))
-        ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-        KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
-        FunctionTransformer(lambda x: x.astype(int))
-    ),
-    cat=make_pipeline(
-        FunctionTransformer(lambda x: x.astype('str')),
-        OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
-        FunctionTransformer(lambda x: (x + 1).astype(int))
-    ),
-    target=make_pipeline(
-        PowerTransformer(),
-        # QuantileTransformer(output_distribution='normal'),
-        FunctionTransformer(lambda x: x.astype(np.float32))
+cfg = EasyDict(
+    raw_data=raw_data,
+    columns=columns,
+    processors=EasyDict(
+        num=make_pipeline(
+            # QuantileTransformer(output_distribution='normal'),
+            # FunctionTransformer(np.nan_to_num),
+            # FunctionTransformer(lambda x: x.astype(np.float32)),
+            FunctionTransformer(
+                lambda x: x.fillna(raw_data.train[columns.num].quantile(0.5))
+            ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
+            FunctionTransformer(lambda x: x.astype(int))
+        ),
+        cat=make_pipeline(
+            FunctionTransformer(lambda x: x.astype('str')),
+            OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
+            FunctionTransformer(lambda x: (x + 1).astype(int))
+        ),
+        target=make_pipeline(
+            PowerTransformer(),
+            # QuantileTransformer(output_distribution='normal'),
+            FunctionTransformer(lambda x: x.astype(np.float32))
+        )
     )
 )
 
-cfg = EasyDict(
-    processors=processors,
-    columns=columns,
-    # raw_data=raw_data,
-    datasets=EasyDict(
-        train=EasyDict(
-            x_num=processors.num.fit_transform(raw_data.train[columns.num]),
-            x_cat=processors.cat.fit_transform(raw_data.train[columns.cat]),
-            target=processors.target.fit_transform(raw_data.train[columns.target].to_numpy()),
-            label=raw_data.train[columns.target].to_numpy(),
-        ),
-        valid=EasyDict(
-            x_num=processors.num.transform(raw_data.valid[columns.num]),
-            x_cat=processors.cat.transform(raw_data.valid[columns.cat]),
-            target=processors.target.transform(raw_data.valid[columns.target].to_numpy()),
-            label=raw_data.valid[columns.target].to_numpy(),
-        ),
-        test=EasyDict(
-            x_num=processors.num.transform(raw_data.test[columns.num]),
-            x_cat=processors.cat.transform(raw_data.test[columns.cat]),
-            target=processors.target.transform(raw_data.test[columns.target].to_numpy()),
-            label=raw_data.test[columns.target].to_numpy(),
-        ),
-    ),
-    # n_embed_num=len(columns.num),
-    n_embed_num=processors.num.steps[1][1].n_bins_.tolist(),
-    n_embed_cat=[len(cat) + 1 for cat in cats],
-)
+# cfg = EasyDict(
+#     processors=processors,
+#     columns=columns,
+#     # raw_data=raw_data,
+#     datasets=EasyDict(
+#         train=EasyDict(
+#             x_num=processors.num.fit_transform(raw_data.train[columns.num]),
+#             x_cat=processors.cat.fit_transform(raw_data.train[columns.cat]),
+#             target=processors.target.fit_transform(raw_data.train[columns.target].to_numpy()),
+#             label=raw_data.train[columns.target].to_numpy(),
+#         ),
+#         valid=EasyDict(
+#             x_num=processors.num.transform(raw_data.valid[columns.num]),
+#             x_cat=processors.cat.transform(raw_data.valid[columns.cat]),
+#             target=processors.target.transform(raw_data.valid[columns.target].to_numpy()),
+#             label=raw_data.valid[columns.target].to_numpy(),
+#         ),
+#         test=EasyDict(
+#             x_num=processors.num.transform(raw_data.test[columns.num]),
+#             x_cat=processors.cat.transform(raw_data.test[columns.cat]),
+#             target=processors.target.transform(raw_data.test[columns.target].to_numpy()),
+#             label=raw_data.test[columns.target].to_numpy(),
+#         ),
+#     ),
+#     # n_embed_num=len(columns.num),
+#     n_embed_num=processors.num.steps[1][1].n_bins_.tolist(),
+#     n_embed_cat=[len(cat) + 1 for cat in processors.cat.steps[1][1].categories],
+# )
 # print(cfg.n_embed_num)
 # print(processors.num.steps[1][1].bin_edges_)
 

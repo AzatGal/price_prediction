@@ -97,6 +97,6 @@ if __name__ == '__main__':
     from executors.trainer import Trainer
 
     trainer = Trainer(cfg)
-    print(trainer.train_data[0]['mask'])
-    print(trainer.train_data[0]['mask'])
-    print(trainer.train_data[0]['mask'])
+    print(trainer.train_dataset[0]['mask'])
+    print(trainer.train_dataset[0]['mask'])
+    print(trainer.train_dataset[0]['mask'])
