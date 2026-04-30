@@ -63,7 +63,7 @@ processors = EasyDict(
         # FunctionTransformer(np.nan_to_num),
         # FunctionTransformer(lambda x: x.astype(np.float32)),
         FunctionTransformer(lambda x: x.fillna(raw_data.train[columns.num].min() - 100)), # nan - как отдельный эмбеддинг
-        KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
+        KBinsDiscretizer(n_bins=1000, encode='ordinal', strategy='kmeans'),
         FunctionTransformer(lambda x: x.astype(int))
     ),
     cat=make_pipeline(
