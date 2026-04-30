@@ -133,7 +133,7 @@ def predict_price(
 ):
     """Предсказание цены и сохранение в историю"""
     # Делаем предсказание
-    # input_dict = data.dict()
+    # input_dict = dataset.dict()
     # result = predictor.predict(input_dict)
     result = predictor.predict(data)  # .to_dataframe())
     

@@ -9,12 +9,12 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, QuantileTransformer, \
     FunctionTransformer
 
-# from data.data_processing import DataTransformer
+# from dataset.data_processing import DataTransformer
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-path = os.path.join(ROOT_DIR, 'data', 'datasets', 'apartment_dataset')
+path = os.path.join(ROOT_DIR, 'dataset', 'apartment_dataset')
 
 columns = EasyDict(
     num=['Общая площадь',
@@ -39,13 +39,26 @@ columns = EasyDict(
     target=['Стоимость']
 )
 
-raw_data = EasyDict(
-    train=pd.read_csv(os.path.join(path, "train.csv")),
-    valid=pd.read_csv(os.path.join(path, "valid.csv")),
-    test=pd.read_csv(os.path.join(path, "test.csv"))
-)
+raw_data = EasyDict({
+    dataset_type: pd.read_csv(os.path.join(path, f"{dataset_type}.csv"))
+    for dataset_type in ('train', 'valid', 'test')
+})
+raw_data = EasyDict({
+    dataset_type: EasyDict({
+        feature_type: raw_data[dataset_type][columns[feature_type]]
+        for feature_type in ('num', 'cat', 'target')
+    })
+    for dataset_type in ('train', 'valid', 'test')
+})
+# raw_data = EasyDict(
+#     train=EasyDict(
+#         raw_data.train[]
+#     ),
+#     valid=pd.read_csv(os.path.join(path, "valid.csv")),
+#     test=pd.read_csv(os.path.join(path, "test.csv"))
+# )
 
-cats = [raw_data.train[col].value_counts() for col in columns.cat]
+cats = [raw_data.train.cat[col].value_counts() for col in columns.cat]
 cats = [cat.index[cat > 10].to_numpy() for cat in cats] # 26
 # n_bins = [
 #     min(128, int(0.6 * raw_data.train[col].nunique()))
@@ -59,14 +72,14 @@ warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
 cfg = EasyDict(
     raw_data=raw_data,
-    columns=columns,
+    # columns=columns,
     processors=EasyDict(
         num=make_pipeline(
             # QuantileTransformer(output_distribution='normal'),
             # FunctionTransformer(np.nan_to_num),
             # FunctionTransformer(lambda x: x.astype(np.float32)),
             FunctionTransformer(
-                lambda x: x.fillna(raw_data.train[columns.num].min() - 100)
+                lambda x: x.fillna(raw_data.train.num.min() - 100)
             ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
             KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
             FunctionTransformer(lambda x: x.astype(int))
@@ -122,7 +135,7 @@ cfg = EasyDict(
 # KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),
 
 
-    # 'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'cat_processor.pkl')
+    # 'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'cat_processor.pkl')
 # cfg.cat_cfg['processor'] = OrdinalEncoder(
 #     encoded_missing_value=-1, handle_unknown='use_encoded_value', min_frequency=26, unknown_value=-1
 # ).fit(
@@ -155,7 +168,7 @@ cfg = EasyDict(
 #                          'Количество комнат',
 #                          'Высота потолков',
 #                          'Кол-во раздельных санузлов'],
-#              'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'num_processor.pkl')},
+#              'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'num_processor.pkl')},
 #     cat_cfg={'processor': OrdinalEncoder(encoded_missing_value=-1, handle_unknown='use_encoded_value',
 #                                          min_frequency=26, unknown_value=-1),
 #              'columns': ['Тип продажи',
@@ -167,10 +180,10 @@ cfg = EasyDict(
 #                          'Расстояние до метро',
 #                          'Округ',
 #                          'Район'],
-#              'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'cat_processor.pkl')},
+#              'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'cat_processor.pkl')},
 #     target_cfg={'processor': PowerTransformer(),
 #                 'columns': ['Стоимость'],
-#                 'path': os.path.join(ROOT_DIR, 'data', 'data_transformers', 'target_processor.pkl')},
+#                 'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'target_processor.pkl')},
 # )
 # cfg.features = cfg.data_transformer.num_cols + cfg.data_transformer.cat_cols
 

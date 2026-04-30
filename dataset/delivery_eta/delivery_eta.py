@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 from sklearn.preprocessing import OrdinalEncoder
 
-# import data.util as lib
+# import dataset.util as lib
 from data.util import * # save_dataset
 
 
@@ -24,7 +24,7 @@ def main():
     kaggle.api.dataset_download_files('pcovkrd84mejm/delivery-eta', path=TMP_DATA_PATH)
     unzip(TMP_DATA_PATH/'delivery-eta.zip')
 
-    # Store full_index to help with potential future experiments on large data
+    # Store full_index to help with potential future experiments on large dataset
     data = pl.read_parquet(TMP_DATA_PATH/'delivery_eta.parquet').with_row_index(name="index_in_full")
 
     bin_cols = [c for c in data.columns if c.startswith('bin')]
@@ -126,7 +126,7 @@ def main():
     # >>> Random splits <<<
     # ======================================================================================
 
-    # Random splits are created from the sliding_window splits by shuffling  all the data in the
+    # Random splits are created from the sliding_window splits by shuffling  all the dataset in the
     # respective window and respliting into same train validation and test dataset sizes
 
     np.random.seed(0)
@@ -153,7 +153,7 @@ def main():
         {f'random-{i}': split for i, split in enumerate(random_splits)}
     )
 
-    logger.info('Writing data to disk')
+    logger.info('Writing dataset to disk')
     save_dataset(
         name='delivery-eta',
         task_type='regression',

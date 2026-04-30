@@ -60,8 +60,8 @@ def main(data_path=None):
 
     # Expressions used in aggregation of transaction histories
 
-    # first works, because data_train has one unique id for each offer, thus after join all data (like
-    # target, offervalue come from training data and have one uniuqe value)
+    # first works, because data_train has one unique id for each offer, thus after join all dataset (like
+    # target, offervalue come from training dataset and have one uniuqe value)
 
     exprs = [
         pl.col('purchaseamount').cast(pl.Float64).sum().alias('total_spend'),
@@ -194,7 +194,7 @@ def main(data_path=None):
     # >>> Random splits <<<
     # ======================================================================================
 
-    # Random splits are created from the sliding_window splits by shuffling  all the data in the
+    # Random splits are created from the sliding_window splits by shuffling  all the dataset in the
     # respective window and respliting into same train validation and test dataset sizes
 
     np.random.seed(0)
@@ -210,7 +210,7 @@ def main(data_path=None):
 
 
     # ======================================================================================
-    # >>> Save data and splits <<<
+    # >>> Save dataset and splits <<<
     # ======================================================================================
 
 
@@ -221,7 +221,7 @@ def main(data_path=None):
         {f'random-{i}': split for i, split in enumerate(random_splits)}
     )
 
-    logger.info('Writing data to disk')
+    logger.info('Writing dataset to disk')
     save_dataset(
         name='ecom-offers',
         task_type='binclass',

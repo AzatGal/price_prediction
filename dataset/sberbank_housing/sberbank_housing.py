@@ -18,7 +18,7 @@ TMP_DATA_PATH = PROJECT_DIR/'preprocessing/tmp/sberbank-housing'
 TMP_DATA_PATH.mkdir(exist_ok=True, parents=True)
 
 
-def main(data_path):
+def main(data_path=None):
     if data_path is None:
         import kaggle
         data_path = TMP_DATA_PATH
@@ -224,7 +224,7 @@ def main(data_path):
     # >>> Random splits <<<
     # ======================================================================================
 
-    # Random splits are created from the sliding_window splits by shuffling  all the data in the
+    # Random splits are created from the sliding_window splits by shuffling  all the dataset in the
     # respective window and respliting into same train validation and test dataset sizes
 
     np.random.seed(0)
@@ -239,7 +239,7 @@ def main(data_path):
         })
 
     # ======================================================================================
-    # >>> Save data and splits <<<
+    # >>> Save dataset and splits <<<
     # ======================================================================================
 
 
@@ -250,7 +250,7 @@ def main(data_path):
         {f'random-{i}': split for i, split in enumerate(random_splits)}
     )
 
-    logger.info('Writing data to disk')
+    logger.info('Writing dataset to disk')
     save_dataset(
         name='sberbank-housing',
         task_type='regression',

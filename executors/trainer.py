@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from data.apartment_dataset.apartment_dataset import ApartmentDataset
+from dataset.apartment_dataset.apartment_dataset import ApartmentDataset
 import models.transformers as models
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, mape, get_param_groups
@@ -42,27 +42,27 @@ class Trainer:
         # self.data_transformer = data_cfg.data_transformer
         self.train_dataset = ApartmentDataset(
             data_cfg.processors.num.fit_transform(
-                data_cfg.raw_data.train[data_cfg.columns.num]
+                data_cfg.raw_data.train.num
             ),
             data_cfg.processors.cat.fit_transform(
-                data_cfg.raw_data.train[data_cfg.columns.cat]
+                data_cfg.raw_data.train.cat
             ),
             data_cfg.processors.target.fit_transform(
-                data_cfg.raw_data.train[data_cfg.columns.target].to_numpy()
+                data_cfg.raw_data.train.target.to_numpy()
             ),
-            data_cfg.raw_data.train[data_cfg.columns.target].to_numpy(),
+            data_cfg.raw_data.train.target.to_numpy(),
         )
         self.val_dataset = ApartmentDataset(
             data_cfg.processors.num.transform(
-                data_cfg.raw_data.valid[data_cfg.columns.num]
+                data_cfg.raw_data.valid.num
             ),
             data_cfg.processors.cat.transform(
-                data_cfg.raw_data.valid[data_cfg.columns.cat]
+                data_cfg.raw_data.valid.cat
             ),
             data_cfg.processors.target.transform(
-                data_cfg.raw_data.valid[data_cfg.columns.target].to_numpy()
+                data_cfg.raw_data.valid.target.to_numpy()
             ),
-            data_cfg.raw_data.valid[data_cfg.columns.target].to_numpy(),
+            data_cfg.raw_data.valid.target.to_numpy(),
         )
 
         self.target_processor = data_cfg.processors.target
@@ -287,39 +287,39 @@ class Trainer:
             if step % 100 == 0:
                 self.logger.print(f'[{step}]: loss - {loss:.4f}')
 
-    @torch.no_grad()
-    def test(self):
-        kwargs = {'batch_size': self.cfg.batch_size}
-        if torch.cuda.is_available():
-            kwargs['num_workers'] = 2
-            kwargs['pin_memory'] = True
-        dataloader = DataLoader(
-            ApartmentDataset("test", **self.cfg.data_cfg),
-            shuffle=True, **kwargs
-        )
-        dataloader = self.accelerator.prepare(dataloader)
-
-        self.model.eval()
-        total_loss = 0
-        total_metric = 0
-        total_samples = 0
-
-        t = time.time()
-        for batch in dataloader:
-            loss, pred = self.make_step(batch, False)
-            batch_len = len(pred)
-            total_samples += batch_len
-            total_loss += loss * batch_len
-            total_metric += self.metric(pred, batch['label']) * batch_len
-
-        t = time.time() - t
-        total_loss /= total_samples
-        total_metric /= total_samples
-        return {
-            'loss': total_loss,
-            'metric': total_metric,
-            'time': t
-        }
+    # @torch.no_grad()
+    # def test(self):
+    #     kwargs = {'batch_size': self.cfg.batch_size}
+    #     if torch.cuda.is_available():
+    #         kwargs['num_workers'] = 2
+    #         kwargs['pin_memory'] = True
+    #     dataloader = DataLoader(
+    #         ApartmentDataset("test", **self.cfg.data_cfg),
+    #         shuffle=True, **kwargs
+    #     )
+    #     dataloader = self.accelerator.prepare(dataloader)
+    #
+    #     self.model.eval()
+    #     total_loss = 0
+    #     total_metric = 0
+    #     total_samples = 0
+    #
+    #     t = time.time()
+    #     for batch in dataloader:
+    #         loss, pred = self.make_step(batch, False)
+    #         batch_len = len(pred)
+    #         total_samples += batch_len
+    #         total_loss += loss * batch_len
+    #         total_metric += self.metric(pred, batch['label']) * batch_len
+    #
+    #     t = time.time() - t
+    #     total_loss /= total_samples
+    #     total_metric /= total_samples
+    #     return {
+    #         'loss': total_loss,
+    #         'metric': total_metric,
+    #         'time': t
+    #     }
 
 
 if __name__ == "__main__":

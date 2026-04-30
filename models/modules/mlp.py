@@ -64,6 +64,8 @@ class LinearEnsemble(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x = x * self.r
+        # print(x.shape)
+        # print(self.weight.shape)
         x = x @ self.weight
         # x = x * self.s
         if self.bias is not None:

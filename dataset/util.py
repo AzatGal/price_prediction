@@ -36,7 +36,7 @@ DataKey = Literal['x_num', 'x_bin', 'x_cat', 'x_meta', 'y']
 
 PROJECT_DIR = Path(__file__).parent.parent
 CACHE_DIR = PROJECT_DIR / 'cache'
-DATA_DIR = PROJECT_DIR / 'data'
+DATA_DIR = PROJECT_DIR / 'dataset'
 EXP_DIR = PROJECT_DIR / 'exp'
 
 assert PROJECT_DIR.exists()
@@ -530,7 +530,7 @@ def save_dataset(
         'Y': np.float32 if task_type == TaskType.REGRESSION else np.uint64,
     }
 
-    # create an info.json file with high level meta-data
+    # create an info.json file with high level meta-dataset
     info = {
         "name": name,
         "task_type": task_type.value,
@@ -541,7 +541,7 @@ def save_dataset(
 
     dump_json(info, out_path / 'info.json')
 
-    # All data is stored in a binary format on disk
+    # All dataset is stored in a binary format on disk
     # Small csv preview is also stored
 
     for n, v in data.items():

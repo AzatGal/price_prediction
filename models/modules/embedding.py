@@ -132,7 +132,7 @@ class FeatureTokenizerEnsemble(nn.Module):
     #             weight_out = F.conv1d(weight_in, kernel, padding=half,
     #                                   groups=self.embed_dim)
     #
-    #             self.cat_weight.data[mask] = weight_out.squeeze(0).t()
+    #             self.cat_weight.dataset[mask] = weight_out.squeeze(0).t()
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         if self.num_weight is None:

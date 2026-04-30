@@ -18,7 +18,7 @@ def fit_catboost(train_dataset, val_dataset):
         'Район'
     ]
     # with open(
-    #         '/Users/azatgalautdinov/PycharmProjects/price_prediction/data/data_transformers/target_processor.pkl',
+    #         '/Users/azatgalautdinov/PycharmProjects/price_prediction/dataset/data_transformers/target_processor.pkl',
     #         'rb'
     # ) as f:
     #     target_processor = dill.load(f)
@@ -98,7 +98,7 @@ def fit_catboost(train_dataset, val_dataset):
 
 
 if __name__ == '__main__':
-    path = '/data/apartment_dataset/datasets'
+    path = '/dataset/apartment_dataset/datasets'
 
     # train_dataset = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
     # val_dataset = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])

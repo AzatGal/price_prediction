@@ -1,4 +1,4 @@
 .venv
-./data/data_transformers
-./data/datasets
+dataset/data_transformers
+dataset/datasets
 /executors/catboost_info/

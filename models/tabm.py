@@ -217,7 +217,7 @@ class _OneHotEncoding(nn.Module):
         """Do the forward pass.
 
         Args:
-            x: the categorical features. The data type must be `torch.long`.
+            x: the categorical features. The dataset type must be `torch.long`.
                The i-th feature must take values in ``range(0, cardinalities[i])``,
                where ``cardinalities`` is the list passed to the constructor.
         """
@@ -278,7 +278,7 @@ class ElementwiseAffine(nn.Module):
             scaling_init_chunks: the initialization chunks of the scaling
                 (see README of the package for details).
             bias: if True, the module will have a trainable bias.
-            dtype: the parameter data type.
+            dtype: the parameter dataset type.
             device: the parameter device.
         """
         super().__init__()
@@ -449,7 +449,7 @@ class LinearEnsemble(nn.Module):
             out_features: the output size of each layer.
             bias: determines if the layers have biases.
             k: the number of linear layers.
-            dtype: the parameter data type.
+            dtype: the parameter dataset type.
             device: the parameter device.
         """
         super().__init__()
@@ -573,7 +573,7 @@ class LinearBatchEnsemble(nn.Module):
                 and second scaling parameters.
             first_scaling_init_chunks: the initialization chunks of the first scaling
                 (see README of the package for details).
-            dtype: the parameter data type.
+            dtype: the parameter dataset type.
             device: the parameter device.
         """
         _check_positive_integer(in_features, 'in_features')
@@ -1679,7 +1679,7 @@ class TabM(nn.Module):
         """Create TabM.
 
         Compared to `TabM.__init__`, this function does not require setting all
-        model-related arguments (data-related arguments are still required).
+        model-related arguments (dataset-related arguments are still required).
         More precisely:
 
         * The missing model arguments will be set to their default values.
@@ -1775,8 +1775,8 @@ class TabM(nn.Module):
         """Do the forward pass.
 
         Args:
-            x_num: the numerical features. The data type must be float.
-            x_cat: the categorical features. The data type must be long.
+            x_num: the numerical features. The dataset type must be float.
+            x_cat: the categorical features. The dataset type must be long.
                 The i-th feature must take values in ``range(0, cat_cardinalities[i])``,
                 where ``cat_cardinalities`` is the list passed to the constructor.
         """
