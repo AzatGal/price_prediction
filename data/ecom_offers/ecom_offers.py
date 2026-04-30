@@ -3,7 +3,6 @@ import gzip
 
 import numpy as np
 import polars as pl
-import kaggle
 from loguru import logger
 
 from data.util import *
@@ -14,6 +13,7 @@ TMP_DATA_PATH.mkdir(exist_ok=True, parents=True)
 
 def main(data_path=None):
     if data_path is None:
+        import kaggle
         data_path = TMP_DATA_PATH
         kaggle.api.competition_download_files('acquire-valued-shoppers-challenge', path=data_path)
         # kaggle.api.dataset_download_files('dmdave/acquire-valued-shoppers-challenge', path=data_path)
