@@ -22,12 +22,12 @@ def main(data_path):
     if data_path is None:
         import kaggle
         data_path = TMP_DATA_PATH
-        kaggle.api.competition_download_files('sberbank-russian-housing-market', path=TMP_DATA_PATH)
-        unzip(TMP_DATA_PATH/'sberbank-russian-housing-market.zip')
+        kaggle.api.competition_download_files('sberbank-russian-housing-market', path=data_path)
+        unzip(data_path/'sberbank-russian-housing-market.zip')
     else:
         data_path = Path(data_path)
 
-    download("https://storage.googleapis.com/kaggle-forum-message-attachments/190521/6630/BAD_ADDRESS_FIX.xlsx", TMP_DATA_PATH/'BAD_ADDRESS_FIX.xlsx')
+    download("https://storage.googleapis.com/kaggle-forum-message-attachments/190521/6630/BAD_ADDRESS_FIX.xlsx", data_path/'BAD_ADDRESS_FIX.xlsx')
 
 
     # ======================================================================================
@@ -36,7 +36,7 @@ def main(data_path):
     logger.info('Preprocessing sberbank housing dataset')
 
     data = pl.read_csv(
-        zipfile.ZipFile(TMP_DATA_PATH/'train.csv.zip').read('train.csv'),
+        zipfile.ZipFile(data_path/'train.csv.zip').read('train.csv'),
         null_values=["NA"],
         infer_schema_length=30_000
     ).with_columns(
@@ -44,7 +44,7 @@ def main(data_path):
     )
 
     data_macro = pl.read_csv(
-        zipfile.ZipFile(TMP_DATA_PATH/'macro.csv.zip').read('macro.csv'),
+        zipfile.ZipFile(data_path/'macro.csv.zip').read('macro.csv'),
         null_values=["NA"],
         infer_schema_length=30_000
     ).with_columns(
@@ -58,7 +58,7 @@ def main(data_path):
     # details in preprocessing/readme.md
 
     data_fixup = pl.read_excel(
-        TMP_DATA_PATH/'BAD_ADDRESS_FIX.xlsx',
+        data_path/'BAD_ADDRESS_FIX.xlsx',
         # read_options=dict(null_values=["NA"])
         # null_values=["NA"]
     ).fill_null("NA")
