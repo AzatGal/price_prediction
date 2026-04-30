@@ -85,30 +85,30 @@ class GatedMLPEnsemble(nn.Module):
         super().__init__()
         self.k = k
         hidden_dim = round(dim_factor * embed_dim)
-        self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
-        self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
+        # self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
+        # self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
 
-        self.in_rank = nn.Parameter(torch.ones(k, 20, embed_dim))
-        self.in_scale = nn.Parameter(torch.ones(k, 20, 2 * hidden_dim))
-        self.out_rank = nn.Parameter(torch.ones(k, 20, hidden_dim))
-        self.out_scale = nn.Parameter(torch.ones(k, 20, embed_dim))
+        # self.in_rank = nn.Parameter(torch.ones(k, 20, embed_dim))
+        # self.in_scale = nn.Parameter(torch.ones(k, 20, 2 * hidden_dim))
+        # self.out_rank = nn.Parameter(torch.ones(k, 20, hidden_dim))
+        # self.out_scale = nn.Parameter(torch.ones(k, 20, embed_dim))
 
-        # self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
-        # self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
+        self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
+        self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
 
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x * self.in_rank
+        # x = x * self.in_rank
         x = self.in_proj(x)
-        x = x * self.in_scale
+        # x = x * self.in_scale
 
         x, y = x.chunk(2, dim=-1)
         x = self.act(x) * y
         x = self.dropout(x)
 
-        x = x * self.out_rank
+        # x = x * self.out_rank
         x = self.out_proj(x)
-        x = x * self.out_scale
+        # x = x * self.out_scale
         return x
