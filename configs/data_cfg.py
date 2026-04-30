@@ -46,7 +46,7 @@ raw_data = EasyDict(
 )
 
 cats = [raw_data.train[col].value_counts() for col in columns.cat]
-cats = [cat.index[cat > 26].to_numpy() for cat in cats]
+cats = [cat.index[cat > 50].to_numpy() for cat in cats] # 26
 # n_bins = [
 #     min(128, int(0.6 * raw_data.train[col].nunique()))
 #     for col in columns.num
