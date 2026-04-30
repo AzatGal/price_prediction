@@ -46,7 +46,7 @@ raw_data = EasyDict(
 )
 
 cats = [raw_data.train[col].value_counts() for col in columns.cat]
-cats = [cat.index[cat > 5].to_numpy() for cat in cats] # 26
+cats = [cat.index[cat > 10].to_numpy() for cat in cats] # 26
 # n_bins = [
 #     min(128, int(0.6 * raw_data.train[col].nunique()))
 #     for col in columns.num
@@ -62,14 +62,14 @@ cfg = EasyDict(
     columns=columns,
     processors=EasyDict(
         num=make_pipeline(
-            # QuantileTransformer(output_distribution='normal'),
-            # FunctionTransformer(np.nan_to_num),
-            # FunctionTransformer(lambda x: x.astype(np.float32)),
-            FunctionTransformer(
-                lambda x: x.fillna(raw_data.train[columns.num].min() - 100)
-            ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
-            FunctionTransformer(lambda x: x.astype(int))
+            QuantileTransformer(output_distribution='normal'),
+            FunctionTransformer(np.nan_to_num),
+            FunctionTransformer(lambda x: x.astype(np.float32)),
+            # FunctionTransformer(
+            #     lambda x: x.fillna(raw_data.train[columns.num].min() - 100)
+            # ), # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            # KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
+            # FunctionTransformer(lambda x: x.astype(int))
         ),
         cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype('str')),
