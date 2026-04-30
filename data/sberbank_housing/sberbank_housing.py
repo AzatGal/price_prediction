@@ -27,7 +27,7 @@ def main(data_path):
     else:
         data_path = Path(data_path)
 
-    download("https://storage.googleapis.com/kaggle-forum-message-attachments/190521/6630/BAD_ADDRESS_FIX.xlsx", data_path/'BAD_ADDRESS_FIX.xlsx')
+    # download("https://storage.googleapis.com/kaggle-forum-message-attachments/190521/6630/BAD_ADDRESS_FIX.xlsx", data_path/'BAD_ADDRESS_FIX.xlsx')
 
 
     # ======================================================================================
@@ -58,7 +58,8 @@ def main(data_path):
     # details in preprocessing/readme.md
 
     data_fixup = pl.read_excel(
-        data_path/'BAD_ADDRESS_FIX.xlsx',
+        # data_path/'BAD_ADDRESS_FIX.xlsx',
+        '/kaggle/input/datasets/galazat/bad-address/BAD_ADDRESS_FIX.xlsx'
         # read_options=dict(null_values=["NA"])
         # null_values=["NA"]
     ).fill_null("NA")
