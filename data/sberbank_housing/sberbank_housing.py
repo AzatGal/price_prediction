@@ -5,7 +5,7 @@ import zipfile
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
-import kaggle
+# import kaggle
 from sklearn.preprocessing import OrdinalEncoder
 from loguru import logger
 
@@ -18,10 +18,15 @@ TMP_DATA_PATH = PROJECT_DIR/'preprocessing/tmp/sberbank-housing'
 TMP_DATA_PATH.mkdir(exist_ok=True, parents=True)
 
 
-def main():
+def main(data_path):
+    if data_path is None:
+        import kaggle
+        data_path = TMP_DATA_PATH
+        kaggle.api.competition_download_files('sberbank-russian-housing-market', path=TMP_DATA_PATH)
+        unzip(TMP_DATA_PATH/'sberbank-russian-housing-market.zip')
+    else:
+        data_path = Path(data_path)
 
-    kaggle.api.competition_download_files('sberbank-russian-housing-market', path=TMP_DATA_PATH)
-    unzip(TMP_DATA_PATH/'sberbank-russian-housing-market.zip')
     download("https://storage.googleapis.com/kaggle-forum-message-attachments/190521/6630/BAD_ADDRESS_FIX.xlsx", TMP_DATA_PATH/'BAD_ADDRESS_FIX.xlsx')
 
 
