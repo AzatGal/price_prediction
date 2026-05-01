@@ -68,9 +68,9 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
             self.num_weight_1 = nn.Parameter(torch.empty(k, self.n_num, 1, 4 * embed_dim))
-            self.num_weight_2 = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim, embed_dim))
+            self.num_weight_2 = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim, 2 * embed_dim))
             self.num_bias_1 = nn.Parameter(torch.empty(k, self.n_num, 1, 4 * embed_dim))
-            self.num_bias_2 = nn.Parameter(torch.empty(k, self.n_num, 1, embed_dim))
+            self.num_bias_2 = nn.Parameter(torch.empty(k, self.n_num, 1, 2 * embed_dim))
             self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
@@ -150,14 +150,12 @@ class FeatureTokenizerEnsemble(nn.Module):
                 .reshape(-1, 1, self.n_num, 1, 1)
                 .repeat(1, self.k, 1, 1, 1)
             )
-            # print(x_num.shape)
-            # print(self.num_weight_1.shape)
             x_num = x_num @ self.num_weight_1 + self.num_bias_1
             x_num_1, x_num_2 = x_num.chunk(2, -1)
             x_num = self.num_act(x_num_1) * x_num_2
-            # print(x_num.shape)
-            # print(self.num_weight_2.shape)
             x_num = x_num @ self.num_weight_2 + self.num_bias_2
+            x_num_1, x_num_2 = x_num.chunk(2, -1)
+            x_num = self.num_act(x_num_1) * x_num_2
             x_num = x_num.squeeze()
 
         assert torch.all(x_cat < self.n_embed_cat)
