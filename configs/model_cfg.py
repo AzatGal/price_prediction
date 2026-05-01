@@ -23,7 +23,7 @@ cfg.kv_compression_dim = 4  # 0.01
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 
 cfg.attn = 'AttentionEnsemble'  # Linear
-cfg.mlp = 'GatedMLPEnsemble'  # GatedMLP MLP
+cfg.mlp = 'GatedMLP'  # GatedMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 
 

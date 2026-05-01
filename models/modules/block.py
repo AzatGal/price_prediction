@@ -76,7 +76,7 @@ class TransformerEnsembleBlock(nn.Module):
         self.attn_drop = nn.Dropout(dropout)
         self.mlp_drop = nn.Dropout(dropout)
 
-        self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, k, act, mlp_dropout)
+        self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, act, mlp_dropout)
         self.attn = getattr(attn_obj, attn)(embed_dim, k, attn_dropout)
 
     def _attn_block(self,

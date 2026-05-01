@@ -28,8 +28,8 @@ class GatedMLP(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  dim_factor: float,
-                 dropout: float,
                  act: str,
+                 dropout: float,
                  bias: bool = False
                  ) -> None:
         super().__init__()

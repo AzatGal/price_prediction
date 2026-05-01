@@ -67,8 +67,8 @@ class Trainer:
 
         self.target_processor = data_cfg.processors.target
 
-        # self.cfg.model_cfg.n_embed_num = len(data_cfg.columns.num)
-        self.cfg.model_cfg.n_embed_num = data_cfg.processors.num.steps[1][1].n_bins_.tolist()
+        self.cfg.model_cfg.n_embed_num = data_cfg.raw_data.train.num.shape[1]
+        # self.cfg.model_cfg.n_embed_num = data_cfg.processors.num.steps[1][1].n_bins_.tolist()
         self.cfg.model_cfg.n_embed_cat = [
             len(cat) + 1 for cat in data_cfg.processors.cat.steps[1][1].categories_
         ]
