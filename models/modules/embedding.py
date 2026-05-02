@@ -67,10 +67,13 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
-            self.num_weight_1 = nn.Parameter(torch.empty(k, self.n_num, 1, 4 * embed_dim))
-            self.num_weight_2 = nn.Parameter(torch.empty(k, self.n_num, 2 * embed_dim, 2 * embed_dim))
-            self.num_bias_1 = nn.Parameter(torch.empty(k, self.n_num, 1, 4 * embed_dim))
+
+            self.num_weight_1 = nn.Parameter(torch.empty(k, self.n_num, 1, embed_dim))
+            self.num_bias_1 = nn.Parameter(torch.empty(k, self.n_num, 1, embed_dim))
+
+            self.num_weight_2 = nn.Parameter(torch.empty(k, self.n_num, embed_dim // 2, 2 * embed_dim))
             self.num_bias_2 = nn.Parameter(torch.empty(k, self.n_num, 1, 2 * embed_dim))
+
             self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
