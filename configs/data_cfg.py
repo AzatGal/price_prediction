@@ -75,8 +75,8 @@ cfg = EasyDict(
     # columns=columns,
     processors=EasyDict(
         num=make_pipeline(
-            PowerTransformer(),
-            # QuantileTransformer(output_distribution='normal'),
+            # PowerTransformer(),
+            QuantileTransformer(output_distribution='normal'),
             FunctionTransformer(np.nan_to_num),
             FunctionTransformer(lambda x: x.astype(np.float32)),
             # FunctionTransformer(
