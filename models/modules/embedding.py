@@ -61,7 +61,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.k = k
         self.embed_dim = embed_dim
         if add_cls_token:
-            self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
+            self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim // 2))
         else:
             self.register_parameter('cls_token', None)
 
@@ -94,7 +94,8 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.register_buffer(
             'offsets', torch.cat([offsets + i * sum(n_embed_cat) for i in range(k)])
         )
-        self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim))
+        self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim // 2))
+        self.tw = nn.Parameter(torch.empty(k, self.seq_len, embed_dim // 2, embed_dim))
 
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         self.dropout = nn.Dropout(dropout)
@@ -180,6 +181,13 @@ class FeatureTokenizerEnsemble(nn.Module):
                 x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
 
         x = torch.cat(x, dim=2)
+
+        x = x.reshape(x.size(0), self.k, self.seq_len, 1, -1)
+        # print(x.shape)
+        # print(self.tw.shape)
+        x = x @ self.tw
+        x = x.reshape(x.size(0), self.k, self.seq_len, -1)
+
         x = x + self.bias
         # x = self.norm(x)
         x = self.dropout(x)
