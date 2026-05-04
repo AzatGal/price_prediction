@@ -445,6 +445,8 @@ class TransformerEnsemble(nn.Module):
         # )
 
         self.embed_rank = nn.Parameter(torch.ones(k, self.seq_len, embed_dim))
+        self.embed_proj = nn.Linear(embed_dim, embed_dim)
+        self.embed_scale = nn.Parameter(torch.ones(k, self.seq_len, embed_dim))
         # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
         # self.embed_act = getattr(nn, act)()
         # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
@@ -510,6 +512,8 @@ class TransformerEnsemble(nn.Module):
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
         x = x * self.embed_rank
+        x = self.embed_proj(x)
+        x = x * self.embed_scale
 
         for i, block in enumerate(self.blocks):
             x = block(
