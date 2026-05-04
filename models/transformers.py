@@ -490,7 +490,8 @@ class TransformerEnsemble(nn.Module):
         return LinearEnsemble(
             self.seq_len,
             self.kv_compression_dim,
-            self.k
+            self.k,
+            False
         )
 
     def reset_parameters(self) -> None:
