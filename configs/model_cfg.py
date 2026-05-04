@@ -5,9 +5,9 @@ from easydict import EasyDict
 cfg = EasyDict()
 
 # cfg.k = 2
-cfg.k = 24  # 16
+cfg.k = 16
 cfg.embed_dim = 48  # 32
-cfg.num_blocks = 1
+cfg.num_blocks = 2
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1
 
