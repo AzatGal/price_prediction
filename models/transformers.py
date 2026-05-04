@@ -432,6 +432,8 @@ class TransformerEnsemble(nn.Module):
                  kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__()
+        assert 0 < kv_compression_ratio < 1
+
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
