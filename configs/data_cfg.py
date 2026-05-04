@@ -3,11 +3,14 @@ import warnings
 
 import numpy as np
 import pandas as pd
+
 from easydict import EasyDict
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, QuantileTransformer, \
     FunctionTransformer
+
+from configs.model_cfg import cfg as model_cfg
 
 # from dataset.data_processing import DataTransformer
 
@@ -97,6 +100,16 @@ cfg = EasyDict(
         )
     )
 )
+
+# # model_cfg.n_embed_num = cfg.raw_data.train.num.shape[1]
+# model_cfg.n_embed_num = (
+#     cfg.processors.num.steps[1][1].n_bins_.tolist()
+#     if isinstance(cfg.processors.num.steps[1][1], KBinsDiscretizer)
+#     else cfg.raw_data.train.num.shape[1]
+# )
+# model_cfg.n_embed_cat = [
+#     len(cat) + 1 for cat in cfg.processors.cat.steps[1][1].categories_
+# ]
 
 # cfg = EasyDict(
 #     processors=processors,
