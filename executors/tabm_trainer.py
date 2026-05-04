@@ -69,8 +69,8 @@ class TabmTrainer:
         if torch.cuda.is_available():
             kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
-        self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
+        self.train_dataloader = DataLoader(self.train_dataset, shuffle=True, **kwargs)
+        self.val_dataloader = DataLoader(self.val_dataset, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
         self.model = tabm.TabM.make(**model_cfg)
