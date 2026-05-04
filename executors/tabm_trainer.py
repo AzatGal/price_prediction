@@ -38,18 +38,39 @@ class TabmTrainer:
         self.logger.print('Training on ' + str(self.accelerator.device))
 
     def _prepare_data(self, data_cfg):
-        # self.data_transformer = data_cfg.data_transformer
-        self.target_processor = data_cfg.processors.target
+        self.train_dataset = ApartmentDataset(
+            data_cfg.processors.num.fit_transform(
+                data_cfg.raw_data.train.num
+            ),
+            data_cfg.processors.cat.fit_transform(
+                data_cfg.raw_data.train.cat
+            ),
+            data_cfg.processors.target.fit_transform(
+                data_cfg.raw_data.train.target.to_numpy()
+            ),
+            data_cfg.raw_data.train.target.to_numpy(),
+        )
+        self.val_dataset = ApartmentDataset(
+            data_cfg.processors.num.transform(
+                data_cfg.raw_data.valid.num
+            ),
+            data_cfg.processors.cat.transform(
+                data_cfg.raw_data.valid.cat
+            ),
+            data_cfg.processors.target.transform(
+                data_cfg.raw_data.valid.target.to_numpy()
+            ),
+            data_cfg.raw_data.valid.target.to_numpy(),
+        )
 
-        self.train_data = ApartmentDataset(**data_cfg.datasets.train)
-        self.valid_data = ApartmentDataset(**data_cfg.datasets.valid)
+        self.target_processor = data_cfg.processors.target
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
             kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
         self.train_dataloader = DataLoader(self.train_data, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.valid_data, shuffle=False, **kwargs)
+        self.val_dataloader = DataLoader(self.val_data, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
         self.model = tabm.TabM.make(**model_cfg)
