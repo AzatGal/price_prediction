@@ -455,34 +455,34 @@ class TransformerEnsemble(nn.Module):
         # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
         # self.embed_mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, k, act, dropout)
 
-        # if kv_compression is None:
-        #     self.kv_compressors = None
-        # elif kv_compression == 'Head':
-        #     self.kv_compressors = nn.ModuleList([
-        #         nn.ModuleList([self._get_compressor(), self._get_compressor()])
-        #         for _ in range(num_blocks)
-        #     ])
-        # elif kv_compression == 'KV':
-        #     self.kv_compressors = nn.ModuleList([
-        #         self._get_compressor() for _ in range(num_blocks)
-        #     ])
-        # elif kv_compression == 'Layer':
-        #     self.kv_compressors = self._get_compressor()
-        # else:
-        #     raise NotImplementedError()
-        #
+        if kv_compression is None:
+            self.kv_compressors = None
+        elif kv_compression == 'Head':
+            self.kv_compressors = nn.ModuleList([
+                nn.ModuleList([self._get_compressor(), self._get_compressor()])
+                for _ in range(num_blocks)
+            ])
+        elif kv_compression == 'KV':
+            self.kv_compressors = nn.ModuleList([
+                self._get_compressor() for _ in range(num_blocks)
+            ])
+        elif kv_compression == 'Layer':
+            self.kv_compressors = self._get_compressor()
+        else:
+            raise NotImplementedError()
+
         self.blocks = nn.ModuleList([
-            # TransformerEnsembleBlock(embed_dim, mlp_dim_factor, act, k, attn_dropout,
-            #                          mlp_dropout, dropout, attn, mlp, norm)
-            nn.Sequential(
-                nn.Linear(self.seq_len * embed_dim, self.seq_len * embed_dim, False),
-                getattr(nn, act)()
-            )
+            TransformerEnsembleBlock(embed_dim, mlp_dim_factor, act, k, attn_dropout,
+                                     mlp_dropout, dropout, attn, mlp, norm)
+            # nn.Sequential(
+            #     nn.Linear(self.seq_len * embed_dim, self.seq_len * embed_dim, False),
+            #     getattr(nn, act)()
+            # )
             for _ in range(num_blocks)
         ])
 
         self.norm = NormEnsemble(norm, embed_dim, k)
-        self.pred_head = LinearEnsemble(self.seq_len * embed_dim, pred_dim, k)
+        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
 
         if pool == 'w_avg':
             self.w_avg = nn.Parameter(torch.zeros(k, 1, self.seq_len))
@@ -506,7 +506,7 @@ class TransformerEnsemble(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if all(s not in pn for s in ['num_embed', 'norm', 'w_avg', '_rank', '_scale']):
-                if 'bias' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
+                if 'bias' in pn or 'compressor' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
                     nn.init.zeros_(p)
                 if 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
@@ -521,29 +521,29 @@ class TransformerEnsemble(nn.Module):
         # x = x * self.embed_rank
         # x = self.embed_proj(x)
         # x = x * self.embed_s
-        x = x.reshape(x.size(0), self.k, -1)
+        # x = x.reshape(x.size(0), self.k, -1)
 
         for i, block in enumerate(self.blocks):
             x = block(
                 x,
-                # self.add_cls_token and (i == len(self.blocks) - 1),
-                # self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
+                self.add_cls_token and (i == len(self.blocks) - 1),
+                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
             )
 
-        # if self.pool == 'cls':
-        #     x = x[:, :, :1]
-        # elif self.pool == 'avg':
-        #     x = x.mean(2, keepdim=True)
-        # elif self.pool == 'sum':
-        #     x = x.sum(2, keepdim=True)
-        # elif self.pool == 'max':
-        #     x = x.max(2, keepdim=True).values
-        # elif self.pool == 'w_avg':
-        #     x = self.w_avg.softmax(0) @ x
-        # else:
-        #     raise NotImplementedError()
+        if self.pool == 'cls':
+            x = x[:, :, :1]
+        elif self.pool == 'avg':
+            x = x.mean(2, keepdim=True)
+        elif self.pool == 'sum':
+            x = x.sum(2, keepdim=True)
+        elif self.pool == 'max':
+            x = x.max(2, keepdim=True).values
+        elif self.pool == 'w_avg':
+            x = self.w_avg.softmax(0) @ x
+        else:
+            raise NotImplementedError()
 
-        # x = self.norm(x)
+        x = self.norm(x)
         x = self.pred_head(x)
         return x
 

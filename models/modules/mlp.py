@@ -57,7 +57,7 @@ class LinearEnsemble(nn.Module):
         super().__init__()
         self.weight = nn.Parameter(torch.empty(k, in_features, out_features))  # k,
         self.register_parameter(
-            'bias', nn.Parameter(torch.empty(k, out_features)) if bias else None,
+            'bias', nn.Parameter(torch.empty(k, 1, out_features)) if bias else None,
         )
         # self.r = nn.Parameter(torch.empty(k, 1, in_features))
         # self.s = nn.Parameter(torch.empty(k, 1, out_features))
@@ -66,12 +66,12 @@ class LinearEnsemble(nn.Module):
         # x = x * self.r
         # print(x.shape)
         # print(self.weight.shape)
-        x = x.unsqueeze(-2) @ self.weight
+        x = x @ self.weight
         # print(x.shape)
         # print(self.weight.shape)
         # x = x * self.s
         if self.bias is not None:
-            x = x.squeeze(-1) + self.bias
+            x = x + self.bias
         return x
 
 
@@ -87,16 +87,16 @@ class GatedMLPEnsemble(nn.Module):
         super().__init__()
         self.k = k
         hidden_dim = round(dim_factor * embed_dim)
-        # self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
-        # self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
+        self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
+        self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
 
         # self.in_rank = nn.Parameter(torch.ones(k, 20, embed_dim))
         # self.in_scale = nn.Parameter(torch.ones(k, 20, 2 * hidden_dim))
         # self.out_rank = nn.Parameter(torch.ones(k, 20, hidden_dim))
         # self.out_scale = nn.Parameter(torch.ones(k, 20, embed_dim))
 
-        self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
-        self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
+        # self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
+        # self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
 
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
