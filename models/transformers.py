@@ -508,7 +508,7 @@ class TransformerEnsemble(nn.Module):
             if all(s not in pn for s in ['num_embed', 'norm', 'w_avg', '_rank', '_scale']):
                 if 'bias' in pn:  # or 'compressor' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
                     nn.init.zeros_(p)
-                if 'head' in pn:
+                elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 else:
                     nn.init.normal_(p, std=0.02)
