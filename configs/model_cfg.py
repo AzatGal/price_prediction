@@ -6,7 +6,7 @@ cfg = EasyDict()
 
 # cfg.k = 2
 cfg.k = 16
-cfg.embed_dim = 32
+cfg.embed_dim = 24  # 32
 cfg.num_blocks = 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1
@@ -19,7 +19,7 @@ cfg.mlp_dropout = 0.0
 cfg.dropout = 0.0
 
 cfg.kv_compression = 'Head'  # Head KV Layer  None
-cfg.kv_compression_dim = 4  # 0.01
+cfg.kv_compression_dim = 8  # 4
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 
 cfg.attn = 'AttentionEnsemble'  # Linear
