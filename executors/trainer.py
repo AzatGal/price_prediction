@@ -194,6 +194,8 @@ class Trainer:
             # else:
             #     raise NotImplementedError()
 
+            # print(pred.shape)
+            # print(batch['target'].shape)
             loss = self.criterion(pred, batch['target'])
 
         if update_model:

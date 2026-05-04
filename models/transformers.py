@@ -413,7 +413,7 @@ from models.modules.norm import NormEnsemble
 class TransformerEnsemble(nn.Module):
     def __init__(self,
                  embed_dim: int,
-                 n_embed_num: int,
+                 n_embed_num: int | list[int],
                  n_embed_cat: list[int],
                  k: int,
                  attn_dropout: float,
@@ -435,7 +435,7 @@ class TransformerEnsemble(nn.Module):
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              1, act, dropout, add_cls_token)
+                                              k, act, dropout, add_cls_token)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
@@ -443,10 +443,10 @@ class TransformerEnsemble(nn.Module):
         #     LinearEnsemble(embed_dim, embed_dim, k),
         #     # getattr(nn, act)()
         # )
-        self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-
-        with torch.inference_mode():
-            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+        # self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        #
+        # with torch.inference_mode():
+        #     self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.embed_proj = nn.Linear(embed_dim, embed_dim)
         # self.embed_s = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
@@ -455,30 +455,34 @@ class TransformerEnsemble(nn.Module):
         # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
         # self.embed_mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, k, act, dropout)
 
-        if kv_compression is None:
-            self.kv_compressors = None
-        elif kv_compression == 'Head':
-            self.kv_compressors = nn.ModuleList([
-                nn.ModuleList([self._get_compressor(), self._get_compressor()])
-                for _ in range(num_blocks)
-            ])
-        elif kv_compression == 'KV':
-            self.kv_compressors = nn.ModuleList([
-                self._get_compressor() for _ in range(num_blocks)
-            ])
-        elif kv_compression == 'Layer':
-            self.kv_compressors = self._get_compressor()
-        else:
-            raise NotImplementedError()
-
+        # if kv_compression is None:
+        #     self.kv_compressors = None
+        # elif kv_compression == 'Head':
+        #     self.kv_compressors = nn.ModuleList([
+        #         nn.ModuleList([self._get_compressor(), self._get_compressor()])
+        #         for _ in range(num_blocks)
+        #     ])
+        # elif kv_compression == 'KV':
+        #     self.kv_compressors = nn.ModuleList([
+        #         self._get_compressor() for _ in range(num_blocks)
+        #     ])
+        # elif kv_compression == 'Layer':
+        #     self.kv_compressors = self._get_compressor()
+        # else:
+        #     raise NotImplementedError()
+        #
         self.blocks = nn.ModuleList([
-            TransformerEnsembleBlock(embed_dim, mlp_dim_factor, act, k, attn_dropout,
-                                     mlp_dropout, dropout, attn, mlp, norm)
+            # TransformerEnsembleBlock(embed_dim, mlp_dim_factor, act, k, attn_dropout,
+            #                          mlp_dropout, dropout, attn, mlp, norm)
+            nn.Sequential(
+                nn.Linear(self.seq_len * embed_dim, self.seq_len * embed_dim, False),
+                getattr(nn, act)()
+            )
             for _ in range(num_blocks)
         ])
 
         self.norm = NormEnsemble(norm, embed_dim, k)
-        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
+        self.pred_head = LinearEnsemble(self.seq_len * embed_dim, pred_dim, k)
 
         if pool == 'w_avg':
             self.w_avg = nn.Parameter(torch.zeros(k, 1, self.seq_len))
@@ -514,31 +518,32 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
-        x = x * self.embed_rank
+        # x = x * self.embed_rank
         # x = self.embed_proj(x)
         # x = x * self.embed_s
+        x = x.reshape(x.size(0), self.k, -1)
 
         for i, block in enumerate(self.blocks):
             x = block(
                 x,
-                self.add_cls_token and (i == len(self.blocks) - 1),
-                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
+                # self.add_cls_token and (i == len(self.blocks) - 1),
+                # self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
             )
 
-        if self.pool == 'cls':
-            x = x[:, :, :1]
-        elif self.pool == 'avg':
-            x = x.mean(2, keepdim=True)
-        elif self.pool == 'sum':
-            x = x.sum(2, keepdim=True)
-        elif self.pool == 'max':
-            x = x.max(2, keepdim=True).values
-        elif self.pool == 'w_avg':
-            x = self.w_avg.softmax(0) @ x
-        else:
-            raise NotImplementedError()
+        # if self.pool == 'cls':
+        #     x = x[:, :, :1]
+        # elif self.pool == 'avg':
+        #     x = x.mean(2, keepdim=True)
+        # elif self.pool == 'sum':
+        #     x = x.sum(2, keepdim=True)
+        # elif self.pool == 'max':
+        #     x = x.max(2, keepdim=True).values
+        # elif self.pool == 'w_avg':
+        #     x = self.w_avg.softmax(0) @ x
+        # else:
+        #     raise NotImplementedError()
 
-        x = self.norm(x)
+        # x = self.norm(x)
         x = self.pred_head(x)
         return x
 

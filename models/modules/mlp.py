@@ -57,7 +57,7 @@ class LinearEnsemble(nn.Module):
         super().__init__()
         self.weight = nn.Parameter(torch.empty(k, in_features, out_features))  # k,
         self.register_parameter(
-            'bias', nn.Parameter(torch.empty(k, 1, out_features)) if bias else None,
+            'bias', nn.Parameter(torch.empty(k, out_features)) if bias else None,
         )
         # self.r = nn.Parameter(torch.empty(k, 1, in_features))
         # self.s = nn.Parameter(torch.empty(k, 1, out_features))
@@ -66,10 +66,12 @@ class LinearEnsemble(nn.Module):
         # x = x * self.r
         # print(x.shape)
         # print(self.weight.shape)
-        x = x @ self.weight
+        x = x.unsqueeze(-2) @ self.weight
+        # print(x.shape)
+        # print(self.weight.shape)
         # x = x * self.s
         if self.bias is not None:
-            x = x + self.bias
+            x = x.squeeze(-1) + self.bias
         return x
 
 
