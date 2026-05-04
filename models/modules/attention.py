@@ -186,6 +186,7 @@ class AttentionEnsemble(nn.Module):
 
         if cls_token_only_attn:
             qkv[0] = qkv[0][:, :, :1]
+
         if kv_compressors is not None:
             if isinstance(kv_compressors, nn.ModuleList):
                 qkv[1:] = [
