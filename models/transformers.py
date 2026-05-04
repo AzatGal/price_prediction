@@ -439,13 +439,13 @@ class TransformerEnsemble(nn.Module):
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
-        # self.embed_proj = nn.Sequential(
-        #     LinearEnsemble(embed_dim, embed_dim, k),
-        #     getattr(nn, act)()
-        # )
+        self.embed_proj = nn.Sequential(
+            LinearEnsemble(embed_dim, embed_dim, k),
+            getattr(nn, act)()
+        )
 
         self.embed_rank = nn.Parameter(torch.ones(k, self.seq_len, embed_dim))
-        self.embed_proj = nn.Linear(embed_dim, embed_dim)
+        # self.embed_proj = nn.Linear(embed_dim, embed_dim)
         self.embed_scale = nn.Parameter(torch.ones(k, self.seq_len, embed_dim))
         # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
         # self.embed_act = getattr(nn, act)()
