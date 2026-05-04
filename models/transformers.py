@@ -435,7 +435,7 @@ class TransformerEnsemble(nn.Module):
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              k, act, dropout, add_cls_token)
+                                              1, act, dropout, add_cls_token)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = kv_compression_dim
 
@@ -444,7 +444,7 @@ class TransformerEnsemble(nn.Module):
         #     getattr(nn, act)()
         # )
 
-        # self.embed_r = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        self.embed_rank = nn.Parameter(torch.ones(k, self.seq_len, embed_dim))
         # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
         # self.embed_act = getattr(nn, act)()
         # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
@@ -509,6 +509,7 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
+        x = x * self.embed_rank
 
         for i, block in enumerate(self.blocks):
             x = block(
