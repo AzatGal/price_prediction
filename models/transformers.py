@@ -486,7 +486,6 @@ class TransformerEnsemble(nn.Module):
         return nn.Linear(
             self.seq_len,
             self.kv_compression_dim,
-            False
         )
         # return LinearEnsemble(
         #     self.seq_len,
