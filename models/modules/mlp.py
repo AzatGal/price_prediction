@@ -11,8 +11,9 @@ class MLP(nn.Module):
                  bias: bool = False
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(embed_dim, round(dim_factor * embed_dim), bias)
-        self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
+        hidden_dim = round(dim_factor * embed_dim)
+        self.in_proj = nn.Linear(embed_dim, hidden_dim, bias)
+        self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
 
@@ -33,8 +34,9 @@ class GatedMLP(nn.Module):
                  bias: bool = False
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(embed_dim, 2 * round(dim_factor * embed_dim), bias)  # 2 *
-        self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
+        hidden_dim = round(dim_factor * embed_dim)
+        self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)  # 2 *
+        self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
 

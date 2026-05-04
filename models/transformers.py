@@ -491,17 +491,17 @@ class TransformerEnsemble(nn.Module):
         self.reset_parameters()
 
     def _get_compressor(self) -> nn.Module:
-        return nn.Linear(
-            self.seq_len,
-            self.kv_compression_dim,
-            False
-        )
-        # return LinearEnsemble(
+        # return nn.Linear(
         #     self.seq_len,
         #     self.kv_compression_dim,
-        #     self.k,
         #     False
         # )
+        return LinearEnsemble(
+            self.seq_len,
+            self.kv_compression_dim,
+            self.k,
+            False
+        )
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
