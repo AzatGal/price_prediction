@@ -33,14 +33,18 @@ class GatedMLP(nn.Module):
                  bias: bool = False
                  ) -> None:
         super().__init__()
-        self.in_proj = nn.Linear(embed_dim, 2 * round(dim_factor * embed_dim), bias)
+        self.in_proj = nn.Linear(embed_dim, round(dim_factor * embed_dim), bias)  # 2 *
         self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x, y = self.in_proj(x).chunk(2, dim=-1)
-        x = self.act(x) * y
+        # x, y = self.in_proj(x).chunk(2, dim=-1)
+        # x = self.act(x) * y
+
+        x = self.in_proj(x)
+        x = self.act(x)
+
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
@@ -87,16 +91,16 @@ class GatedMLPEnsemble(nn.Module):
         super().__init__()
         self.k = k
         hidden_dim = round(dim_factor * embed_dim)
-        self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
-        self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
+        # self.in_proj = nn.Linear(embed_dim, 2 * hidden_dim, bias)
+        # self.out_proj = nn.Linear(hidden_dim, embed_dim, bias)
 
         # self.in_rank = nn.Parameter(torch.ones(k, 20, embed_dim))
         # self.in_scale = nn.Parameter(torch.ones(k, 20, 2 * hidden_dim))
         # self.out_rank = nn.Parameter(torch.ones(k, 20, hidden_dim))
         # self.out_scale = nn.Parameter(torch.ones(k, 20, embed_dim))
 
-        # self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
-        # self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
+        self.in_proj = LinearEnsemble(embed_dim, 2 * hidden_dim, k, bias)
+        self.out_proj = LinearEnsemble(hidden_dim, embed_dim, k, bias)
 
         self.dropout = nn.Dropout(dropout)
         self.act = getattr(nn, act)()
