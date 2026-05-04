@@ -5,8 +5,8 @@ from easydict import EasyDict
 cfg = EasyDict()
 
 # cfg.k = 2
-cfg.k = 32  # 16
-cfg.embed_dim = 16
+cfg.k = 16
+cfg.embed_dim = 32
 cfg.num_blocks = 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1
@@ -23,7 +23,7 @@ cfg.kv_compression_ratio = 0.2
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 
 cfg.attn = 'AttentionEnsemble'  # Linear
-cfg.mlp = 'MLP'  # GatedMLP MLP
+cfg.mlp = 'GatedMLP'  # GatedMLP MLP
 cfg.norm = 'RMSNorm'  # LayerNorm RMSNorm
 
 
