@@ -60,10 +60,10 @@ class FeatureTokenizerEnsemble(nn.Module):
         super().__init__()
         self.k = k
         self.embed_dim = embed_dim
-        if add_cls_token:
-            self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
-        else:
-            self.register_parameter('cls_token', None)
+        self.register_parameter(
+            'cls_token',
+            nn.Parameter(torch.empty(1, k, 1, embed_dim)) if add_cls_token else None
+        )
 
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
