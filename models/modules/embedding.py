@@ -53,9 +53,9 @@ class FeatureTokenizerEnsemble(nn.Module):
                  n_embed_num: int | list[int],
                  n_embed_cat: list[int],
                  k: int,
-                 num_act: str,
                  dropout: float,
                  add_cls_token: bool,
+                 num_act: str = None,
                  ) -> None:
         super().__init__()
         self.k = k
@@ -94,7 +94,6 @@ class FeatureTokenizerEnsemble(nn.Module):
             'offsets', torch.cat([offsets + i * sum(n_embed_cat) for i in range(k)])
         )
         self.cat_weight = nn.Parameter(torch.empty(k * sum(n_embed_cat), embed_dim))
-        # self.tw = nn.Parameter(torch.empty(k, self.seq_len, embed_dim // 2, embed_dim))
 
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         self.dropout = nn.Dropout(dropout)
@@ -154,11 +153,9 @@ class FeatureTokenizerEnsemble(nn.Module):
                 .repeat(1, self.k, 1, 1, 1)
             )
             x_num = x_num @ self.num_weight_1 + self.num_bias_1
-            # x_num_1, x_num_2 = x_num.chunk(2, -1)
-            x_num = self.num_act_1(x_num)  # _1) * x_num_2
+            x_num = self.num_act_1(x_num)
             x_num = x_num @ self.num_weight_2 + self.num_bias_2
-            # x_num_1, x_num_2 = x_num.chunk(2, -1)
-            x_num = self.num_act_2(x_num)  # _1) * x_num_2
+            x_num = self.num_act_2(x_num)
             x_num = x_num.squeeze()
 
         assert torch.all(x_cat < self.n_embed_cat)
@@ -172,21 +169,19 @@ class FeatureTokenizerEnsemble(nn.Module):
         x_cat = F.embedding(x_cat, self.cat_weight)
 
         if self.cls_token is None:
-            x = [x_cat] if x_num is None else [x_num, x_cat]
+            x = x_cat if x_num is None else torch.cat([x_num, x_cat], dim=2)
         else:
             if x_num is None:
-                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
+                x = torch.cat(
+                    [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat],
+                    dim=2
+                )
             else:
-                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
-
-        x = torch.cat(x, dim=2)
-
-        # x = x.reshape(x.size(0), self.k, self.seq_len, 1, -1)
-        # x = x @ self.tw
-        # x = x.reshape(x.size(0), self.k, self.seq_len, -1)
-
+                x = torch.cat(
+                    [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat],
+                    dim=2
+                )
         x = x + self.bias
-        # x = self.norm(x)
         x = self.dropout(x)
         return x
 

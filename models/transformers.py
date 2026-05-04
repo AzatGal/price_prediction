@@ -429,15 +429,15 @@ class TransformerEnsemble(nn.Module):
                  pred_dim: int,
                  add_cls_token: bool,
                  kv_compression: str = None,
-                 kv_compression_dim: int = None,
+                 kv_compression_ratio: float = None,
                  ) -> None:
         super().__init__()
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              k, act, dropout, add_cls_token)
+                                              k, dropout, add_cls_token, act)
         self.seq_len = self.embed.seq_len
-        self.kv_compression_dim = kv_compression_dim
+        self.kv_compression_dim = round(self.seq_len * kv_compression_ratio)
 
         # self.embed_proj = nn.Sequential(
         #     LinearEnsemble(embed_dim, embed_dim, k),
