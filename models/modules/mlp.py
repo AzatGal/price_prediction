@@ -36,19 +36,17 @@ class GatedMLP(nn.Module):
         self.in_proj = nn.Linear(embed_dim, round(dim_factor * embed_dim), bias)  # 2 *
         self.out_proj = nn.Linear(round(dim_factor * embed_dim), embed_dim, bias)
         self.dropout = nn.Dropout(dropout)
-        self.in_act = getattr(nn, act)()
-        self.out_act = getattr(nn, act)()
+        self.act = getattr(nn, act)()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x, y = self.in_proj(x).chunk(2, dim=-1)
         # x = self.act(x) * y
 
         x = self.in_proj(x)
-        x = self.in_act(x)
+        x = self.act(x)
 
         x = self.dropout(x)
         x = self.out_proj(x)
-        x = self.out_act(x)
         return x
 
 

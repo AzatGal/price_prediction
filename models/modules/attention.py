@@ -190,7 +190,7 @@ class AttentionEnsemble(nn.Module):
             if isinstance(kv_compressors, nn.ModuleList):
                 qkv[1:] = [
                     kv_compressors[i](
-                        x.transpose(2, 3)
+                        F.relu(x).transpose(2, 3)
                         # .transpose(3, 4).transpose(1, 2)  # 2, 3)
                     ).transpose(2, 3)
                     # .transpose(1, 2).transpose(3, 4).contiguous()  # 2, 3)
@@ -199,7 +199,7 @@ class AttentionEnsemble(nn.Module):
             else:
                 qkv[1:] = [
                     kv_compressors(
-                        x.transpose(2, 3)
+                        F.relu(x).transpose(2, 3)
                     ).transpose(2, 3)
                     for x in qkv[1:]
                 ]
