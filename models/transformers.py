@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from models.modules.embedding import FeatureTokenizerEnsemble
 from models.modules.block import TransformerEnsembleBlock
-from models.modules.mlp import LinearEnsemble
+from models.modules.mlp import LinearEnsemble, GatedMLPEnsemble
 from models.modules.norm import NormEnsemble
 
 
@@ -437,7 +437,7 @@ class TransformerEnsemble(nn.Module):
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              k // 2, dropout, add_cls_token, act)
+                                              k, dropout, add_cls_token, act)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = round(self.seq_len * kv_compression_ratio)
 
@@ -445,16 +445,16 @@ class TransformerEnsemble(nn.Module):
         #     LinearEnsemble(embed_dim, embed_dim, k),
         #     # getattr(nn, act)()
         # )
-        self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-        with torch.inference_mode():
-            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+        # self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        # with torch.inference_mode():
+        #     self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.embed_proj = nn.Linear(embed_dim, embed_dim)
         # self.embed_s = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
         # self.embed_act = getattr(nn, act)()
         # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
-        # self.embed_mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, k, act, dropout)
+        # self.embed_mlp = GatedMLPEnsemble(embed_dim, 2, k, act, dropout, True)
 
         if kv_compression is None:
             self.kv_compressors = None
@@ -519,7 +519,7 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
-        x = x.repeat(1, 2, 1, 1) * self.embed_rank
+        # x = x.repeat(1, 2, 1, 1) * self.embed_rank
         # x = self.embed_proj(x)
         # x = x * self.embed_s
         # x = x.reshape(x.size(0), self.k, -1)

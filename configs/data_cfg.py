@@ -75,20 +75,20 @@ warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
 cfg = EasyDict(
     raw_data=raw_data,
-    n_num=len(columns.num),
-    n_cat=[len(c) + 1 for c in cats],
+    # n_num=len(columns.num),
+    # n_cat=[len(c) + 1 for c in cats],
     # columns=columns,
     processors=EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),
-            QuantileTransformer(output_distribution='normal'),
-            FunctionTransformer(np.nan_to_num),
-            FunctionTransformer(lambda x: x.astype(np.float32)),
-            # FunctionTransformer(
-            #     lambda x: x.fillna(raw_data.train.num.min() - 100)
-            # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            # KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
-            # FunctionTransformer(lambda x: x.astype(int))
+            # QuantileTransformer(output_distribution='normal'),
+            # FunctionTransformer(np.nan_to_num),
+            # FunctionTransformer(lambda x: x.astype(np.float32)),
+            FunctionTransformer(
+                lambda x: x.fillna(raw_data.train.num.min() - 100)
+            ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            KBinsDiscretizer(n_bins=128, encode='ordinal', strategy='kmeans'),
+            FunctionTransformer(lambda x: x.astype(int))
         ),
         cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype('str')),
