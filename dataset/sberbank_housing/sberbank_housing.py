@@ -67,7 +67,7 @@ def main(data_path=None):
 
     data = data.filter(
         (pl.col('kremlin_km').ne(pl.col('kremlin_km').min())) |
-        pl.col('id').is_in(data_fixup['id'].implode())
+        pl.col('id').is_in(data_fixup['id'])
     ).update(data_fixup, on='id')
 
     # Plot outliers
