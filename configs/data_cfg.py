@@ -17,12 +17,11 @@ from configs.model_cfg import cfg as model_cfg
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-path = '/kaggle/input/competitions/sberbank-russian-housing-market'
-# os.path.join(
-#     ROOT_DIR, 'dataset',
-#     # 'apartment_dataset'
-#     'sberbank_housing'
-# )
+path = os.path.join(
+    ROOT_DIR, 'dataset',
+    # 'apartment_dataset'
+    'sberbank_housing'
+)
 
 
 # columns = EasyDict(
