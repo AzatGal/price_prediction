@@ -176,7 +176,7 @@ if __name__ == '__main__':
         print(len(oe.categories_[i]) == len(cats[i]))
 
     t = oe.transform(
-        pd.read_csv('valid.csv')[cfg.cat_cfg['columns']].astype(str)
+        pd.read_csv('val.csv')[cfg.cat_cfg['columns']].astype(str)
     ) + 1
 
     print(t.min(axis=0))

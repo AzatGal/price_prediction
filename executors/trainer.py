@@ -48,21 +48,21 @@ class Trainer:
                 data_cfg.raw_data.train.cat
             ),
             data_cfg.processors.target.fit_transform(
-                data_cfg.raw_data.train.target.to_numpy()
+                data_cfg.raw_data.train.label.to_numpy()
             ),
-            data_cfg.raw_data.train.target.to_numpy(),
+            data_cfg.raw_data.train.label.to_numpy(),
         )
         self.val_dataset = ApartmentDataset(
             data_cfg.processors.num.transform(
-                data_cfg.raw_data.valid.num
+                data_cfg.raw_data.val.num
             ),
             data_cfg.processors.cat.transform(
-                data_cfg.raw_data.valid.cat
+                data_cfg.raw_data.val.cat
             ),
             data_cfg.processors.target.transform(
-                data_cfg.raw_data.valid.target.to_numpy()
+                data_cfg.raw_data.val.label.to_numpy()
             ),
-            data_cfg.raw_data.valid.target.to_numpy(),
+            data_cfg.raw_data.val.label.to_numpy(),
         )
 
         self.target_processor = data_cfg.processors.target
@@ -213,7 +213,7 @@ class Trainer:
     def train_epoch(self):
         self.model.train()
         total_loss = 0
-        total_metric = 0
+        # total_metric = 0
         total_samples = 0
 
         t = time.time()
@@ -222,16 +222,17 @@ class Trainer:
             batch_len = len(pred)
             total_samples += batch_len
             total_loss += loss * batch_len
-            total_metric += self.metric(pred, batch['label']) * batch_len
+            # total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
         total_loss /= total_samples
-        total_metric /= total_samples
+        # total_metric /= total_samples
         self.time_training += t
 
         return {
             'loss': total_loss,
-            'metric': total_metric,
+            # 'metric': total_metric,
+            'metric': total_loss ** 0.5,
             'time': t
         }
 
@@ -239,7 +240,7 @@ class Trainer:
     def evaluate(self):
         self.model.eval()
         total_loss = 0
-        total_metric = 0
+        # total_metric = 0
         total_samples = 0
 
         t = time.time()
@@ -248,14 +249,15 @@ class Trainer:
             batch_len = len(pred)
             total_samples += batch_len
             total_loss += loss * batch_len
-            total_metric += self.metric(pred, batch['label']) * batch_len
+            # total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
         total_loss /= total_samples
-        total_metric /= total_samples
+        # total_metric /= total_samples
         return {
             'loss': total_loss,
-            'metric': total_metric,
+            # 'metric': total_metric,
+            'metric': total_loss ** 0.5,
             'time': t
         }
 

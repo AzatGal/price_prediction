@@ -21,7 +21,7 @@ def data_analysis():
     path = '/dataset/apartment_dataset/datasets/'
     train = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
     print(train.info())
-    # valid = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
+    # valid = pd.read_csv(os.path.join(path, 'val.csv')).drop(columns=['Unnamed: 0'])
     # test = pd.read_csv(os.path.join(path, 'test.csv')).drop(columns=['Unnamed: 0'])
     # t = len(train) + len(valid) + len(test)
     # print(t)

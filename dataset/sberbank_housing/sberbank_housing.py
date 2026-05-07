@@ -253,7 +253,7 @@ def main(data_path=None):
 
     logger.info('Writing dataset to disk')
     save_dataset(
-        name='sberbank-housing',
+        name='sberbank_housing',
         task_type='regression',
         data=data_parts,
         splits=all_splits,

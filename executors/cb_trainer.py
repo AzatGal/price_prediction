@@ -101,7 +101,7 @@ if __name__ == '__main__':
     path = '/dataset/apartment_dataset/datasets'
 
     # train_dataset = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
-    # val_dataset = pd.read_csv(os.path.join(path, 'valid.csv')).drop(columns=['Unnamed: 0'])
+    # val_dataset = pd.read_csv(os.path.join(path, 'val.csv')).drop(columns=['Unnamed: 0'])
     # fit_catboost(train_dataset, val_dataset)
     # # print(train_dataset[['Стоимость', 'Этаж', 'Этажей в доме', 'Общая площадь', 'Высота потолков']].corr())
 
