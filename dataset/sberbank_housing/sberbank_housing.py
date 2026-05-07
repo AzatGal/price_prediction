@@ -9,7 +9,7 @@ import polars as pl
 from sklearn.preprocessing import OrdinalEncoder
 from loguru import logger
 
-from data.util import *
+from dataset.util import *
 # import lib
 # from preprocessing.util import save_dataset
 
@@ -59,6 +59,7 @@ def main(data_path=None):
 
     data_fixup = pl.read_excel(
         # data_path/'BAD_ADDRESS_FIX.xlsx',
+        # '/Users/azatgalautdinov/Downloads/BAD_ADDRESS_FIX.xlsx',
         '/kaggle/input/datasets/galazat/bad-address/BAD_ADDRESS_FIX.xlsx'
         # read_options=dict(null_values=["NA"])
         # null_values=["NA"]
@@ -66,7 +67,7 @@ def main(data_path=None):
 
     data = data.filter(
         (pl.col('kremlin_km').ne(pl.col('kremlin_km').min())) |
-        pl.col('id').is_in(data_fixup['id'])
+        pl.col('id').is_in(data_fixup['id'].implode())
     ).update(data_fixup, on='id')
 
     # Plot outliers
