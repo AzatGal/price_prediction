@@ -6,7 +6,7 @@ cfg = EasyDict()
 
 # cfg.k = 2
 cfg.k = 42
-cfg.embed_dim = 16
+cfg.embed_dim = 8
 cfg.num_blocks = 2
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1
