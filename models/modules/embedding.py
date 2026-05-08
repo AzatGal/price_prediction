@@ -144,11 +144,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     [embed(x_num).unsqueeze(1) for embed in self.num_embed],
             #     dim=1
             # )
-            x_num = (
-                x_num
-                .reshape(-1, 1, self.n_num, 1, 1)
-                .repeat(1, self.k, 1, 1, 1)
-            )
+            x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
             x_num = x_num @ self.num_weight + self.num_bias
             x_num, x_num_gate = x_num.chunk(2, -1)
             x_num = self.num_act(x_num) * x_num_gate
@@ -169,14 +165,18 @@ class FeatureTokenizerEnsemble(nn.Module):
         else:
             if x_num is None:
                 x = torch.cat(
-                    [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat],
+                    [
+                        self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat
+                    ],
                     dim=2
                 )
             else:
                 # print(x_num.shape)
                 # print(x_cat.shape)
                 x = torch.cat(
-                    [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat],
+                    [
+                        self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat
+                    ],
                     dim=2
                 )
         x = x + self.bias
