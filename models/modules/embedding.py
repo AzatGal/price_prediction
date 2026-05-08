@@ -96,14 +96,14 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         # self.norm = NormEnsemble('RMSNorm', embed_dim, k)
 
-        self.num_embed = nn.ModuleList([
-            rtdl_num_embeddings.PeriodicEmbeddings(
-                self.n_num, embed_dim,
-                # n_frequencies=2*embed_dim,
-                lite=False
-            )
-            for _ in range(k)
-        ])
+        # self.num_embed = nn.ModuleList([
+        #     rtdl_num_embeddings.PeriodicEmbeddings(
+        #         self.n_num, embed_dim,
+        #         # n_frequencies=2*embed_dim,
+        #         lite=False
+        #     )
+        #     for _ in range(k)
+        # ])
 
     # def init_smooth_weights(self,
     #                         sigma: float = 1.0,
@@ -172,6 +172,8 @@ class FeatureTokenizerEnsemble(nn.Module):
                     dim=2
                 )
             else:
+                # print(x_cat.shape)
+                # print(x_num.shape)
                 x = torch.cat(
                     [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat],
                     dim=2

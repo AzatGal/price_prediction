@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import rtdl_num_embeddings
+
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from dataset.apartment_dataset.apartment_dataset import ApartmentDataset
@@ -87,18 +89,19 @@ class Trainer:
     def _prepare_model(self, model_cfg):
         self.model = getattr(models, self.cfg.model)(**model_cfg)
 
-        # self.model.embed.num_embed = nn.ModuleList([
-        #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
-        #         rtdl_num_embeddings.compute_bins(
-        #             torch.as_tensor(self.cfg.data_cfg.datasets.train.x_num),
-        #             n_bins=128 # 48
-        #         ),
-        #         d_embedding=model_cfg.embed_dim,
-        #         activation=True,  # False,
-        #         version='B',
-        #     )
-        #     for _ in range(model_cfg.k)
-        # ])
+        # print(torch.cat([x['x_num'].unsqueeze(0) for x in self.train_dataset]).shape)
+        self.model.embed.num_embed = nn.ModuleList([
+            rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+                rtdl_num_embeddings.compute_bins(
+                    torch.cat([x['x_num'].unsqueeze(0) for x in self.train_dataset]),
+                    # n_bins=128 # 48
+                ),
+                d_embedding=model_cfg.embed_dim,
+                activation=True,  # False,
+                version='B',
+            )
+            for _ in range(1)  # model_cfg.k)
+        ])
 
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
