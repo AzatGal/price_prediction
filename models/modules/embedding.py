@@ -152,33 +152,18 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         assert torch.all(x_cat < self.n_embed_cat)
 
-        x_cat = (
-            x_cat
-            .reshape(-1, 1, self.n_cat)
-            .repeat(1, self.k, 1)
-        )
+        x_cat = x_cat.reshape(-1, 1, self.n_cat)
         x_cat = x_cat + self.offsets
         x_cat = F.embedding(x_cat, self.cat_weight)
 
         if self.cls_token is None:
-            x = x_cat if x_num is None else torch.cat([x_num, x_cat], dim=2)
+            x = [x_cat] if x_num is None else [x_num, x_cat]
         else:
             if x_num is None:
-                x = torch.cat(
-                    [
-                        self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat
-                    ],
-                    dim=2
-                )
+                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
             else:
-                # print(x_num.shape)
-                # print(x_cat.shape)
-                x = torch.cat(
-                    [
-                        self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat
-                    ],
-                    dim=2
-                )
+                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
+        x = torch.cat(x, dim=2)
         x = x + self.bias
         x = self.dropout(x)
         return x

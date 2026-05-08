@@ -492,17 +492,17 @@ class TransformerEnsemble(nn.Module):
         self.reset_parameters()
 
     def _get_compressor(self) -> nn.Module:
-        # return nn.Linear(
-        #     self.seq_len,
-        #     self.kv_compression_dim,
-        #     False
-        # )
-        return LinearEnsemble(
+        return nn.Linear(
             self.seq_len,
             self.kv_compression_dim,
-            self.k,
             False
         )
+        # return LinearEnsemble(
+        #     self.seq_len,
+        #     self.kv_compression_dim,
+        #     self.k,
+        #     False
+        # )
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
@@ -521,7 +521,7 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
-        x = x.repeat(1, self.k, 1, 1) * self.embed_rank
+        x = x * self.embed_rank
         # x = self.embed_proj(x)
         # x = x * self.embed_s
         # x = x.reshape(x.size(0), self.k, -1)
