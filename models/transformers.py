@@ -441,13 +441,13 @@ class TransformerEnsemble(nn.Module):
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = round(self.seq_len * kv_compression_ratio)
 
-        self.embed_proj = nn.Sequential(
-            LinearEnsemble(embed_dim, embed_dim, k),
-            # getattr(nn, act)()
-        )
-        # self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-        # with torch.inference_mode():
-        #     self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+        # self.embed_proj = nn.Sequential(
+        #     LinearEnsemble(embed_dim, embed_dim, k),
+        #     # getattr(nn, act)()
+        # )
+        self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        with torch.inference_mode():
+            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.embed_proj = nn.Linear(embed_dim, embed_dim)
         # self.embed_s = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
@@ -514,7 +514,7 @@ class TransformerEnsemble(nn.Module):
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 else:
-                    nn.init.normal_(p, std=0.02)
+                    nn.init.trunc_normal_(p, std=0.02, a=-0.06, b=0.06)
                     # nn.init.kaiming_uniform_(p, a=math.sqrt(5))
         # with torch.inference_mode():
         #     if self.embed.num_weight is not None:
@@ -524,8 +524,8 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
-        # x = x * self.embed_rank
-        x = self.embed_proj(x)
+        x = x * self.embed_rank
+        # x = self.embed_proj(x)
         # x = x * self.embed_s
         # x = x.reshape(x.size(0), self.k, -1)
 
