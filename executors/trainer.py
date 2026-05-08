@@ -4,6 +4,7 @@ import time
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
@@ -134,9 +135,9 @@ class Trainer:
         #     return accuracy(pred, label)
         # elif self.cfg.task == 'train':
         pred = torch.as_tensor(self.target_processor.inverse_transform(pred))
-        return mape(pred, label)
-        # else:
-        #     raise NotImplementedError()
+        pred = pred.mean(1, keepdim=True)
+        # return mape(pred, label)
+        return (F.mse_loss(pred, label) ** 0.5).item()
 
     def save_model(self, save_path=None, **kwargs):
         if save_path is None:
@@ -207,13 +208,13 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        pred = pred.mean(1, keepdim=True)
+        # pred = pred.mean(1, keepdim=True)
         return loss.item(), pred.detach()
 
     def train_epoch(self):
         self.model.train()
         total_loss = 0
-        # total_metric = 0
+        total_metric = 0
         total_samples = 0
 
         t = time.time()
@@ -222,17 +223,16 @@ class Trainer:
             batch_len = len(pred)
             total_samples += batch_len
             total_loss += loss * batch_len
-            # total_metric += self.metric(pred, batch['label']) * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
         total_loss /= total_samples
-        # total_metric /= total_samples
+        total_metric /= total_samples
         self.time_training += t
 
         return {
             'loss': total_loss,
-            # 'metric': total_metric,
-            'metric': total_loss ** 0.5,
+            'metric': total_metric,
             'time': t
         }
 
@@ -240,7 +240,7 @@ class Trainer:
     def evaluate(self):
         self.model.eval()
         total_loss = 0
-        # total_metric = 0
+        total_metric = 0
         total_samples = 0
 
         t = time.time()
@@ -249,33 +249,33 @@ class Trainer:
             batch_len = len(pred)
             total_samples += batch_len
             total_loss += loss * batch_len
-            # total_metric += self.metric(pred, batch['label']) * batch_len
+            total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
         total_loss /= total_samples
-        # total_metric /= total_samples
+        total_metric /= total_samples
         return {
             'loss': total_loss,
-            # 'metric': total_metric,
-            'metric': total_loss ** 0.5,
+            'metric': total_metric,
             'time': t
         }
 
     def fit(self):
         for epoch in range(self.start_epoch, self.cfg.num_epoch + 1):
             train = self.train_epoch()
-            valid = self.evaluate()
-
-            self.logger.log_metrics(epoch, train, valid)
+            val = self.evaluate()
+            # print(train)
+            # print(val)
+            self.logger.log_metrics(epoch, train, val)
             # if (
             #         (self.cfg.task == 'train' and valid['metric'] < self.best_metric) or
             #         (self.cfg.task == 'pretrain' and valid['loss'] < self.best_loss)
             # ):
-            if valid['metric'] < self.best_metric:
+            if val['metric'] < self.best_metric:
                 self.logger.print('Best')
                 self.save_model()
-                self.best_metric = valid['metric']
-                self.best_loss = valid['loss']
+                self.best_metric = val['metric']
+                self.best_loss = val['loss']
                 self.best_epoch = epoch
             else:
                 self.logger.print(

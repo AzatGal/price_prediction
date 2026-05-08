@@ -7,8 +7,8 @@ import pandas as pd
 from easydict import EasyDict
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, QuantileTransformer, \
-    FunctionTransformer
+from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, \
+                                   QuantileTransformer, FunctionTransformer, StandardScaler
 
 from configs.model_cfg import cfg as model_cfg
 
@@ -124,7 +124,8 @@ cfg = EasyDict(
             FunctionTransformer(lambda x: (x + 1).astype(int))
         ),
         target=make_pipeline(
-            PowerTransformer(),
+            StandardScaler(),
+            # PowerTransformer(),
             # QuantileTransformer(output_distribution='normal'),
             FunctionTransformer(lambda x: x.astype(np.float32))
         )
