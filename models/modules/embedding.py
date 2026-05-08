@@ -68,12 +68,13 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
 
-            # self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
-            # self.num_act = getattr(nn, num_act)()
-            self.num_mlp = nn.Sequential(
-                nn.Linear(1, embed_dim, False),
-                nn.ReLU()
-            )
+            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
+            self.num_act = torch.sin  # getattr(nn, num_act)()
+
+            # self.num_mlp = nn.Sequential(
+            #     nn.Linear(1, embed_dim, False),
+            #     nn.ReLU()
+            # )
         else:
             self.n_num = 0
             self.register_buffer(
@@ -148,10 +149,16 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     dim=1
             # )
             x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
-            x_num = self.num_mlp(x_num)
-            # x_num = x_num * self.num_weight  # + self.num_bias
-            # x_num, x_num_gate = x_num.chunk(2, -1)
-            # x_num = self.num_act(x_num) * x_num_gate
+
+            # x_num = self.num_mlp(x_num)
+
+            x_num = x_num * self.num_weight  # + self.num_bias
+            x_num, x_num_gate = x_num.chunk(2, -1)
+            x_num = self.num_act(x_num) * x_num_gate
+
+            # x_num = x_num * self.num_weight
+            # x_num[:, :, :, :self.embed_dim // 2] = torch.sin(x_num[:, :, :, :self.embed_dim // 2])
+
             x_num = x_num.squeeze(-2)
 
         if x_cat is None:
