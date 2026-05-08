@@ -105,53 +105,54 @@ class FeatureTokenizerEnsemble(nn.Module):
         #     for _ in range(k)
         # ])
 
-    # def init_smooth_weights(self,
-    #                         sigma: float = 1.0,
-    #                         kernel_size: int = 5,
-    #                         # **init_kwargs
-    #                         ) -> None:
-    #     # nn.init.normal_(self.cat_weight, **init_kwargs)
-    #
-    #     t = self.n_embed_cat.sum()
-    #     for i in range(len(self.n_embed_num)):
-    #         for j in range(self.k):
-    #             mask = (
-    #                 (torch.arange(self.k * t) < j * t + self.n_embed_num[:i + 1].sum())
-    #                 &
-    #                 (torch.arange(self.k * t) >= j * t + self.n_embed_num[:i].sum())
-    #             )
-    #             # print(mask)
-    #
-    #             half = kernel_size // 2
-    #             x = torch.arange(-half, half + 1).float()
-    #             gauss = torch.exp(-x**2 / (2 * sigma**2))
-    #             gauss = gauss / gauss.sum()
-    #             kernel = gauss.view(1, 1, -1).repeat(self.embed_dim, 1, 1)
-    #
-    #             weight_in = self.cat_weight[mask].t().unsqueeze(0)
-    #             weight_out = F.conv1d(weight_in, kernel, padding=half,
-    #                                   groups=self.embed_dim)
-    #
-    #             self.cat_weight.dataset[mask] = weight_out.squeeze(0).t()
+    @torch.inference_mode()
+    def init_smooth_weights(self,
+                            sigma: float = 1.0,
+                            kernel_size: int = 5,
+                            # **init_kwargs
+                            ) -> None:
+        # nn.init.normal_(self.cat_weight, **init_kwargs)
+
+        t = self.n_embed_cat.sum()
+        for i in range(len(self.n_embed_num)):
+            for j in range(self.k):
+                mask = (
+                    (torch.arange(self.k * t) < j * t + self.n_embed_num[:i + 1].sum())
+                    &
+                    (torch.arange(self.k * t) >= j * t + self.n_embed_num[:i].sum())
+                )
+                # print(mask)
+
+                half = kernel_size // 2
+                x = torch.arange(-half, half + 1).float()
+                gauss = torch.exp(-x**2 / (2 * sigma**2))
+                gauss = gauss / gauss.sum()
+                kernel = gauss.view(1, 1, -1).repeat(self.embed_dim, 1, 1)
+
+                weight_in = self.cat_weight[mask].t().unsqueeze(0)
+                weight_out = F.conv1d(weight_in, kernel, padding=half,
+                                      groups=self.embed_dim)
+
+                self.cat_weight[mask] = weight_out.squeeze(0).t()
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         if self.num_weight is None:
             x_cat = torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
-            x_num = torch.cat(
-                [embed(x_num).unsqueeze(1) for embed in self.num_embed],
-                dim=1
-            )
-            # x_num = (
-            #     x_num
-            #     .reshape(-1, 1, self.n_num, 1, 1)
-            #     .repeat(1, self.k, 1, 1, 1)
+            # x_num = torch.cat(
+            #     [embed(x_num).unsqueeze(1) for embed in self.num_embed],
+            #     dim=1
             # )
-            # x_num = x_num @ self.num_weight + self.num_bias
-            # x_num, x_num_gate = x_num.chunk(2, -1)
-            # x_num = self.num_act(x_num) * x_num_gate
-            # x_num = x_num.squeeze(-2)
+            x_num = (
+                x_num
+                .reshape(-1, 1, self.n_num, 1, 1)
+                .repeat(1, self.k, 1, 1, 1)
+            )
+            x_num = x_num @ self.num_weight + self.num_bias
+            x_num, x_num_gate = x_num.chunk(2, -1)
+            x_num = self.num_act(x_num) * x_num_gate
+            x_num = x_num.squeeze(-2)
 
         assert torch.all(x_cat < self.n_embed_cat)
 
