@@ -12,7 +12,7 @@ cfg.num_blocks = 1  # 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1
 
-cfg.pool = 'cls'  # avg cls sum w_avg
+cfg.pool = 'avg'  # avg cls sum w_avg
 cfg.add_cls_token = cfg.pool == 'cls'
 
 cfg.attn_dropout = 0.1  # 1
