@@ -173,8 +173,8 @@ class FeatureTokenizerEnsemble(nn.Module):
                     dim=2
                 )
             else:
-                print(x_num.shape)
-                print(x_cat.shape)
+                # print(x_num.shape)
+                # print(x_cat.shape)
                 x = torch.cat(
                     [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat],
                     dim=2
