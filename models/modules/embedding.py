@@ -96,14 +96,14 @@ class FeatureTokenizerEnsemble(nn.Module):
 
         # self.norm = NormEnsemble('RMSNorm', embed_dim, k)
 
-        # self.num_embed = nn.ModuleList([
-        #     rtdl_num_embeddings.PeriodicEmbeddings(
-        #         self.n_num, embed_dim,
-        #         # n_frequencies=2*embed_dim,
-        #         lite=False
-        #     )
-        #     for _ in range(k)
-        # ])
+        self.num_embed = nn.ModuleList([
+            rtdl_num_embeddings.PeriodicEmbeddings(
+                self.n_num, embed_dim,
+                # n_frequencies=2*embed_dim,
+                lite=False
+            )
+            for _ in range(k)
+        ])
 
     # def init_smooth_weights(self,
     #                         sigma: float = 1.0,
@@ -139,19 +139,19 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_cat = torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
-            # x_num = torch.cat(
-            #     [embed(x_num).unsqueeze(1) for embed in self.num_embed],
-            #     dim=1
-            # )
-            x_num = (
-                x_num
-                .reshape(-1, 1, self.n_num, 1, 1)
-                .repeat(1, self.k, 1, 1, 1)
+            x_num = torch.cat(
+                [embed(x_num).unsqueeze(1) for embed in self.num_embed],
+                dim=1
             )
-            x_num = x_num @ self.num_weight + self.num_bias
-            x_num, x_num_gate = x_num.chunk(2, -1)
-            x_num = self.num_act(x_num) * x_num_gate
-            x_num = x_num.squeeze(-2)
+            # x_num = (
+            #     x_num
+            #     .reshape(-1, 1, self.n_num, 1, 1)
+            #     .repeat(1, self.k, 1, 1, 1)
+            # )
+            # x_num = x_num @ self.num_weight + self.num_bias
+            # x_num, x_num_gate = x_num.chunk(2, -1)
+            # x_num = self.num_act(x_num) * x_num_gate
+            # x_num = x_num.squeeze(-2)
 
         assert torch.all(x_cat < self.n_embed_cat)
 
