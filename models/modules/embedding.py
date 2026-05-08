@@ -157,7 +157,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = self.num_act_1(x_num_1) * x_num_2
             # x_num = x_num @ self.num_weight_2 + self.num_bias_2
             # x_num = self.num_act_2(x_num)
-            x_num = x_num.squeeze()
+            x_num = x_num.squeeze(-2)
 
         assert torch.all(x_cat < self.n_embed_cat)
 
