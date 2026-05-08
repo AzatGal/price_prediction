@@ -68,9 +68,13 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
 
-            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
-            # self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
-            self.num_act = getattr(nn, num_act)()
+            # self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
+            # self.num_act = getattr(nn, num_act)()
+            self.num_mlp = nn.Sequential(
+                nn.Linear(1, 2 * embed_dim, False),
+                nn.ReLU(),
+                nn.Linear(2 * embed_dim, embed_dim, False)
+            )
         else:
             self.n_num = 0
             self.register_buffer(
@@ -136,7 +140,7 @@ class FeatureTokenizerEnsemble(nn.Module):
     #             self.cat_weight[mask] = weight_out.squeeze(0).t()
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
-        if self.num_weight is None:
+        if self.n_num == 0:
             x_cat = x_num if x_cat is None else torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
@@ -145,9 +149,10 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     dim=1
             # )
             x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
-            x_num = x_num * self.num_weight  # + self.num_bias
-            x_num, x_num_gate = x_num.chunk(2, -1)
-            x_num = self.num_act(x_num) * x_num_gate
+            x_num = self.num_mlp(x_num)
+            # x_num = x_num * self.num_weight  # + self.num_bias
+            # x_num, x_num_gate = x_num.chunk(2, -1)
+            # x_num = self.num_act(x_num) * x_num_gate
             x_num = x_num.squeeze(-2)
 
         if x_cat is None:
@@ -166,6 +171,8 @@ class FeatureTokenizerEnsemble(nn.Module):
                     x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
                 else:
                     x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
+            # for i in x:
+            #     print(i.shape)
             x = torch.cat(x, dim=2)
 
         x = x + self.bias
