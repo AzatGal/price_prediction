@@ -190,7 +190,8 @@ class Trainer:
             #     batch['target'] = batch['target'][mask]
             #     batch['label'] = batch['label'][mask]
             # elif self.cfg.task == 'train':
-            pred = self.model(batch['x_num'], batch['x_cat']).squeeze()
+            pred = self.model(batch['x_num'], batch['x_cat']).squeeze(2, 3)
+            # print(pred.shape)
             batch['target'] = batch['target'].repeat(1, pred.size(1))
             # else:
             #     raise NotImplementedError()
