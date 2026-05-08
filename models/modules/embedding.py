@@ -68,7 +68,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
 
-            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
+            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 2*embed_dim))
             self.num_act = getattr(nn, num_act)()
 
             # self.num_mlp = nn.Sequential(
@@ -148,7 +148,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     [embed(x_num).unsqueeze(1) for embed in self.num_embed],
             #     dim=1
             # )
-            x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
+            x_num = x_num.reshape(-1, 1, self.n_num, 1)
 
             # x_num = self.num_mlp(x_num)
 
@@ -159,7 +159,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             # x_num = x_num * self.num_weight
             # x_num[:, :, :, :self.embed_dim // 2] = torch.sin(x_num[:, :, :, :self.embed_dim // 2])
 
-            x_num = x_num.squeeze(-2)
+            # x_num = x_num.squeeze(-2)
 
         if x_cat is None:
             x = x_num
