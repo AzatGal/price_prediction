@@ -447,8 +447,8 @@ class TransformerEnsemble(nn.Module):
         # )
         self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         with torch.inference_mode():
-            nn.init.normal_(self.embed_rank)
-            # self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+            # nn.init.normal_(self.embed_rank)
+            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.embed_proj = nn.Linear(embed_dim, embed_dim)
         # self.embed_s = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
