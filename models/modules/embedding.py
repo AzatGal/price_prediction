@@ -71,9 +71,8 @@ class FeatureTokenizerEnsemble(nn.Module):
             # self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
             # self.num_act = getattr(nn, num_act)()
             self.num_mlp = nn.Sequential(
-                nn.Linear(1, 2 * embed_dim, False),
-                nn.ReLU(),
-                nn.Linear(2 * embed_dim, embed_dim, False)
+                nn.Linear(1, embed_dim, False),
+                nn.ReLU()
             )
         else:
             self.n_num = 0
