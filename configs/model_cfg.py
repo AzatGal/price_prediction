@@ -21,7 +21,7 @@ cfg.dropout = 0.0
 
 
 cfg.kv_compression = 'Head'  # Head KV Layer  None
-cfg.kv_compression_ratio = 0.1
+cfg.kv_compression_ratio = 0.2
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 
 cfg.attn = 'AttentionEnsemble'  # Linear
