@@ -68,19 +68,15 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
 
-            self.num_weight_1 = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
-            self.num_bias_1 = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
-            self.num_act_1 = getattr(nn, num_act)()
-
-            # self.num_weight_2 = nn.Parameter(torch.empty(k, self.n_num, embed_dim // 2, embed_dim))
-            # self.num_bias_2 = nn.Parameter(torch.empty(k, self.n_num, 1, embed_dim))
-            # self.num_act_2 = getattr(nn, num_act)()
+            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
+            self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
+            self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
             self.register_buffer(
                 'n_embed_num', torch.tensor(n_embed_num)
             )
-            self.register_parameter('num_weight_1', None)
+            self.register_parameter('num_weight', None)
             n_embed_cat = n_embed_num + n_embed_cat
 
         self.n_cat = len(n_embed_cat)
@@ -139,7 +135,7 @@ class FeatureTokenizerEnsemble(nn.Module):
     #             self.cat_weight.dataset[mask] = weight_out.squeeze(0).t()
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
-        if self.num_weight_1 is None:
+        if self.num_weight is None:
             x_cat = torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
@@ -152,11 +148,9 @@ class FeatureTokenizerEnsemble(nn.Module):
                 .reshape(-1, 1, self.n_num, 1, 1)
                 .repeat(1, self.k, 1, 1, 1)
             )
-            x_num = x_num @ self.num_weight_1 + self.num_bias_1
+            x_num = x_num @ self.num_weight + self.num_bias
             x_num_1, x_num_2 = x_num.chunk(2, -1)
-            x_num = self.num_act_1(x_num_1) * x_num_2
-            # x_num = x_num @ self.num_weight_2 + self.num_bias_2
-            # x_num = self.num_act_2(x_num)
+            x_num = self.num_act(x_num_1) * x_num_2
             x_num = x_num.squeeze(-2)
 
         assert torch.all(x_cat < self.n_embed_cat)

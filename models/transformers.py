@@ -437,7 +437,7 @@ class TransformerEnsemble(nn.Module):
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              1, dropout, add_cls_token, act)
+                                              k, dropout, add_cls_token, act)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = round(self.seq_len * kv_compression_ratio)
 
@@ -445,9 +445,9 @@ class TransformerEnsemble(nn.Module):
         #     LinearEnsemble(embed_dim, embed_dim, k),
         #     # getattr(nn, act)()
         # )
-        self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-        with torch.inference_mode():
-            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+        # self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        # with torch.inference_mode():
+        #     self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.embed_proj = nn.Linear(embed_dim, embed_dim)
         # self.embed_s = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
@@ -492,17 +492,17 @@ class TransformerEnsemble(nn.Module):
         self.reset_parameters()
 
     def _get_compressor(self) -> nn.Module:
-        return nn.Linear(
-            self.seq_len,
-            self.kv_compression_dim,
-            False
-        )
-        # return LinearEnsemble(
+        # return nn.Linear(
         #     self.seq_len,
         #     self.kv_compression_dim,
-        #     self.k,
         #     False
         # )
+        return LinearEnsemble(
+            self.seq_len,
+            self.kv_compression_dim,
+            self.k,
+            False
+        )
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
@@ -521,7 +521,7 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
-        x = x.repeat(1, self.k, 1, 1) * self.embed_rank
+        # x = x.repeat(1, self.k, 1, 1) * self.embed_rank
         # x = self.embed_proj(x)
         # x = x * self.embed_s
         # x = x.reshape(x.size(0), self.k, -1)
