@@ -69,7 +69,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.n_num = n_embed_num
 
             self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
-            self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
+            # self.num_bias = nn.Parameter(torch.empty(k, self.n_num, 1, 2*embed_dim))
             self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
@@ -94,7 +94,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         self.dropout = nn.Dropout(dropout)
 
-        self.norm = NormEnsemble('RMSNorm', embed_dim, k)
+        # self.norm = NormEnsemble('RMSNorm', embed_dim, k)
 
         # self.num_embed = nn.ModuleList([
         #     rtdl_num_embeddings.PeriodicEmbeddings(
@@ -135,9 +135,9 @@ class FeatureTokenizerEnsemble(nn.Module):
     #
     #             self.cat_weight[mask] = weight_out.squeeze(0).t()
 
-    def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         if self.num_weight is None:
-            x_cat = torch.cat([x_num, x_cat], dim=1)
+            x_cat = x_num if x_cat is None else torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
             # x_num = torch.cat(
@@ -145,26 +145,29 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     dim=1
             # )
             x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
-            x_num = x_num @ self.num_weight + self.num_bias
+            x_num = x_num * self.num_weight  # + self.num_bias
             x_num, x_num_gate = x_num.chunk(2, -1)
             x_num = self.num_act(x_num) * x_num_gate
             x_num = x_num.squeeze(-2)
 
-        assert torch.all(x_cat < self.n_embed_cat)
-
-        x_cat = x_cat.reshape(-1, 1, self.n_cat)
-        x_cat = x_cat + self.offsets
-        x_cat = F.embedding(x_cat, self.cat_weight)
-
-        if self.cls_token is None:
-            x = [x_cat] if x_num is None else [x_num, x_cat]
+        if x_cat is None:
+            x = x_num
         else:
-            if x_num is None:
-                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
+            assert torch.all(x_cat < self.n_embed_cat)
+
+            x_cat = x_cat.reshape(-1, 1, self.n_cat)
+            x_cat = x_cat + self.offsets
+            x_cat = F.embedding(x_cat, self.cat_weight)
+
+            if self.cls_token is None:
+                x = [x_cat] if x_num is None else [x_num, x_cat]
             else:
-                x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
-        x = torch.cat(x, dim=2)
-        x = 0.02 * self.norm(x)
+                if x_num is None:
+                    x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
+                else:
+                    x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
+            x = torch.cat(x, dim=2)
+
         x = x + self.bias
         x = self.dropout(x)
         return x

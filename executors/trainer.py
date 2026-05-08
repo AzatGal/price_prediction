@@ -137,9 +137,9 @@ class Trainer:
         #     return accuracy(pred, label)
         # elif self.cfg.task == 'train':
         pred = torch.as_tensor(self.target_processor.inverse_transform(pred))
-        pred = pred.mean(1, keepdim=True)
-        # return mape(pred, label)
-        return (F.mse_loss(pred, label) ** 0.5).item()
+        return mape(pred, label)
+        # pred = pred.mean(1, keepdim=True)
+        # return (F.mse_loss(pred, label) ** 0.5).item()
 
     def save_model(self, save_path=None, **kwargs):
         if save_path is None:
@@ -211,7 +211,7 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        # pred = pred.mean(1, keepdim=True)
+        pred = pred.mean(1, keepdim=True)
         return loss.item(), pred.detach()
 
     def train_epoch(self):

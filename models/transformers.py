@@ -447,7 +447,6 @@ class TransformerEnsemble(nn.Module):
         # )
         self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         with torch.inference_mode():
-            # nn.init.normal_(self.embed_rank)
             self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.embed_proj = nn.Linear(embed_dim, embed_dim)
@@ -520,7 +519,7 @@ class TransformerEnsemble(nn.Module):
         # if self.embed.num_weight is None:
         #     self.embed.init_smooth_weights()
 
-    def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
         x = x * self.embed_rank
         # x = self.embed_proj(x)
