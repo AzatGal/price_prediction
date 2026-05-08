@@ -69,7 +69,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.n_num = n_embed_num
 
             self.num_weight = nn.Parameter(torch.empty(k, self.n_num, 2*embed_dim))
-            self.num_act = nn.LeakyReLU()  # getattr(nn, num_act)()
+            self.num_act = nn.Softplus()  # getattr(nn, num_act)()
 
             # self.num_mlp = nn.Sequential(
             #     nn.Linear(1, embed_dim, False),
