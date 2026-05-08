@@ -516,9 +516,9 @@ class TransformerEnsemble(nn.Module):
                 else:
                     nn.init.normal_(p, std=0.02)
                     # nn.init.kaiming_uniform_(p, a=math.sqrt(5))
-        # with torch.inference_mode():
-        #     if self.embed.num_weight is not None:
-        #         nn.init.normal_(self.embed.num_weight, std=math.sqrt(2) / 10)
+        with torch.inference_mode():
+            if self.embed.num_weight is not None:
+                nn.init.normal_(self.embed.num_weight, std=math.sqrt(2) / 10)
         # if self.embed.num_weight is None:
         #     self.embed.init_smooth_weights()
 

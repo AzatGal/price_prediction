@@ -169,7 +169,6 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_cat = x_cat.reshape(-1, 1, self.n_cat)
             x_cat = x_cat + self.offsets
             x_cat = F.embedding(x_cat, self.cat_weight)
-            x_cat = F.relu(x_cat)
 
             if self.cls_token is None:
                 x = [x_cat] if x_num is None else [x_num, x_cat]
