@@ -60,6 +60,8 @@ class Trainer:
         self.cfg.model_cfg.n_embed_cat = [
             len(cat) + 1 for cat in data_cfg.processors.cat.steps[1][1].categories_
         ]
+        print(self.cfg.model_cfg.n_embed_num)
+        print(self.cfg.model_cfg.n_embed_cat)
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
