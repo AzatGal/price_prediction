@@ -514,7 +514,7 @@ class TransformerEnsemble(nn.Module):
                 elif 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 else:
-                    nn.init.trunc_normal_(p, std=0.02, a=-0.06, b=0.06)
+                    nn.init.normal_(p, std=0.02)
                     # nn.init.kaiming_uniform_(p, a=math.sqrt(5))
         # with torch.inference_mode():
         #     if self.embed.num_weight is not None:
