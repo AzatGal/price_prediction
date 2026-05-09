@@ -56,7 +56,7 @@ path = os.path.join(
 
 
 ids = EasyDict({
-    dataset_type: np.load(os.path.join(path, 'split-random-0', f'{dataset_type}_idx.npy'))
+    dataset_type: np.load(os.path.join(path, 'split-default', f'{dataset_type}_idx.npy'))
     for dataset_type in ('train', 'val', 'test')
 })
 raw_data = EasyDict(
@@ -97,14 +97,14 @@ cfg = EasyDict(
     processors=EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),
-            # QuantileTransformer(output_distribution='normal'),
-            # FunctionTransformer(np.nan_to_num),
-            # FunctionTransformer(lambda x: x.astype(np.float32)),
-            FunctionTransformer(
-                lambda x: x.fillna(raw_data.train.num.min() - 100)
-            ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            KBinsDiscretizer(n_bins=32, encode='ordinal', strategy='quantile'),
-            FunctionTransformer(lambda x: x.astype(int))
+            QuantileTransformer(output_distribution='normal'),
+            FunctionTransformer(np.nan_to_num),
+            FunctionTransformer(lambda x: x.astype(np.float32)),
+            # FunctionTransformer(
+            #     lambda x: x.fillna(raw_data.train.num.min() - 100)
+            # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            # KBinsDiscretizer(n_bins=32, encode='ordinal', strategy='quantile'),
+            # FunctionTransformer(lambda x: x.astype(int))
         ),
         cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype('str')),

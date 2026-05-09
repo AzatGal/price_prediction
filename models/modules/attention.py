@@ -168,10 +168,7 @@ class AttentionEnsemble(nn.Module):
         self.v_compressor = LinearEnsemble(seq_len, kv_compression_dim,
                                            k, share_weights, bias)
 
-    def forward(self,
-                x: torch.Tensor,
-                cls_token_only_attn: bool,
-                ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
         k = self.k_compressor(x.transpose(2, 3)).transpose(2, 3)
         v = self.v_compressor(x.transpose(2, 3)).transpose(2, 3)
 
@@ -182,7 +179,6 @@ class AttentionEnsemble(nn.Module):
             x, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
-
         return a
 
 
