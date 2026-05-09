@@ -71,7 +71,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.num_rank = nn.Parameter(torch.empty(k, self.n_num, embed_dim))
             with torch.inference_mode():
                 nn.init.uniform_(self.num_rank, 0, 2)
-            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, embed_dim))
+            self.num_weight = nn.Parameter(torch.empty(k, self.n_num, embed_dim, embed_dim))
             self.num_bias = nn.Parameter(torch.empty(k, self.n_num, embed_dim))
             # self.num_act = getattr(nn, num_act)()
         else:
@@ -155,8 +155,8 @@ class FeatureTokenizerEnsemble(nn.Module):
             # x_num = self.num_act(x_num) * x_num_gate
 
             x_num = torch.cat([torch.sin(x_num), torch.cos(x_num_gate)], dim=-1)
-            x_num = x_num * self.num_weight
-            # x_num = x_num.squeeze(-2)
+            x_num = x_num.unsqueeze(-2) @ self.num_weight
+            x_num = x_num.squeeze(-2)
 
         if x_cat is None:
             x = x_num
