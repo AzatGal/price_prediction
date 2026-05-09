@@ -56,7 +56,10 @@ path = os.path.join(
 
 
 ids = EasyDict({
-    dataset_type: np.load(os.path.join(path, 'split-default', f'{dataset_type}_idx.npy'))
+    dataset_type: np.load(os.path.join(path,
+                                       # 'split-default',
+                                       'split-random-0',
+                                       f'{dataset_type}_idx.npy'))
     for dataset_type in ('train', 'val', 'test')
 })
 raw_data = EasyDict(
