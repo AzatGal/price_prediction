@@ -473,10 +473,11 @@ class TransformerEnsemble(nn.Module):
                 # if 'bias' in pn:
                 #     nn.init.zeros_(p)
                 # el
-                if 'head' in pn:
-                    nn.init.kaiming_uniform_(p, a=math.sqrt(5))
-                else:
-                    nn.init.normal_(p, std=0.02)
+                nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+                # if 'head' in pn:
+                #     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+                # else:
+                #     nn.init.normal_(p, std=0.02)
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
