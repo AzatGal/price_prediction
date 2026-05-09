@@ -59,11 +59,11 @@ class Logger:
         with open(self.metrics_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
         self.print(
-            "Train | " + " | ".join(f"{k}: {v:.5f}" if isinstance(v, float) else f"{k}: {v}"
+            "Train | " + " | ".join(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}"
             for k, v in train.items())
         )
         self.print(
-            "Valid | " + " | ".join(f"{k}: {v:.5f}" if isinstance(v, float) else f"{k}: {v}"
+            "Valid | " + " | ".join(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}"
             for k, v in valid.items())
         )
 
