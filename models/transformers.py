@@ -437,7 +437,7 @@ class TransformerEnsemble(nn.Module):
         self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              k, dropout, add_cls_token, act)
+                                              1, dropout, add_cls_token, act)
         self.seq_len = self.embed.seq_len
         self.kv_compression_dim = round(self.seq_len * kv_compression_ratio)
 
