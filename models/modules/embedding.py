@@ -59,7 +59,7 @@ class FeatureTokenizerEnsemble(nn.Module):
                  share_weights: bool = True,
                  ) -> None:
         super().__init__()
-        # self.k = k
+        self.share_weights = share_weights
         k_ = 1 if share_weights else k
         self.embed_dim = embed_dim
         self.register_parameter(
@@ -95,9 +95,10 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
         self.dropout = nn.Dropout(dropout)
 
-        self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-        with torch.inference_mode():
-            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+        if self.share_weights:
+            self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+            with torch.inference_mode():
+                self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.num_embed = nn.ModuleList([
         #     rtdl_num_embeddings.PeriodicEmbeddings(
@@ -178,7 +179,8 @@ class FeatureTokenizerEnsemble(nn.Module):
             x = torch.cat(x, dim=2)
 
         x = x + self.bias
-        x = x * self.embed_rank
+        if self.share_weights:
+            x = x * self.embed_rank
         x = self.dropout(x)
         return x
 
