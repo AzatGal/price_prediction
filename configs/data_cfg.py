@@ -103,7 +103,7 @@ cfg = EasyDict(
             FunctionTransformer(
                 lambda x: x.fillna(raw_data.train.num.min() - 100)
             ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            KBinsDiscretizer(n_bins=24, encode='ordinal', strategy='kmeans'),
+            KBinsDiscretizer(n_bins=24, encode='ordinal', strategy='quantile'),
             FunctionTransformer(lambda x: x.astype(int))
         ),
         cat=make_pipeline(
