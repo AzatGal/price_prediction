@@ -415,75 +415,51 @@ class TransformerEnsemble(nn.Module):
                  embed_dim: int,
                  n_embed_num: int | list[int],
                  n_embed_cat: list[int],
-                 k: int,
-                 attn_dropout: float,
-                 mlp_dropout: float,
+                 add_cls_token: bool,
                  dropout: float,
-                 act: str,
-                 mlp_dim_factor: float,
+                 k: int,
                  num_blocks: int,
-                 attn: str,
-                 mlp: str,
-                 norm: str,
                  pool: str,
                  pred_dim: int,
-                 add_cls_token: bool,
-                 kv_compression: str = None,
-                 kv_compression_ratio: float = None,
+                 share_weights: bool,
+
+                 kv_compression_ratio: float,
+                 attn_dropout: float,
+                 attn_bias: bool,
+
+                 mlp_dim_factor: float,
+                 act: str,
+                 mlp_dropout: float,
+                 mlp_bias: bool
                  ) -> None:
         super().__init__()
         assert 0 < kv_compression_ratio < 1
 
-        self.k = k
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              1, dropout, add_cls_token, act)
+                                              k, dropout, add_cls_token, act, share_weights)
         self.seq_len = self.embed.seq_len
-        self.kv_compression_dim = round(self.seq_len * kv_compression_ratio)
-
-        # self.embed_proj = nn.Sequential(
-        #     LinearEnsemble(embed_dim, embed_dim, k),
-        #     # getattr(nn, act)()
-        # )
-        self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-        with torch.inference_mode():
-            self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
-
-        # self.embed_proj = nn.Linear(embed_dim, embed_dim)
-        # self.embed_s = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-        # self.embed_in_proj = LinearEnsemble(embed_dim, 4 * embed_dim, k)
-        # self.embed_act = getattr(nn, act)()
-        # self.embed_out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k)
-        # self.embed_proj = GatedMLPEnsemble(embed_dim, 2, k, act, dropout, True)
-
-        if kv_compression is None:
-            self.kv_compressors = None
-        elif kv_compression == 'Head':
-            self.kv_compressors = nn.ModuleList([
-                nn.ModuleList([self._get_compressor(), self._get_compressor()])
-                for _ in range(num_blocks)
-            ])
-        elif kv_compression == 'KV':
-            self.kv_compressors = nn.ModuleList([
-                self._get_compressor() for _ in range(num_blocks)
-            ])
-        elif kv_compression == 'Layer':
-            self.kv_compressors = self._get_compressor()
-        else:
-            raise NotImplementedError()
 
         self.blocks = nn.ModuleList([
-            TransformerEnsembleBlock(embed_dim, mlp_dim_factor, act, k, attn_dropout,
-                                     mlp_dropout, dropout, attn, mlp, norm)
-            # nn.Sequential(
-            #     nn.Linear(self.seq_len * embed_dim, self.seq_len * embed_dim, False),
-            #     getattr(nn, act)()
-            # )
+            TransformerEnsembleBlock(
+                self.seq_len,
+                max(2, round(kv_compression_ratio * self.seq_len)),
+                attn_bias,
+                attn_dropout,
+                mlp_dim_factor,
+                act,
+                mlp_dropout,
+                mlp_bias,
+                embed_dim,
+                dropout,
+                k,
+                share_weights
+            )
             for _ in range(num_blocks)
         ])
 
-        self.norm = NormEnsemble(norm, embed_dim, k)
-        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k)
+        self.norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k, False, False)
 
         if pool == 'w_avg':
             self.w_avg = nn.Parameter(torch.zeros(k, 1, self.seq_len))
@@ -491,50 +467,22 @@ class TransformerEnsemble(nn.Module):
 
         self.reset_parameters()
 
-    def _get_compressor(self) -> nn.Module:
-        return nn.Linear(
-            self.seq_len,
-            self.kv_compression_dim,
-            False
-        )
-        # return LinearEnsemble(
-        #     self.seq_len,
-        #     self.kv_compression_dim,
-        #     self.k,
-        #     False
-        # )
-
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
-            if all(s not in pn for s in ['num_embed', 'norm', 'w_avg', '_rank', '_scale']):
-                if 'bias' in pn:  # or 'compressor' in pn:  # or 'qkv' in pn or 'out_proj' in pn:
-                    nn.init.zeros_(p)
-                # elif 'embed' in pn:
-                #     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
-                elif 'head' in pn:
+            if all(s not in pn for s in ['num_embed', 'norm', 'w_avg', 'rank', 'scale']):
+                # if 'bias' in pn:
+                #     nn.init.zeros_(p)
+                # el
+                if 'head' in pn:
                     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 else:
                     nn.init.normal_(p, std=0.02)
-                    # nn.init.kaiming_uniform_(p, a=math.sqrt(5))
-        # with torch.inference_mode():
-        #     if self.embed.num_weight is not None:
-        #         nn.init.normal_(self.embed.num_weight, std=math.sqrt(2) / 10)
-        # if self.embed.num_weight is None:
-        #     self.embed.init_smooth_weights()
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
-        x = x * self.embed_rank
-        # x = self.embed_proj(x)
-        # x = x * self.embed_s
-        # x = x.reshape(x.size(0), self.k, -1)
 
         for i, block in enumerate(self.blocks):
-            x = block(
-                x,
-                self.add_cls_token and (i == len(self.blocks) - 1),
-                self.kv_compressors[i] if isinstance(self.kv_compressors, nn.ModuleList) else self.kv_compressors
-            )
+            x = block(x, self.add_cls_token and i == len(self.blocks) - 1)
 
         if self.pool == 'cls':
             x = x[:, :, :1]

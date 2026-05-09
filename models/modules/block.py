@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-import models.modules.attention as attn_obj
-import models.modules.mlp as mlp_obj
+from models.modules.attention import AttentionEnsemble
+from models.modules.mlp import GatedMLPEnsemble
 from models.modules.norm import NormEnsemble
 
 
@@ -58,51 +58,42 @@ from models.modules.norm import NormEnsemble
 
 class TransformerEnsembleBlock(nn.Module):
     def __init__(self,
-                 embed_dim: int,
+                 seq_len: int,
+                 kv_compression_dim: int,
+                 attn_bias: bool,
+                 attn_dropout: float,
                  mlp_dim_factor: float,
                  act: str,
-                 k: int,
-                 attn_dropout: float,
                  mlp_dropout: float,
+                 mlp_bias: bool,
+                 embed_dim: int,
                  dropout: float,
-                 attn: str,
-                 mlp: str,
-                 norm: str,
+                 k: int,
+                 share_weights: bool,
                  ) -> None:
         super().__init__()
-        self.attn_norm = NormEnsemble(norm, embed_dim, k)
-        self.mlp_norm = NormEnsemble(norm, embed_dim, k)
-
+        self.attn_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.attn = AttentionEnsemble(seq_len, kv_compression_dim, attn_dropout, k, share_weights, attn_bias)
         self.attn_drop = nn.Dropout(dropout)
+
+        self.mlp_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias)
         self.mlp_drop = nn.Dropout(dropout)
 
-        self.mlp = getattr(mlp_obj, mlp)(embed_dim, mlp_dim_factor, act, mlp_dropout)
-        self.attn = getattr(attn_obj, attn)(embed_dim, k, attn_dropout)
-
-    def _attn_block(self,
-                    x: torch.Tensor,
-                    cls_token_only_attn: bool,
-                    kv_compressors: nn.ModuleList | nn.Module = None
-                    ) -> torch.Tensor:
+    def _attn_block(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
         x = self.attn_norm(x)
-        x = self.attn(x, cls_token_only_attn, kv_compressors)
-        # x = self.attn_norm(x)
+        x = self.attn(x, cls_token_only_attn)
         x = self.attn_drop(x)
         return x
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.mlp_norm(x)
         x = self.mlp(x)
-        # x = self.mlp_norm(x)
         x = self.mlp_drop(x)
         return x
 
-    def forward(self,
-                x: torch.Tensor,
-                cls_token_only_attn: bool,
-                kv_compressors: nn.ModuleList | nn.Module = None,
-                ) -> torch.Tensor:
-        x = x + self._attn_block(x, cls_token_only_attn, kv_compressors)
+    def forward(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
+        x = x + self._attn_block(x, cls_token_only_attn)
         x = x + self._mlp_block(x)
         return x
 

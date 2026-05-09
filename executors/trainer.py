@@ -11,7 +11,7 @@ import rtdl_num_embeddings
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
 from dataset.apartment_dataset.apartment_dataset import ApartmentDataset
-import models.transformers as models
+from models.transformers import TransformerEnsemble
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, mape, get_param_groups
 
@@ -31,40 +31,22 @@ class Trainer:
         self.time_training = 0
         self.start_epoch = 1
 
-        # if cfg.task == 'pretrain':
-        #     self.best_metric = 0
-        # elif cfg.task == 'train':
         self.best_metric = float('inf')
-        # else:
-        #     raise NotImplementedError()
 
         self._prepare_data(cfg.data_cfg)
         self._prepare_model(cfg.model_cfg)
 
     def _prepare_data(self, data_cfg):
-        # self.data_transformer = data_cfg.data_transformer
         self.train_dataset = ApartmentDataset(
-            data_cfg.processors.num.fit_transform(
-                data_cfg.raw_data.train.num
-            ),
-            data_cfg.processors.cat.fit_transform(
-                data_cfg.raw_data.train.cat
-            ),
-            data_cfg.processors.target.fit_transform(
-                data_cfg.raw_data.train.label.to_numpy()
-            ),
+            data_cfg.processors.num.fit_transform(data_cfg.raw_data.train.num),
+            data_cfg.processors.cat.fit_transform(data_cfg.raw_data.train.cat),
+            data_cfg.processors.target.fit_transform(data_cfg.raw_data.train.label.to_numpy()),
             data_cfg.raw_data.train.label.to_numpy(),
         )
         self.val_dataset = ApartmentDataset(
-            data_cfg.processors.num.transform(
-                data_cfg.raw_data.val.num
-            ),
-            data_cfg.processors.cat.transform(
-                data_cfg.raw_data.val.cat
-            ),
-            data_cfg.processors.target.transform(
-                data_cfg.raw_data.val.label.to_numpy()
-            ),
+            data_cfg.processors.num.transform(data_cfg.raw_data.val.num),
+            data_cfg.processors.cat.transform(data_cfg.raw_data.val.cat),
+            data_cfg.processors.target.transform(data_cfg.raw_data.val.label.to_numpy()),
             data_cfg.raw_data.val.label.to_numpy(),
         )
 
@@ -87,7 +69,7 @@ class Trainer:
         self.val_dataloader = DataLoader(self.val_dataset, shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        self.model = getattr(models, self.cfg.model)(**model_cfg)
+        self.model = TransformerEnsemble(**model_cfg)
 
         # self.model.embed.num_embed = nn.ModuleList([
         #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
@@ -133,9 +115,7 @@ class Trainer:
     def metric(self, pred, label):
         pred = pred.cpu()
         label = label.cpu()
-        # if self.cfg.task == 'pretrain':
-        #     return accuracy(pred, label)
-        # elif self.cfg.task == 'train':
+
         pred = torch.as_tensor(self.target_processor.inverse_transform(pred))
         # return mape(pred, label)
         pred = pred.mean(1, keepdim=True)
@@ -143,7 +123,7 @@ class Trainer:
 
     def save_model(self, save_path=None, **kwargs):
         if save_path is None:
-            save_path = os.path.join(self.cfg.exp_dir, f"{self.cfg.model}.pt")
+            save_path = os.path.join(self.cfg.exp_dir, "model.pt")  # {self.cfg.model}
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         torch.save(self.model.state_dict(), save_path, **kwargs)
 
@@ -187,19 +167,9 @@ class Trainer:
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            # if self.cfg.task == 'pretrain':
-            #     pred, mask = self.model(batch['features'], self.cfg.mask_ratio)
-            #     batch['target'] = batch['target'][mask]
-            #     batch['label'] = batch['label'][mask]
-            # elif self.cfg.task == 'train':
             pred = self.model(batch['x_num'], batch['x_cat']).squeeze(2, 3)
-            # print(pred.shape)
             batch['target'] = batch['target'].repeat(1, pred.size(1))
-            # else:
-            #     raise NotImplementedError()
 
-            # print(pred.shape)
-            # print(batch['target'].shape)
             loss = self.criterion(pred, batch['target'])
 
         if update_model:
@@ -207,7 +177,6 @@ class Trainer:
             if self.accelerator.sync_gradients:
                 self.accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
-            # print(self.model.blocks[0].attn.qkv_proj.weight.grad)
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
@@ -267,13 +236,7 @@ class Trainer:
         for epoch in range(self.start_epoch, self.cfg.num_epoch + 1):
             train = self.train_epoch()
             val = self.evaluate()
-            # print(train)
-            # print(val)
             self.logger.log_metrics(epoch, train, val)
-            # if (
-            #         (self.cfg.task == 'train' and valid['metric'] < self.best_metric) or
-            #         (self.cfg.task == 'pretrain' and valid['loss'] < self.best_loss)
-            # ):
             if val['metric'] < self.best_metric:
                 self.logger.print('Best')
                 self.save_model()
@@ -288,7 +251,6 @@ class Trainer:
             self.save_checkpoint(epoch)
             self.logger.save_plot('loss')
             self.logger.save_plot('metric')
-            # print(self.optimizer.param_groups[0]['lr'])
 
     def overfitting_on_batch(self, max_step=1000):
         batch = next(iter(self.train_dataloader))

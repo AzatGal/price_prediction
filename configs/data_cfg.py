@@ -10,10 +10,6 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, \
                                    QuantileTransformer, FunctionTransformer, StandardScaler
 
-from configs.model_cfg import cfg as model_cfg
-
-# from dataset.data_processing import DataTransformer
-
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -98,7 +94,6 @@ cfg = EasyDict(
     raw_data=raw_data,
     # n_num=len(columns.num),
     # n_cat=[len(c) + 1 for c in cats],
-    # columns=columns,
     processors=EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),
@@ -124,108 +119,6 @@ cfg = EasyDict(
         )
     )
 )
-
-# # model_cfg.n_embed_num = cfg.raw_data.train.num.shape[1]
-# model_cfg.n_embed_num = (
-#     cfg.processors.num.steps[1][1].n_bins_.tolist()
-#     if isinstance(cfg.processors.num.steps[1][1], KBinsDiscretizer)
-#     else cfg.raw_data.train.num.shape[1]
-# )
-# model_cfg.n_embed_cat = [
-#     len(cat) + 1 for cat in cfg.processors.cat.steps[1][1].categories_
-# ]
-
-# cfg = EasyDict(
-#     processors=processors,
-#     columns=columns,
-#     # raw_data=raw_data,
-#     datasets=EasyDict(
-#         train=EasyDict(
-#             x_num=processors.num.fit_transform(raw_data.train[columns.num]),
-#             x_cat=processors.cat.fit_transform(raw_data.train[columns.cat]),
-#             target=processors.target.fit_transform(raw_data.train[columns.target].to_numpy()),
-#             label=raw_data.train[columns.target].to_numpy(),
-#         ),
-#         valid=EasyDict(
-#             x_num=processors.num.transform(raw_data.valid[columns.num]),
-#             x_cat=processors.cat.transform(raw_data.valid[columns.cat]),
-#             target=processors.target.transform(raw_data.valid[columns.target].to_numpy()),
-#             label=raw_data.valid[columns.target].to_numpy(),
-#         ),
-#         test=EasyDict(
-#             x_num=processors.num.transform(raw_data.test[columns.num]),
-#             x_cat=processors.cat.transform(raw_data.test[columns.cat]),
-#             target=processors.target.transform(raw_data.test[columns.target].to_numpy()),
-#             label=raw_data.test[columns.target].to_numpy(),
-#         ),
-#     ),
-#     # n_embed_num=len(columns.num),
-#     n_embed_num=processors.num.steps[1][1].n_bins_.tolist(),
-#     n_embed_cat=[len(cat) + 1 for cat in processors.cat.steps[1][1].categories],
-# )
-# print(cfg.n_embed_num)
-# print(processors.num.steps[1][1].bin_edges_)
-
-
-# cfg.num_cfg['processor'] = QuantileTransformer(output_distribution='normal').fit(
-#     df[cfg.num_cfg['columns']].fillna(-1.0)
-# )
-# KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),
-
-
-    # 'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'cat_processor.pkl')
-# cfg.cat_cfg['processor'] = OrdinalEncoder(
-#     encoded_missing_value=-1, handle_unknown='use_encoded_value', min_frequency=26, unknown_value=-1
-# ).fit(
-#     df[cfg.cat_cfg['columns']]
-# )
-
-# cats = [
-#     len(c) for c in cfg.cat_cfg['processor'].categories_
-# ]
-# inf_cats = [
-#     0 if c is None else len(c) - 1
-#     for c in cfg.cat_cfg['processor'].infrequent_categories_
-# ]
-# cfg.n_embed_cat = [i - j for i, j in zip(cats, inf_cats)]
-
-
-# cfg.target_cfg['processor'] = PowerTransformer().fit(df[cfg.target_cfg['columns']].to_numpy())
-
-
-# cfg.data_transformer = DataTransformer(
-#     num_cfg={'processor': KBinsDiscretizer(encode='ordinal', n_bins=128, strategy='kmeans'),
-#              'columns': ['Стоимость',
-#                          'Общая площадь',
-#                          'Жилая площадь',
-#                          'Площадь кухни',
-#                          'Этаж',
-#                          'Этажей в доме',
-#                          'Лифт пассажирский (кол-во)',
-#                          'Лифт грузовой (кол-во)',
-#                          'Количество комнат',
-#                          'Высота потолков',
-#                          'Кол-во раздельных санузлов'],
-#              'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'num_processor.pkl')},
-#     cat_cfg={'processor': OrdinalEncoder(encoded_missing_value=-1, handle_unknown='use_encoded_value',
-#                                          min_frequency=26, unknown_value=-1),
-#              'columns': ['Тип продажи',
-#                          'Объект продажи',
-#                          'Мусоропровод',
-#                          'Парковка',
-#                          'Тип дома',
-#                          'Вид из окон',
-#                          'Расстояние до метро',
-#                          'Округ',
-#                          'Район'],
-#              'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'cat_processor.pkl')},
-#     target_cfg={'processor': PowerTransformer(),
-#                 'columns': ['Стоимость'],
-#                 'path': os.path.join(ROOT_DIR, 'dataset', 'data_transformers', 'target_processor.pkl')},
-# )
-# cfg.features = cfg.data_transformer.num_cols + cfg.data_transformer.cat_cols
-
-
 
 
 if __name__ == '__main__':
