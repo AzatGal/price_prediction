@@ -122,7 +122,7 @@ class Trainer:
 
         if isinstance(self.criterion, nn.CrossEntropyLoss):
             # print(pred.shape)
-            pred = F.softmax(pred, -1).mean(1)[:, 1].numpy()
+            pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
             # print(pred.shape)
             # print(label.shape)
             return metrics.roc_auc_score(label, pred)
