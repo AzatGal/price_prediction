@@ -500,8 +500,8 @@ class TransformerEnsemble(nn.Module):
             raise NotImplementedError()
 
         x = self.norm(x)
-        x = self.pred_head(x)
-        return x
+        x = self.pred_head(x) # .squeeze(2, 3)
+        return x.squeeze(2)
 
 
 if __name__ == '__main__':

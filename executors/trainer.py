@@ -177,10 +177,13 @@ class Trainer:
 
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
-            pred = self.model(batch['x_num'], batch['x_cat']).squeeze(2, 3)
-            batch['target'] = batch['target'].repeat(1, pred.size(1))
-
-            loss = self.criterion(pred, batch['target'])
+            pred = self.model(batch['x_num'], batch['x_cat'])
+            # batch['target'] = batch['target'].repeat(1, pred.size(1))
+            # print(pred.shape)
+            loss = self.criterion(
+                pred.flatten(0, 1),
+                batch['target'].repeat_interleave(pred.size(1))
+            )
 
         if update_model:
             self.accelerator.backward(loss)
