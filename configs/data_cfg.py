@@ -90,7 +90,6 @@ cats = [
 cats = [cat.index[cat > 10].to_numpy() for cat in cats]  # 26
 
 n_bins = [
-    # max(2, int( * 0.1)
     min(100, np.unique(raw_data.train.num[col]).shape[0])
     for col in range(raw_data.train.num.shape[1])
 ]
@@ -107,7 +106,7 @@ cfg = EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),
             # QuantileTransformer(output_distribution='normal'),
-            # FunctionTransformer(lambda x: np.nan_to_num(x, nan=-10)),
+            # FunctionTransformer(np.nan_to_num),
             # FunctionTransformer(lambda x: x.astype(np.float32)),
             FunctionTransformer(
                 lambda x: x.fillna(raw_data.train.num.min() - 100)
