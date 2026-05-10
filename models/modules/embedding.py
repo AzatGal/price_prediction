@@ -71,9 +71,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.n_num = n_embed_num
 
             self.num_mlp = nn.Sequential(
-                LinearEnsemble(1, embed_dim // 2, k_, True, True),
+                LinearEnsemble(1, embed_dim // 2, k_, False, True),
                 nn.ReLU(),
-                LinearEnsemble(embed_dim // 2, embed_dim, k_, True, False),
+                LinearEnsemble(embed_dim // 2, embed_dim, k_, False, True),
             )
             # self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))  # 2 *
             # self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
@@ -184,9 +184,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     print(i.shape)
             x = torch.cat(x, dim=2)
 
-        x = x + self.bias
         if self.share_weights:
             x = x * self.embed_rank
+        x = x + self.bias
         x = self.dropout(x)
         return x
 
