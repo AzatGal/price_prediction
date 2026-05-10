@@ -73,18 +73,18 @@ class Trainer:
     def _prepare_model(self, model_cfg):
         self.model = TransformerEnsemble(**model_cfg)
 
-        # self.model.embed.num_embed = nn.ModuleList([
-        #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
-        #         rtdl_num_embeddings.compute_bins(
-        #             torch.cat([x['x_num'].unsqueeze(0) for x in self.train_dataset]),
-        #             # n_bins=128 # 48
-        #         ),
-        #         d_embedding=model_cfg.embed_dim,
-        #         activation=True,  # False,
-        #         version='B',
-        #     )
-        #     for _ in range(1)  # model_cfg.k)
-        # ])
+        self.model.embed.num_embed = nn.ModuleList([
+            rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+                rtdl_num_embeddings.compute_bins(
+                    torch.cat([x['x_num'].unsqueeze(0) for x in self.train_dataset]),
+                    # n_bins=128 # 48
+                ),
+                d_embedding=model_cfg.embed_dim,
+                activation=True,  # False,
+                version='B',
+            )
+            for _ in range(1)  # model_cfg.k)
+        ])
 
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(

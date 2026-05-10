@@ -100,10 +100,10 @@ class FeatureTokenizerEnsemble(nn.Module):
             with torch.inference_mode():
                 self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
-        self.num_embed = nn.ModuleList([
-            rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
-            for _ in range(k_)
-        ])
+        # self.num_embed = nn.ModuleList([
+        #     rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
+        #     for _ in range(k_)
+        # ])
 
     # @torch.inference_mode()
     # def init_smooth_weights(self,
