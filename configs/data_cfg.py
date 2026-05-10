@@ -101,8 +101,6 @@ warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
 cfg = EasyDict(
     raw_data=raw_data,
-    # n_num=len(columns.num),
-    # n_cat=[len(c) + 1 for c in cats],
     processors=EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),

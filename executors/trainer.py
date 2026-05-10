@@ -117,14 +117,14 @@ class Trainer:
         #     self.logger.print('load_checkpoint')
 
     def metric(self, pred, label):
-        label = label.numpy()
+        label = label.cpu().numpy()
         if isinstance(self.criterion, nn.CrossEntropyLoss):
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
-            # print(pred.shape)
-            # print(label.shape)
             return -metrics.roc_auc_score(label, pred)
         else:
-            pred = self.target_processor.inverse_transform(pred).mean(1)
+            pred = self.target_processor.inverse_transform(
+                pred.numpy()
+            ).mean(1)
             return metrics.root_mean_squared_error(label, pred)
 
     def save_model(self, save_path=None, **kwargs):
@@ -189,7 +189,6 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        # pred = pred.mean(1, keepdim=True)
         return loss.item(), pred.detach().cpu()
 
     def train_epoch(self):
@@ -205,6 +204,7 @@ class Trainer:
             total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
+
             del pred, loss, batch
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()

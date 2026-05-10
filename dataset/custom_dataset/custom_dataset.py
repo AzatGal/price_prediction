@@ -17,7 +17,7 @@ class CustomDataset(Dataset):
         self.x_num = torch.as_tensor(x_num)
         self.x_cat = torch.as_tensor(x_cat)
         self.target = torch.as_tensor(target)
-        self.label = torch.as_tensor(label)
+        self.label = label
 
     #     features = torch.as_tensor(
     #         data_transformer.transform(df)
