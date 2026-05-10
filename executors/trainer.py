@@ -51,6 +51,7 @@ class Trainer:
         )
 
         self.target_processor = data_cfg.processors.target
+        # print(data_cfg.processors.num.steps[1][1].n_bins_.tolist())
 
         self.cfg.model_cfg.n_embed_num = (
             data_cfg.processors.num.steps[1][1].n_bins_.tolist()

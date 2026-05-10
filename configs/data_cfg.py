@@ -89,9 +89,19 @@ cats = [
 ]
 cats = [cat.index[cat > 10].to_numpy() for cat in cats]  # 26
 
+n_bins = [
+    max(2, int(np.unique(raw_data.train.num[col]).shape[0] * 0.1))
+    for col in range(raw_data.train.num.shape[1])
+]
+# print(n_bins)
+# warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
+# warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
-warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
-warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
+# def fill_nan(x: np.ndarray) -> np.ndarray:
+#     mask = np.isnan(x)
+#     # if np.any(mask):
+#     x[np.isnan(x)] = -10
+#     return x
 
 cfg = EasyDict(
     raw_data=raw_data,
@@ -100,19 +110,19 @@ cfg = EasyDict(
     processors=EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),
-            # QuantileTransformer(output_distribution='normal'),
-            # FunctionTransformer(np.nan_to_num),
+            QuantileTransformer(output_distribution='normal'),
+            FunctionTransformer(lambda x: np.nan_to_num(x, nan=-10)),
             # FunctionTransformer(lambda x: x.astype(np.float32)),
-            FunctionTransformer(
-                lambda x: x.fillna(raw_data.train.num.min() - 100)
-            ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            KBinsDiscretizer(n_bins=8, encode='ordinal', strategy='quantile'),
-            FunctionTransformer(lambda x: x.astype(int))
+            # FunctionTransformer(
+            #     lambda x: x.fillna(raw_data.train.num.min() - 100)
+            # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
+            FunctionTransformer(lambda x: x.astype(np.int64))
         ),
         cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype('str')),
             OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
-            FunctionTransformer(lambda x: (x + 1).astype(int))
+            FunctionTransformer(lambda x: (x + 1).astype(np.int64))
         ),
         target=make_pipeline(
             StandardScaler(),
