@@ -18,7 +18,7 @@ from configs.train_cfg import cfg
 
 
 def data_analysis():
-    path = '/dataset/apartment_dataset/datasets/'
+    path = '/datasets/custom_dataset/datasets/'
     train = pd.read_csv(os.path.join(path, 'train.csv')).drop(columns=['Unnamed: 0'])
     print(train.info())
     # valid = pd.read_csv(os.path.join(path, 'val.csv')).drop(columns=['Unnamed: 0'])

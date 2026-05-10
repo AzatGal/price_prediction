@@ -6,14 +6,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import sklearn.metrics as metrics
 import rtdl_num_embeddings
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from dataset.apartment_dataset.apartment_dataset import ApartmentDataset
+from datasets.custom_dataset.custom_dataset import ApartmentDataset
 from models.transformers import TransformerEnsemble
 from utils.logger import Logger
-from utils.utils import set_seed, get_scheduler, mape, get_param_groups
+from utils.utils import set_seed, get_scheduler, get_param_groups
 
 
 class Trainer:
@@ -41,13 +42,13 @@ class Trainer:
             data_cfg.processors.num.fit_transform(data_cfg.raw_data.train.num),
             data_cfg.processors.cat.fit_transform(data_cfg.raw_data.train.cat),
             data_cfg.processors.target.fit_transform(data_cfg.raw_data.train.label.to_numpy()),
-            data_cfg.raw_data.train.label.to_numpy(),
+            data_cfg.raw_data.train.label.to_numpy()
         )
         self.val_dataset = ApartmentDataset(
             data_cfg.processors.num.transform(data_cfg.raw_data.val.num),
             data_cfg.processors.cat.transform(data_cfg.raw_data.val.cat),
             data_cfg.processors.target.transform(data_cfg.raw_data.val.label.to_numpy()),
-            data_cfg.raw_data.val.label.to_numpy(),
+            data_cfg.raw_data.val.label.to_numpy()
         )
 
         self.target_processor = data_cfg.processors.target
@@ -117,12 +118,18 @@ class Trainer:
 
     def metric(self, pred, label):
         pred = pred.cpu()
-        label = label.cpu()
+        label = label.cpu().numpy()
 
-        pred = torch.as_tensor(self.target_processor.inverse_transform(pred))
-        # return mape(pred, label)
-        pred = pred.mean(1, keepdim=True)
-        return torch.sqrt(F.mse_loss(pred, label)).item()
+        if isinstance(self.criterion, nn.CrossEntropyLoss):
+            # print(pred.shape)
+            pred = F.softmax(pred, -1).mean(1)[:, 1].numpy()
+            # print(pred.shape)
+            # print(label.shape)
+            return metrics.roc_auc_score(label, pred)
+        else:
+            pred = self.target_processor.inverse_transform(pred).mean(1)
+            return metrics.root_mean_squared_error(label, pred)
+        # return torch.sqrt(F.mse_loss(pred, label)).item()
 
     def save_model(self, save_path=None, **kwargs):
         if save_path is None:

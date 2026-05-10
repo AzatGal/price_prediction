@@ -9,7 +9,7 @@ cfg.k = 8
 cfg.embed_dim = 32  # 128  # 32
 cfg.num_blocks = 3  # 3
 cfg.act = 'ReLU'  # SiLU
-cfg.pred_dim = 1
+cfg.pred_dim = 2  # 1
 
 cfg.pool = 'cls'  # avg cls sum w_avg
 cfg.add_cls_token = cfg.pool == 'cls'

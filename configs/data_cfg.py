@@ -7,16 +7,17 @@ import pandas as pd
 from easydict import EasyDict
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import KBinsDiscretizer, OrdinalEncoder, PowerTransformer, \
-                                   QuantileTransformer, FunctionTransformer, StandardScaler
+from sklearn.preprocessing import (KBinsDiscretizer, OrdinalEncoder, PowerTransformer, QuantileTransformer,
+                                   FunctionTransformer, StandardScaler, OneHotEncoder)
 
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 path = os.path.join(
-    ROOT_DIR, 'dataset',
-    # 'apartment_dataset'
-    'sberbank_housing'
+    ROOT_DIR, 'datasets',
+    # 'custom_dataset'
+    # 'sberbank_housing'
+    'homesite_insurance'
 )
 
 
@@ -105,14 +106,14 @@ cfg = EasyDict(
     processors=EasyDict(
         num=make_pipeline(
             # # PowerTransformer(),
-            # QuantileTransformer(output_distribution='normal'),
-            # FunctionTransformer(np.nan_to_num),
-            # FunctionTransformer(lambda x: x.astype(np.float32)),
-            FunctionTransformer(
-                lambda x: x.fillna(raw_data.train.num.min() - 100)
-            ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
-            FunctionTransformer(lambda x: x.astype(np.int64))
+            QuantileTransformer(output_distribution='normal'),
+            FunctionTransformer(np.nan_to_num),
+            FunctionTransformer(lambda x: x.astype(np.float32)),
+            # FunctionTransformer(
+            #     lambda x: x.fillna(raw_data.train.num.min() - 100)
+            # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            # KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
+            # FunctionTransformer(lambda x: x.astype(np.int64))
         ),
         cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype('str')),
@@ -120,7 +121,8 @@ cfg = EasyDict(
             FunctionTransformer(lambda x: (x + 1).astype(np.int64))
         ),
         target=make_pipeline(
-            StandardScaler(),
+            # OneHotEncoder(sparse_output=False),
+            # StandardScaler(),
             # PowerTransformer(),
             # QuantileTransformer(output_distribution='normal'),
             FunctionTransformer(lambda x: x.astype(np.float32))
