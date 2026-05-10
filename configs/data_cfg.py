@@ -121,11 +121,12 @@ cfg = EasyDict(
             FunctionTransformer(lambda x: (x + 1).astype(np.int64))
         ),
         target=make_pipeline(
+            FunctionTransformer(lambda x: x)
             # OneHotEncoder(sparse_output=False),
             # StandardScaler(),
             # PowerTransformer(),
             # QuantileTransformer(output_distribution='normal'),
-            FunctionTransformer(lambda x: x.astype(np.float32))
+            # FunctionTransformer(lambda x: x.astype(np.float32))
         )
     )
 )
