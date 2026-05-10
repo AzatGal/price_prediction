@@ -9,7 +9,7 @@ import polars as pl
 from sklearn.preprocessing import OrdinalEncoder
 from loguru import logger
 
-from datasets.util import *
+from dataset.util import *
 # import lib
 # from preprocessing.util import save_dataset
 
@@ -33,7 +33,7 @@ def main(data_path=None):
     # ======================================================================================
     # >>> Preprocessing <<<
     # ======================================================================================
-    logger.info('Preprocessing sberbank housing datasets')
+    logger.info('Preprocessing sberbank housing dataset')
 
     data = pl.read_csv(
         zipfile.ZipFile(data_path/'train.csv.zip').read('train.csv'),
@@ -60,7 +60,7 @@ def main(data_path=None):
     data_fixup = pl.read_excel(
         # data_path/'BAD_ADDRESS_FIX.xlsx',
         # '/Users/azatgalautdinov/Downloads/BAD_ADDRESS_FIX.xlsx',
-        '/kaggle/input/datasets/galazat/bad-address/BAD_ADDRESS_FIX.xlsx'
+        '/kaggle/input/dataset/galazat/bad-address/BAD_ADDRESS_FIX.xlsx'
         # read_options=dict(null_values=["NA"])
         # null_values=["NA"]
     ).fill_null("NA")
@@ -88,7 +88,7 @@ def main(data_path=None):
         pl.col('full_sq').gt(5.0) &
         pl.col('full_sq').ne(5326.0) &
 
-        # These ~=1000 instances are most likely outliers, that appear only in the middle of the datasets
+        # These ~=1000 instances are most likely outliers, that appear only in the middle of the dataset
         # (in terms of timestamps)
         pl.col('price_doc').gt(1_000_000) &
         pl.col('price_doc').ne(2_000_000) &
@@ -225,8 +225,8 @@ def main(data_path=None):
     # >>> Random splits <<<
     # ======================================================================================
 
-    # Random splits are created from the sliding_window splits by shuffling  all the datasets in the
-    # respective window and respliting into same train validation and test datasets sizes
+    # Random splits are created from the sliding_window splits by shuffling  all the dataset in the
+    # respective window and respliting into same train validation and test dataset sizes
 
     np.random.seed(0)
     random_splits = []
@@ -240,7 +240,7 @@ def main(data_path=None):
         })
 
     # ======================================================================================
-    # >>> Save datasets and splits <<<
+    # >>> Save dataset and splits <<<
     # ======================================================================================
 
 
@@ -251,7 +251,7 @@ def main(data_path=None):
         {f'random-{i}': split for i, split in enumerate(random_splits)}
     )
 
-    logger.info('Writing datasets to disk')
+    logger.info('Writing dataset to disk')
     save_dataset(
         name='sberbank_housing',
         task_type='regression',

@@ -11,7 +11,7 @@ import rtdl_num_embeddings
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from datasets.custom_dataset.custom_dataset import ApartmentDataset
+from dataset.custom_dataset.custom_dataset import ApartmentDataset
 from models.transformers import TransformerEnsemble
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, get_param_groups

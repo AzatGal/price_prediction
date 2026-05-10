@@ -5,7 +5,7 @@ import numpy as np
 import polars as pl
 from loguru import logger
 
-from datasets.util import *
+from dataset.util import *
 
 TMP_DATA_PATH = PROJECT_DIR/'preprocessing/tmp/ecom-offers'
 TMP_DATA_PATH.mkdir(exist_ok=True, parents=True)
@@ -25,7 +25,7 @@ def main(data_path=None):
     # >>> Preprocessing <<<
     # ======================================================================================
 
-    logger.info('Preprocessing ecom offers datasets')
+    logger.info('Preprocessing ecom offers dataset')
 
     data_offers = pl.read_csv(gzip.open(data_path/'offers.csv.gz').read())
     data_train_history = pl.read_csv(gzip.open(data_path/'trainHistory.csv.gz').read()).with_columns(
@@ -60,8 +60,8 @@ def main(data_path=None):
 
     # Expressions used in aggregation of transaction histories
 
-    # first works, because data_train has one unique id for each offer, thus after join all datasets (like
-    # target, offervalue come from training datasets and have one uniuqe value)
+    # first works, because data_train has one unique id for each offer, thus after join all dataset (like
+    # target, offervalue come from training dataset and have one uniuqe value)
 
     exprs = [
         pl.col('purchaseamount').cast(pl.Float64).sum().alias('total_spend'),
@@ -194,8 +194,8 @@ def main(data_path=None):
     # >>> Random splits <<<
     # ======================================================================================
 
-    # Random splits are created from the sliding_window splits by shuffling  all the datasets in the
-    # respective window and respliting into same train validation and test datasets sizes
+    # Random splits are created from the sliding_window splits by shuffling  all the dataset in the
+    # respective window and respliting into same train validation and test dataset sizes
 
     np.random.seed(0)
     random_splits = []
@@ -210,7 +210,7 @@ def main(data_path=None):
 
 
     # ======================================================================================
-    # >>> Save datasets and splits <<<
+    # >>> Save dataset and splits <<<
     # ======================================================================================
 
 
@@ -221,7 +221,7 @@ def main(data_path=None):
         {f'random-{i}': split for i, split in enumerate(random_splits)}
     )
 
-    logger.info('Writing datasets to disk')
+    logger.info('Writing dataset to disk')
     save_dataset(
         name='ecom-offers',
         task_type='binclass',

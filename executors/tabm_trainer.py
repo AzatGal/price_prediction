@@ -13,7 +13,7 @@ import torch.nn as nn
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from datasets.custom_dataset.custom_dataset import ApartmentDataset
+from dataset.custom_dataset.custom_dataset import ApartmentDataset
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, mape
 

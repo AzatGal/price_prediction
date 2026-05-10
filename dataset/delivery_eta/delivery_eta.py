@@ -1,4 +1,4 @@
-# > Delivery ETA task and datasets
+# > Delivery ETA task and dataset
 
 import kaggle
 import polars as pl
@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 from sklearn.preprocessing import OrdinalEncoder
 
-# import datasets.util as lib
+# import dataset.util as lib
 from data.util import * # save_dataset
 
 
@@ -20,11 +20,11 @@ def main():
     # >> Load and split into num, bin, cat
     # ================================================================
 
-    logger.info('Preprocessing delivery eta datasets')
+    logger.info('Preprocessing delivery eta dataset')
     kaggle.api.dataset_download_files('pcovkrd84mejm/delivery-eta', path=TMP_DATA_PATH)
     unzip(TMP_DATA_PATH/'delivery-eta.zip')
 
-    # Store full_index to help with potential future experiments on large datasets
+    # Store full_index to help with potential future experiments on large dataset
     data = pl.read_parquet(TMP_DATA_PATH/'delivery_eta.parquet').with_row_index(name="index_in_full")
 
     bin_cols = [c for c in data.columns if c.startswith('bin')]
@@ -126,8 +126,8 @@ def main():
     # >>> Random splits <<<
     # ======================================================================================
 
-    # Random splits are created from the sliding_window splits by shuffling  all the datasets in the
-    # respective window and respliting into same train validation and test datasets sizes
+    # Random splits are created from the sliding_window splits by shuffling  all the dataset in the
+    # respective window and respliting into same train validation and test dataset sizes
 
     np.random.seed(0)
     random_splits = []
@@ -141,7 +141,7 @@ def main():
         })
 
 
-    # Save datasets in the following format
+    # Save dataset in the following format
     # x_[bin|num|cat], y, split/default/ids_[train|val|test], split/sliding-window-N/ids-[train|val|test], split/random-N/ids-[train|val|test]
     # sliding window splits are formed by a custom increment, with the same train/test/val sizes
     # random splits match sliding window time-based splits in train/test/val sizes, but othervise are just random
@@ -153,7 +153,7 @@ def main():
         {f'random-{i}': split for i, split in enumerate(random_splits)}
     )
 
-    logger.info('Writing datasets to disk')
+    logger.info('Writing dataset to disk')
     save_dataset(
         name='delivery-eta',
         task_type='regression',

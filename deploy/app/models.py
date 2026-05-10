@@ -5,9 +5,9 @@ from datetime import datetime
 import os
 
 # Создаем директорию для базы данных если нужно
-os.makedirs('datasets', exist_ok=True)
+os.makedirs('dataset', exist_ok=True)
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///datasets/real_estate.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///dataset/real_estate.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, 

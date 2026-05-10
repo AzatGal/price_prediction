@@ -14,7 +14,7 @@ from sklearn.preprocessing import (KBinsDiscretizer, OrdinalEncoder, PowerTransf
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 path = os.path.join(
-    ROOT_DIR, 'datasets',
+    ROOT_DIR, 'dataset',
     # 'custom_dataset'
     # 'sberbank_housing'
     'homesite_insurance'
