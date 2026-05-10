@@ -4,7 +4,7 @@ import zipfile
 
 import polars as pl
 import numpy as np
-import kaggle
+
 from loguru import logger
 from sklearn.preprocessing import OrdinalEncoder
 
