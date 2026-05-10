@@ -125,7 +125,7 @@ class Trainer:
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
             # print(pred.shape)
             # print(label.shape)
-            return metrics.roc_auc_score(label, pred)
+            return -metrics.roc_auc_score(label, pred)
         else:
             pred = self.target_processor.inverse_transform(pred).mean(1)
             return metrics.root_mean_squared_error(label, pred)
