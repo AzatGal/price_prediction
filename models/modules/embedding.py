@@ -70,13 +70,13 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
 
-            self.num_mlp = nn.Sequential(
-                LinearEnsemble(1, embed_dim // 2, k_, False, True),
-                nn.ReLU(),
-                LinearEnsemble(embed_dim // 2, embed_dim, k_, False, True),
-            )
-            # self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))  # 2 *
-            # self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
+            # self.num_mlp = nn.Sequential(
+            #     LinearEnsemble(1, embed_dim // 2, k_, False, True),
+            #     nn.ReLU(),
+            #     LinearEnsemble(embed_dim // 2, embed_dim, k_, False, True),
+            # )
+            self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))  # 2 *
+            self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
             # self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
@@ -152,17 +152,14 @@ class FeatureTokenizerEnsemble(nn.Module):
             # )
 
             # print(x_num.unsqueeze(1).unsqueeze(-1).shape)
-            x_num = self.num_mlp(x_num.unsqueeze(1).unsqueeze(-1))
-            # x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            # x_num = x_num * self.num_weight + self.num_bias
-            # # x_num, x_num_gate = x_num.chunk(2, -1)
+            # x_num = self.num_mlp(x_num.unsqueeze(1).unsqueeze(-1))
+            x_num = x_num.reshape(-1, 1, self.n_num, 1)
+            x_num = x_num * self.num_weight + self.num_bias
+            # x_num, x_num_gate = x_num.chunk(2, -1)
             # x_num = self.num_act(x_num)  # * x_num_gate
             # x_num = torch.sin(x_num) * x_num_gate
             # x_num = F.tanh(x_num)
-
-            # x_num = torch.cat([torch.sin(x_num), torch.cos(x_num_gate)], dim=-1)
-            # x_num = x_num * self.num_weight
-            x_num = x_num.squeeze(-2)
+            # x_num = x_num.squeeze(-2)
 
         if x_cat is None:
             x = x_num
