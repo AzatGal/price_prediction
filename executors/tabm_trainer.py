@@ -13,7 +13,7 @@ import torch.nn as nn
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from dataset.custom_dataset.custom_dataset import ApartmentDataset
+from dataset.custom_dataset.custom_dataset import CustomDataset
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, mape
 
@@ -38,7 +38,7 @@ class TabmTrainer:
         self.logger.print('Training on ' + str(self.accelerator.device))
 
     def _prepare_data(self, data_cfg):
-        self.train_dataset = ApartmentDataset(
+        self.train_dataset = CustomDataset(
             data_cfg.processors.num.fit_transform(
                 data_cfg.raw_data.train.num
             ),
@@ -50,7 +50,7 @@ class TabmTrainer:
             ),
             data_cfg.raw_data.train.target.to_numpy(),
         )
-        self.val_dataset = ApartmentDataset(
+        self.val_dataset = CustomDataset(
             data_cfg.processors.num.transform(
                 data_cfg.raw_data.valid.num
             ),
@@ -257,7 +257,7 @@ class TabmTrainer:
             kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
         dataloader = DataLoader(
-            ApartmentDataset("test", **self.cfg.data_cfg),
+            CustomDataset("test", **self.cfg.data_cfg),
             shuffle=True, **kwargs
         )
         self.model, dataloader = self.accelerator.prepare(self.model, dataloader)

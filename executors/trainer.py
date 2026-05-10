@@ -11,7 +11,7 @@ import rtdl_num_embeddings
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from dataset.custom_dataset.custom_dataset import ApartmentDataset
+from dataset.custom_dataset.custom_dataset import CustomDataset
 from models.transformers import TransformerEnsemble
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, get_param_groups
@@ -38,13 +38,13 @@ class Trainer:
         self._prepare_model(cfg.model_cfg)
 
     def _prepare_data(self, data_cfg):
-        self.train_dataset = ApartmentDataset(
+        self.train_dataset = CustomDataset(
             data_cfg.processors.num.fit_transform(data_cfg.raw_data.train.num),
             data_cfg.processors.cat.fit_transform(data_cfg.raw_data.train.cat),
             data_cfg.processors.target.fit_transform(data_cfg.raw_data.train.label.to_numpy()),
             data_cfg.raw_data.train.label.to_numpy()
         )
-        self.val_dataset = ApartmentDataset(
+        self.val_dataset = CustomDataset(
             data_cfg.processors.num.transform(data_cfg.raw_data.val.num),
             data_cfg.processors.cat.transform(data_cfg.raw_data.val.cat),
             data_cfg.processors.target.transform(data_cfg.raw_data.val.label.to_numpy()),
@@ -117,11 +117,8 @@ class Trainer:
         #     self.logger.print('load_checkpoint')
 
     def metric(self, pred, label):
-        pred = pred.cpu()
-        label = label.cpu().numpy()
-
+        label = label.numpy()
         if isinstance(self.criterion, nn.CrossEntropyLoss):
-            # print(pred.shape)
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
             # print(pred.shape)
             # print(label.shape)
@@ -129,7 +126,6 @@ class Trainer:
         else:
             pred = self.target_processor.inverse_transform(pred).mean(1)
             return metrics.root_mean_squared_error(label, pred)
-        # return torch.sqrt(F.mse_loss(pred, label)).item()
 
     def save_model(self, save_path=None, **kwargs):
         if save_path is None:
@@ -194,7 +190,7 @@ class Trainer:
             self.scheduler.step()
 
         # pred = pred.mean(1, keepdim=True)
-        return loss.item(), pred.detach()
+        return loss.item(), pred.detach().cpu()
 
     def train_epoch(self):
         self.model.train()
@@ -209,6 +205,9 @@ class Trainer:
             total_samples += batch_len
             total_loss += loss * batch_len
             total_metric += self.metric(pred, batch['label']) * batch_len
+            del pred, loss, batch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         t = time.time() - t
         total_loss /= total_samples

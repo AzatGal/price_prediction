@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 
 
-class ApartmentDataset(Dataset):
+class CustomDataset(Dataset):
     def __init__(self,
                  x_num: np.ndarray,
                  x_cat: np.ndarray,
