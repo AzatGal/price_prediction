@@ -438,9 +438,9 @@ class TransformerEnsemble(nn.Module):
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
                                               k, dropout, add_cls_token, act,
-                                              False) # share_weights)
+                                              share_weights)
         self.seq_len = self.embed.seq_len
-
+        self.num_blocks = num_blocks
         self.blocks = nn.ModuleList([
             TransformerEnsembleBlock(
                 self.seq_len,
@@ -485,7 +485,7 @@ class TransformerEnsemble(nn.Module):
         x = self.embed(x_num, x_cat)
 
         for i, block in enumerate(self.blocks):
-            x = block(x, self.add_cls_token and i == len(self.blocks) - 1)
+            x = block(x, self.add_cls_token and i == self.num_blocks - 1)
 
         if self.pool == 'cls':
             x = x[:, :, :1]
