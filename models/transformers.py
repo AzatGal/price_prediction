@@ -470,14 +470,15 @@ class TransformerEnsemble(nn.Module):
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
             if all(s not in pn for s in ['num_embed', 'norm', 'w_avg', 'rank', 'scale']):
+                nn.init.normal_(p, std=0.02)
                 # if 'bias' in pn:
                 #     nn.init.zeros_(p)
                 # el
                 # nn.init.kaiming_uniform_(p, a=math.sqrt(5))
-                if 'head' in pn:
-                    nn.init.kaiming_uniform_(p, a=math.sqrt(5))
-                else:
-                    nn.init.normal_(p, std=0.02)
+                # if 'head' in pn:
+                #     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+                # else:
+                #     nn.init.normal_(p, std=0.02)
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
