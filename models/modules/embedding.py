@@ -170,8 +170,8 @@ class FeatureTokenizerEnsemble(nn.Module):
                     x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
                 else:
                     x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
-            for i in x:
-                print(i.shape)
+            # for i in x:
+            #     print(i.shape)
             x = torch.cat(x, dim=2)
 
         x = x + self.bias
