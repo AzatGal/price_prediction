@@ -100,14 +100,10 @@ class FeatureTokenizerEnsemble(nn.Module):
             with torch.inference_mode():
                 self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
-        # self.num_embed = nn.ModuleList([
-        #     rtdl_num_embeddings.PeriodicEmbeddings(
-        #         self.n_num, embed_dim,
-        #         # n_frequencies=2*embed_dim,
-        #         lite=False
-        #     )
-        #     for _ in range(k)
-        # ])
+        self.num_embed = nn.ModuleList([
+            rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
+            for _ in range(k_)
+        ])
 
     # @torch.inference_mode()
     # def init_smooth_weights(self,
@@ -144,15 +140,15 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_cat = x_num if x_cat is None else torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
-            # x_num = torch.cat(
-            #     [embed(x_num).unsqueeze(1) for embed in self.num_embed],
-            #     dim=1
-            # )
+            x_num = torch.cat(
+                [embed(x_num).unsqueeze(1) for embed in self.num_embed],
+                dim=1
+            )
 
-            x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = x_num * self.num_weight + self.num_bias
-            # x_num, x_num_gate = x_num.chunk(2, -1)
-            x_num = self.num_act(x_num) # * x_num_gate
+            # x_num = x_num.reshape(-1, 1, self.n_num, 1)
+            # x_num = x_num * self.num_weight + self.num_bias
+            # # x_num, x_num_gate = x_num.chunk(2, -1)
+            # x_num = self.num_act(x_num) # * x_num_gate
 
             # x_num = torch.cat([torch.sin(x_num), torch.cos(x_num_gate)], dim=-1)
             # x_num = x_num * self.num_weight
@@ -174,8 +170,8 @@ class FeatureTokenizerEnsemble(nn.Module):
                     x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
                 else:
                     x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
-            # for i in x:
-            #     print(i.shape)
+            for i in x:
+                print(i.shape)
             x = torch.cat(x, dim=2)
 
         x = x + self.bias
