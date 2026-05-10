@@ -56,7 +56,6 @@ class FeatureTokenizerEnsemble(nn.Module):
                  k: int,
                  dropout: float,
                  add_cls_token: bool,
-                 num_act: str = None,
                  share_weights: bool = True,
                  ) -> None:
         super().__init__()
