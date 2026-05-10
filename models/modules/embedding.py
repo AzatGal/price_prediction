@@ -150,7 +150,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             # x_num, x_num_gate = x_num.chunk(2, -1)
             # x_num = self.num_act(x_num)  # * x_num_gate
             # x_num = torch.sin(x_num) * x_num_gate
-            # x_num = F.tanh(x_num)
+            x_num = F.tanh(x_num)
 
             # x_num = torch.cat([torch.sin(x_num), torch.cos(x_num_gate)], dim=-1)
             # x_num = x_num * self.num_weight
