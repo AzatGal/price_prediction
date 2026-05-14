@@ -56,18 +56,14 @@ class Trainer:
         # self.target_processor = data_cfg.processors.target
         # print(data_cfg.processors.num.steps[1][1].n_bins_.tolist())
 
-        self.datasets, self.data_transformers = prepare_date(self.cfg.seed)
+        self.datasets, self.data_transformers, n_embeds = prepare_date(self.cfg.seed)
 
-        # Determine number of numerical features and categorical cardinalities from data
-        # Use the fitted QuantileTransformer to get number of input features
-        num_features = self.data_transformers['x_num'].steps[0][1].n_features_in_
-        self.cfg.model_cfg.n_embed_num = num_features
+        # num_features = self.data_transformers['x_num'].steps[0][1].n_features_in_
+        self.cfg.model_cfg.n_embed_num = n_embeds['x_num']
+        self.cfg.model_cfg.n_embed_cat = n_embeds['x_cat']
 
-        # Get categorical cardinalities from the OrdinalEncoder in the pipeline
-        ordinal_encoder = self.data_transformers['x_cat'].steps[1][1]
-        self.cfg.model_cfg.n_embed_cat = [len(cat) + 1 for cat in ordinal_encoder.categories_]
-        # print(self.cfg.model_cfg.n_embed_num)
-        # print(self.cfg.model_cfg.n_embed_cat)
+        # ordinal_encoder = self.data_transformers['x_cat'].steps[1][1]
+        # self.cfg.model_cfg.n_embed_cat = [len(cat) + 1 for cat in ordinal_encoder.categories_]
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():

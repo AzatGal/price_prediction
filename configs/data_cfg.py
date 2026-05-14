@@ -86,6 +86,7 @@ def prepare_date(seed):
         for i in range(raw_data['train']['x_cat'].shape[1])
     ]
     cats = [cat.index[cat > 100].astype(str).to_numpy() for cat in cats]
+    n_cats = [len(cat) + 1 for cat in cats]
 
     # warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
     # warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
@@ -95,9 +96,10 @@ def prepare_date(seed):
     # ).astype(raw_data['train']['x_num'].dtype)
 
     n_bins = [
-        max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 8))
+        max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 10))
         for i in range(raw_data['train']['x_num'].shape[1])
     ]
+    n_embed = dict(x_num=n_bins, x_cat=n_cats)
 
     data_transformers = dict(
         x_num=make_pipeline(
@@ -134,7 +136,7 @@ def prepare_date(seed):
         label = raw_data[part]['y'].to_numpy()  # original labels for metric calculation
         datasets_dict[part] = CustomDataset(x_num, x_cat, target, label)
     
-    return datasets_dict, data_transformers
+    return datasets_dict, data_transformers, n_embed
 
 # cfg = EasyDict(
 #     raw_data=raw_data,
