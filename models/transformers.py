@@ -444,11 +444,16 @@ class TransformerEnsemble(nn.Module):
         hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
 
         self.blocks = nn.ModuleList([
-            nn.Sequential(LinearEnsemble(embed_dim, 4 * embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            nn.Sequential(LinearEnsemble(self.seq_len, hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            nn.Sequential(LinearEnsemble(4 * embed_dim, 4 * embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            nn.Sequential(LinearEnsemble(hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            nn.Sequential(LinearEnsemble(4 * embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(self.seq_len, 2 * hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+
+            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(2 * hidden_dim, 2 * hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+
+            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(2 * hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+
+            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
             nn.Sequential(LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias), nn.ReLU()),
         ])
 
@@ -497,7 +502,10 @@ class TransformerEnsemble(nn.Module):
 
         for i, block in enumerate(self.blocks):
             # x = block(x, self.add_cls_token and i == self.num_blocks - 1)
-            x = block(x)
+            if i % 2 == 0:
+                x = x + block(x)
+            else:
+                x = block(x)
             x = x.transpose(2, 3)
 
         if self.pool == 'cls':
