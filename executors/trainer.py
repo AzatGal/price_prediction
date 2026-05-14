@@ -11,7 +11,9 @@ import rtdl_num_embeddings
 
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
-from dataset.custom_dataset.custom_dataset import CustomDataset
+
+from configs.data_cfg import prepare_date
+# from data.custom_dataset.custom_dataset import CustomDataset
 from models.transformers import TransformerEnsemble
 from utils.logger import Logger
 from utils.utils import set_seed, get_scheduler, get_param_groups
@@ -34,34 +36,36 @@ class Trainer:
 
         self.best_metric = float('inf')
 
-        self._prepare_data(cfg.data_cfg)
+        self._prepare_data()
         self._prepare_model(cfg.model_cfg)
 
-    def _prepare_data(self, data_cfg):
-        self.train_dataset = CustomDataset(
-            data_cfg.processors.num.fit_transform(data_cfg.raw_data.train.num),
-            data_cfg.processors.cat.fit_transform(data_cfg.raw_data.train.cat),
-            data_cfg.processors.target.fit_transform(data_cfg.raw_data.train.label.to_numpy()),
-            data_cfg.raw_data.train.label.to_numpy()
-        )
-        self.val_dataset = CustomDataset(
-            data_cfg.processors.num.transform(data_cfg.raw_data.val.num),
-            data_cfg.processors.cat.transform(data_cfg.raw_data.val.cat),
-            data_cfg.processors.target.transform(data_cfg.raw_data.val.label.to_numpy()),
-            data_cfg.raw_data.val.label.to_numpy()
-        )
+    def _prepare_data(self):
+        # self.train_dataset = CustomDataset(
+        #     data_cfg.processors.num.fit_transform(data_cfg.raw_data.train.num),
+        #     data_cfg.processors.cat.fit_transform(data_cfg.raw_data.train.cat),
+        #     data_cfg.processors.target.fit_transform(data_cfg.raw_data.train.label.to_numpy()),
+        #     data_cfg.raw_data.train.label.to_numpy()
+        # )
+        # self.val_dataset = CustomDataset(
+        #     data_cfg.processors.num.transform(data_cfg.raw_data.val.num),
+        #     data_cfg.processors.cat.transform(data_cfg.raw_data.val.cat),
+        #     data_cfg.processors.target.transform(data_cfg.raw_data.val.label.to_numpy()),
+        #     data_cfg.raw_data.val.label.to_numpy()
+        # )
 
-        self.target_processor = data_cfg.processors.target
+        # self.target_processor = data_cfg.processors.target
         # print(data_cfg.processors.num.steps[1][1].n_bins_.tolist())
 
-        self.cfg.model_cfg.n_embed_num = (
-            data_cfg.processors.num.steps[1][1].n_bins_.tolist()
-            if hasattr(data_cfg.processors.num.steps[1][1], 'n_bins_')
-            else data_cfg.raw_data.train.num.shape[1]
-        )
-        self.cfg.model_cfg.n_embed_cat = [
-            len(cat) + 1 for cat in data_cfg.processors.cat.steps[1][1].categories_
-        ]
+        self.datasets, self.data_transformers = prepare_date(self.cfg.seed)
+
+        # Determine number of numerical features and categorical cardinalities from data
+        # Use the fitted QuantileTransformer to get number of input features
+        num_features = self.data_transformers['x_num'].steps[0][1].n_features_in_
+        self.cfg.model_cfg.n_embed_num = num_features
+
+        # Get categorical cardinalities from the OrdinalEncoder in the pipeline
+        ordinal_encoder = self.data_transformers['x_cat'].steps[1][1]
+        self.cfg.model_cfg.n_embed_cat = [len(cat) + 1 for cat in ordinal_encoder.categories_]
         # print(self.cfg.model_cfg.n_embed_num)
         # print(self.cfg.model_cfg.n_embed_cat)
 
@@ -69,10 +73,11 @@ class Trainer:
         if torch.cuda.is_available():
             kwargs['num_workers'] = 2
             kwargs['pin_memory'] = True
-        self.train_dataloader = DataLoader(self.train_dataset, shuffle=True, **kwargs)
-        self.val_dataloader = DataLoader(self.val_dataset, shuffle=False, **kwargs)
+        self.train_dataloader = DataLoader(self.datasets['train'], shuffle=True, **kwargs)
+        self.val_dataloader = DataLoader(self.datasets['val'], shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
+        # if model_cfg
         self.model = TransformerEnsemble(**model_cfg)
 
         # self.model.embed.num_embed = nn.ModuleList([
@@ -122,7 +127,7 @@ class Trainer:
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
             return -metrics.roc_auc_score(label, pred)
         else:
-            pred = self.target_processor.inverse_transform(
+            pred = self.data_transformers['y'].inverse_transform(
                 pred.numpy()
             ).mean(1)
             return metrics.root_mean_squared_error(label, pred)
@@ -175,7 +180,8 @@ class Trainer:
         with self.accelerator.autocast():
             pred = self.model(batch['x_num'], batch['x_cat'])
             # batch['target'] = batch['target'].repeat(1, pred.size(1))
-            # print(pred.shape)
+            # print(pred.flatten(0, 1).shape)
+            # print(batch['target'].repeat_interleave(pred.size(1)).shape)
             loss = self.criterion(
                 pred.flatten(0, 1),
                 batch['target'].repeat_interleave(pred.size(1))
@@ -206,8 +212,8 @@ class Trainer:
             total_metric += self.metric(pred, batch['label']) * batch_len
 
             del pred, loss, batch
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         t = time.time() - t
         total_loss /= total_samples

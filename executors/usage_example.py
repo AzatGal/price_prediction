@@ -43,7 +43,7 @@ def main():
     dt = trainer.data_transformer
 
     i = 9
-    df = pd.read_csv('/dataset/custom_dataset/dataset/test.csv')
+    df = pd.read_csv('/data/custom_dataset/data/test.csv')
 
     print('\n', df.iloc[i])
 

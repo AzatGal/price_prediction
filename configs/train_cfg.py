@@ -3,7 +3,7 @@ import math
 from datetime import datetime
 
 from easydict import EasyDict
-from configs.data_cfg import cfg as data_cfg
+# from configs.data_cfg import cfg as data_cfg
 from configs.model_cfg import cfg as model_cfg
 
 
@@ -15,7 +15,7 @@ cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs',
                            datetime.now().strftime("%d-%m_%H-%M"))
 cfg.batch_size = 192  # 32
-cfg.num_epoch = 300
+cfg.num_epoch = 100
 
 cfg.wu_ratio = 0.05
 cfg.decay_ratio = 0.85
@@ -27,11 +27,11 @@ cfg.optim = 'AdamW'
 cfg.optim_args = {}
 cfg.weight_decay = 3e-4  # 0.1
 
-cfg.loss = 'CrossEntropyLoss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss
+cfg.loss = 'MSELoss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss CrossEntropyLoss
 cfg.loss_args = {}
 
 cfg.accelerator_args = {}
 
 cfg.model_cfg = model_cfg
-cfg.data_cfg = data_cfg
+# cfg.data_cfg = data_cfg
 

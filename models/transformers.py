@@ -439,24 +439,34 @@ class TransformerEnsemble(nn.Module):
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
                                               k, dropout, add_cls_token, share_weights)
         self.seq_len = self.embed.seq_len
-        self.num_blocks = num_blocks
+        self.num_blocks = 4 # num_blocks
+
+        hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
+
         self.blocks = nn.ModuleList([
-            TransformerEnsembleBlock(
-                self.seq_len,
-                max(2, round(kv_compression_ratio * self.seq_len)),
-                attn_bias,
-                attn_dropout,
-                mlp_dim_factor,
-                act,
-                mlp_dropout,
-                mlp_bias,
-                embed_dim,
-                dropout,
-                k,
-                share_weights
-            )
-            for _ in range(num_blocks)
+            nn.Sequential(LinearEnsemble(embed_dim, 4 * embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(self.seq_len, hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(4 * embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias), nn.ReLU()),
         ])
+
+        # self.blocks = nn.ModuleList([
+        #     TransformerEnsembleBlock(
+        #         self.seq_len,
+        #         max(2, round(kv_compression_ratio * self.seq_len)),
+        #         attn_bias,
+        #         attn_dropout,
+        #         mlp_dim_factor,
+        #         act,
+        #         mlp_dropout,
+        #         mlp_bias,
+        #         embed_dim,
+        #         dropout,
+        #         k,
+        #         share_weights
+        #     )
+        #     for _ in range(num_blocks)
+        # ])
 
         self.norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.pred_head = LinearEnsemble(embed_dim, pred_dim, k, False, False)
@@ -484,7 +494,9 @@ class TransformerEnsemble(nn.Module):
         x = self.embed(x_num, x_cat)
 
         for i, block in enumerate(self.blocks):
-            x = block(x, self.add_cls_token and i == self.num_blocks - 1)
+            # x = block(x, self.add_cls_token and i == self.num_blocks - 1)
+            x = block(x)
+            x = x.transpose(2, 3)
 
         if self.pool == 'cls':
             x = x[:, :, :1]
@@ -501,17 +513,18 @@ class TransformerEnsemble(nn.Module):
 
         x = self.norm(x)
         x = self.pred_head(x) # .squeeze(2, 3)
-        return x.squeeze(2)
+        return x.squeeze()
 
 
 if __name__ == '__main__':
-    from configs.model_cfg import cfg
-
-    # cfg.pop('include_target')
-    m = Transformer(**cfg, pred_dim=1)
-    o = m.configure_optimizer(0.1, 0.1)
-    for k, _ in m.named_parameters():
-        print(k)
+    pass
+    # from configs.model_cfg import cfg
+    #
+    # # cfg.pop('include_target')
+    # m = Transformer(**cfg, pred_dim=1)
+    # o = m.configure_optimizer(0.1, 0.1)
+    # for k, _ in m.named_parameters():
+    #     print(k)
 
 """ 
 t1, t2, ...

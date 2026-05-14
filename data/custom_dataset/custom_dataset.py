@@ -14,10 +14,10 @@ class CustomDataset(Dataset):
                  target: np.ndarray,
                  label: np.ndarray
                  ) -> None:
-        self.x_num = torch.as_tensor(x_num)
-        self.x_cat = torch.as_tensor(x_cat)
-        self.target = torch.as_tensor(target)
-        self.label = label
+        self.x_num = torch.as_tensor(x_num, dtype=torch.float32)
+        self.x_cat = torch.as_tensor(x_cat, dtype=torch.long)
+        self.target = torch.as_tensor(target, dtype=torch.float32)
+        self.label = torch.as_tensor(label, dtype=torch.float32)
 
     #     features = torch.as_tensor(
     #         data_transformer.transform(df)

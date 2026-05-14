@@ -8,7 +8,7 @@ import numpy as np
 from loguru import logger
 from sklearn.preprocessing import OrdinalEncoder
 
-from dataset.util import *
+from data.util import *
 # import lib
 # from preprocessing.util import save_dataset
 
@@ -26,9 +26,9 @@ def main(data_path=None):
     else:
         data_path = Path(data_path)
 
-    logger.info('Preprocessing homesite_insurance dataset')
+    logger.info('Preprocessing homesite_insurance data')
 
-    # Download and load dataset to memory
+    # Download and load data to memory
 
     # kaggle.api.competition_download_files('homesite-quote-conversion', path=TMP_DATA_PATH)
     # unzip(TMP_DATA_PATH/'homesite-quote-conversion.zip')
@@ -46,7 +46,7 @@ def main(data_path=None):
 
     data = data.with_columns(pl.col([c for c in data.columns if c.endswith(('A', 'B'))]).replace({-1: None}))
 
-    # We always add some basic features based on timestamp that are generalizable for the dataset at
+    # We always add some basic features based on timestamp that are generalizable for the data at
     # hand
     data = data.with_columns(
         pl.col('timestamp').dt.weekday().alias('day_of_week'),
@@ -172,7 +172,7 @@ def main(data_path=None):
     # ======================================================================================
 
     # Random splits are created from the sliding_window splits by shuffling  all the data in the
-    # respective window and respliting into same train validation and test dataset sizes
+    # respective window and respliting into same train validation and test data sizes
 
     np.random.seed(0)
     random_splits = []
@@ -186,7 +186,7 @@ def main(data_path=None):
         })
 
 
-    # Save dataset in the following format
+    # Save data in the following format
     # x_[bin|num|cat], y, split/default/ids_[train|val|test], split/sliding-window-N/ids-[train|val|test], split/random-N/ids-[train|val|test]
     # sliding window splits are formed by a custom increment, with the same train/test/val sizes
     # random splits match sliding window time-based splits in train/test/val sizes, but othervise are just random

@@ -103,8 +103,8 @@ class FeatureTokenizerEnsemble(nn.Module):
         if self.share_weights:
             self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
             with torch.inference_mode():
-                nn.init.normal_(self.embed_rank)
-                # self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+                # nn.init.normal_(self.embed_rank)
+                self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.num_embed = nn.ModuleList([
         #     rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
