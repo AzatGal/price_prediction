@@ -89,7 +89,7 @@ class CustomDataset(Dataset):
         return len(self.label)
 
     def __getitem__(self, idx):
-        noise = torch.randn(self.k, 1) / 100 if self.add_noise else torch.zeros(self.k, 1)
+        noise = torch.randn(self.k, 1) / 10 if self.add_noise else torch.zeros(self.k, 1)
         return {
             'x_num': self.x_num[idx],
             'x_cat': self.x_cat[idx],
