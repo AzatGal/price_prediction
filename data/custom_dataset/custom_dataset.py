@@ -14,7 +14,7 @@ class CustomDataset(Dataset):
                  target: np.ndarray,
                  label: np.ndarray
                  ) -> None:
-        self.x_num = torch.as_tensor(x_num, dtype=torch.long)
+        self.x_num = torch.as_tensor(x_num, dtype=torch.float32)
         self.x_cat = torch.as_tensor(x_cat, dtype=torch.long)
         self.target = torch.as_tensor(target, dtype=torch.float32)
         # print(label)
