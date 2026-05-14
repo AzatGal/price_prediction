@@ -56,7 +56,9 @@ class Trainer:
         # self.target_processor = data_cfg.processors.target
         # print(data_cfg.processors.num.steps[1][1].n_bins_.tolist())
 
-        self.datasets, self.data_transformers, n_embeds = prepare_date(self.cfg.seed)
+        self.datasets, self.data_transformers, n_embeds = prepare_date(
+            self.cfg.seed, self.cfg.model_cfg.k
+        )
 
         # num_features = self.data_transformers['x_num'].steps[0][1].n_features_in_
         self.cfg.model_cfg.n_embed_num = n_embeds['x_num']
@@ -124,8 +126,8 @@ class Trainer:
             return -metrics.roc_auc_score(label, pred)
         else:
             pred = self.data_transformers['y'].inverse_transform(
-                pred.numpy()
-            ).mean(1)
+                pred.flatten(0, 1).numpy()
+            ).reshape(pred.shape).mean(1)
             return metrics.root_mean_squared_error(label, pred)
 
     def save_model(self, save_path=None, **kwargs):
@@ -180,7 +182,7 @@ class Trainer:
             # print(batch['target'].repeat_interleave(pred.size(1)).shape)
             loss = self.criterion(
                 pred.flatten(0, 1),
-                batch['target'].repeat_interleave(pred.size(1))
+                batch['target'].flatten(0, 1) # .repeat_interleave(pred.size(1))
             )
 
         if update_model:

@@ -25,7 +25,7 @@ DATA_PATH = os.path.join(
 )
 
 
-def prepare_date(seed):
+def prepare_date(seed, k):
     # columns = EasyDict(
     #     num=['Общая площадь',
     #          'Жилая площадь',
@@ -138,7 +138,10 @@ def prepare_date(seed):
         x_cat = data_transformers['x_cat'].transform(raw_data[part]['x_cat'])
         target = data_transformers['y'].transform(raw_data[part]['y'])
         label = raw_data[part]['y'].to_numpy()  # original labels for metric calculation
-        datasets_dict[part] = CustomDataset(x_num, x_cat, target, label)
+        datasets_dict[part] = CustomDataset(
+            x_num, x_cat, target, label, k,
+            part in ('val', 'test')
+        )
     
     return datasets_dict, data_transformers, n_embed
 
