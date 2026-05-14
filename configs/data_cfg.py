@@ -84,7 +84,7 @@ def prepare_date(seed):
     train_cat = raw_data['train']['x_cat']
     cats = [pd.Series(train_cat[:, i]).value_counts() for i in range(train_cat.shape[1])]
     # Convert categories to strings to match the astype(str) transformation
-    cats = [cat.index[cat > 100].astype(str).to_numpy() for cat in cats]
+    cats = [cat.index[cat > 10].astype(str).to_numpy() for cat in cats]
 
     # warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
     # warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
