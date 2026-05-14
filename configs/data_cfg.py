@@ -108,7 +108,7 @@ def prepare_date(seed):
     data_transformers = dict(
         x_num=make_pipeline(
             QuantileTransformer(
-                n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
+                # n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
                 output_distribution='normal',
                 random_state=seed
             ),

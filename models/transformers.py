@@ -466,7 +466,8 @@ class TransformerEnsemble(nn.Module):
                 embed_dim,
                 dropout,
                 k,
-                share_weights
+                share_weights,
+                add_cls_token
             )
             for _ in range(num_blocks)
         ])
