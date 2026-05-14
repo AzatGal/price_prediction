@@ -443,25 +443,12 @@ class TransformerEnsemble(nn.Module):
 
         hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
         self.blocks = nn.ModuleList([
-            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            # nn.Sequential(
+            GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
             LinearEnsemble(self.seq_len, 2 * hidden_dim, k, share_weights, bias=mlp_bias),
-            # nn.ReLU()),
-
-            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            # nn.Sequential(
-            LinearEnsemble(2 * hidden_dim, 2 * hidden_dim, k, share_weights, bias=mlp_bias),
-            # nn.ReLU()),
-
-            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            # nn.Sequential(
+            GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
             LinearEnsemble(2 * hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias),
-            # nn.ReLU()),
-
-            nn.Sequential(LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
-            # nn.Sequential(
+            GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
             LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias),
-            # nn.ReLU()),
         ])
 
         # self.blocks = nn.ModuleList([
