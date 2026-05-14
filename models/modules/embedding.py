@@ -69,14 +69,8 @@ class FeatureTokenizerEnsemble(nn.Module):
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
 
-            # self.num_mlp = nn.Sequential(
-            #     LinearEnsemble(1, embed_dim // 2, k_, False, True),
-            #     nn.ReLU(),
-            #     LinearEnsemble(embed_dim // 2, embed_dim, k_, False, True),
-            # )
-            self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))  # 2 *
+            self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
             self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
-            # self.num_act = getattr(nn, num_act)()
         else:
             self.n_num = 0
             self.register_buffer(
@@ -103,7 +97,6 @@ class FeatureTokenizerEnsemble(nn.Module):
         if self.share_weights:
             self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
             with torch.inference_mode():
-                # nn.init.normal_(self.embed_rank)
                 self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
         # self.num_embed = nn.ModuleList([
@@ -111,55 +104,13 @@ class FeatureTokenizerEnsemble(nn.Module):
         #     for _ in range(k_)
         # ])
 
-    # @torch.inference_mode()
-    # def init_smooth_weights(self,
-    #                         sigma: float = 1.0,
-    #                         kernel_size: int = 5,
-    #                         # **init_kwargs
-    #                         ) -> None:
-    #     # nn.init.normal_(self.cat_weight, **init_kwargs)
-    #
-    #     t = self.n_embed_cat.sum()
-    #     for i in range(len(self.n_embed_num)):
-    #         for j in range(self.k):
-    #             mask = (
-    #                 (torch.arange(self.k * t) < j * t + self.n_embed_num[:i + 1].sum())
-    #                 &
-    #                 (torch.arange(self.k * t) >= j * t + self.n_embed_num[:i].sum())
-    #             )
-    #             # print(mask)
-    #
-    #             half = kernel_size // 2
-    #             x = torch.arange(-half, half + 1).float()
-    #             gauss = torch.exp(-x**2 / (2 * sigma**2))
-    #             gauss = gauss / gauss.sum()
-    #             kernel = gauss.view(1, 1, -1).repeat(self.embed_dim, 1, 1)
-    #
-    #             weight_in = self.cat_weight[mask].t().unsqueeze(0)
-    #             weight_out = F.conv1d(weight_in, kernel, padding=half,
-    #                                   groups=self.embed_dim)
-    #
-    #             self.cat_weight[mask] = weight_out.squeeze(0).t()
-
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         if self.n_num == 0:
             x_cat = x_num if x_cat is None else torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
-            # x_num = torch.cat(
-            #     [embed(x_num).unsqueeze(1) for embed in self.num_embed],
-            #     dim=1
-            # )
-
-            # print(x_num.unsqueeze(1).unsqueeze(-1).shape)
-            # x_num = self.num_mlp(x_num.unsqueeze(1).unsqueeze(-1))
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = x_num * self.num_weight + self.num_bias
-            # x_num, x_num_gate = x_num.chunk(2, -1)
-            # x_num = self.num_act(x_num)  # * x_num_gate
-            # x_num = torch.sin(x_num) * x_num_gate
-            # x_num = F.tanh(x_num)
-            # x_num = x_num.squeeze(-2)
+            x_num = x_num * self.num_weight
 
         if x_cat is None:
             x = x_num
@@ -181,9 +132,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     print(i.shape)
             x = torch.cat(x, dim=2)
 
+        x = x + self.bias
         if self.share_weights:
             x = x * self.embed_rank
-        x = x + self.bias
         x = self.dropout(x)
         return x
 

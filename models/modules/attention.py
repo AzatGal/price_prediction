@@ -163,10 +163,15 @@ class AttentionEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.dropout = dropout
+        k_ = 1 if share_weights else k
+        self.register_buffer('mask', torch.ones(k_, seq_len, 1))
+        with torch.inference_mode():
+            self.mask[:, 1:].bernoulli_(0.9)
         self.k_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
         self.v_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
     def forward(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
+        x = x * self.mask
         k = self.k_compressor(x.transpose(2, 3)).transpose(2, 3)
         v = self.v_compressor(x.transpose(2, 3)).transpose(2, 3)
 

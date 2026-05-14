@@ -441,35 +441,35 @@ class TransformerEnsemble(nn.Module):
         self.seq_len = self.embed.seq_len
         self.num_blocks = num_blocks
 
-        hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
-        self.blocks = nn.ModuleList([
-            GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
-            LinearEnsemble(self.seq_len, 2 * hidden_dim, k, share_weights, bias=mlp_bias),
-
-            GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
-            LinearEnsemble(2 * hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias),
-
-            GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
-            LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias),
-        ])
-
+        # hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
         # self.blocks = nn.ModuleList([
-        #     TransformerEnsembleBlock(
-        #         self.seq_len,
-        #         max(2, round(kv_compression_ratio * self.seq_len)),
-        #         attn_bias,
-        #         attn_dropout,
-        #         mlp_dim_factor,
-        #         act,
-        #         mlp_dropout,
-        #         mlp_bias,
-        #         embed_dim,
-        #         dropout,
-        #         k,
-        #         share_weights
-        #     )
-        #     for _ in range(num_blocks)
+        #     GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
+        #     LinearEnsemble(self.seq_len, 2 * hidden_dim, k, share_weights, bias=mlp_bias),
+        #
+        #     GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
+        #     LinearEnsemble(2 * hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias),
+        #
+        #     GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
+        #     LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias),
         # ])
+
+        self.blocks = nn.ModuleList([
+            TransformerEnsembleBlock(
+                self.seq_len,
+                max(2, round(kv_compression_ratio * self.seq_len)),
+                attn_bias,
+                attn_dropout,
+                mlp_dim_factor,
+                act,
+                mlp_dropout,
+                mlp_bias,
+                embed_dim,
+                dropout,
+                k,
+                share_weights
+            )
+            for _ in range(num_blocks)
+        ])
 
         self.norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.pred_head = LinearEnsemble(embed_dim, pred_dim, k, False, False)
@@ -482,7 +482,7 @@ class TransformerEnsemble(nn.Module):
 
     def reset_parameters(self) -> None:
         for pn, p in self.named_parameters():
-            if all(s not in pn for s in ['num_embed', 'norm', 'w_avg', 'rank', 'scale']):
+            if all(s not in pn for s in ['mask', 'num_embed', 'norm', 'w_avg', 'rank', 'scale']):
                 nn.init.normal_(p, std=0.02)
                 # if 'bias' in pn:
                 #     nn.init.zeros_(p)
@@ -497,12 +497,12 @@ class TransformerEnsemble(nn.Module):
         x = self.embed(x_num, x_cat)
 
         for i, block in enumerate(self.blocks):
-            # x = block(x, self.add_cls_token and i == self.num_blocks - 1)
-            if i % 2 == 0:
-                x = x + block(x)
-            else:
-                x = block(x)
-            x = x.transpose(2, 3)
+            x = block(x, self.add_cls_token and i == self.num_blocks - 1)
+            # if i % 2 == 0:
+            #     x = x + block(x)
+            # else:
+            #     x = block(x)
+            # x = x.transpose(2, 3)
 
         if self.pool == 'cls':
             x = x[:, :, :1]
