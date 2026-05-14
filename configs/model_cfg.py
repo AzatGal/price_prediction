@@ -3,16 +3,16 @@ from easydict import EasyDict
 
 cfg = EasyDict()
 
-cfg.k = 2
-cfg.embed_dim = 4
-# cfg.k = 8
-# cfg.embed_dim = 32  # 128  # 32
+# cfg.k = 2
+# cfg.embed_dim = 4
+cfg.k = 8
+cfg.embed_dim = 32  # 128  # 32
 cfg.num_blocks = 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1  # 1
 
 cfg.pool = 'cls'  # avg cls sum w_avg
-cfg.add_cls_token = False # cfg.pool == 'cls'
+cfg.add_cls_token = cfg.pool == 'cls'
 
 cfg.attn_dropout = 0.0  # 1
 cfg.mlp_dropout = 0.1

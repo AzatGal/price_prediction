@@ -75,16 +75,17 @@ def prepare_date(seed):
 
     raw_data = {
         part: {
-            feature: raw_data[feature][ids[part]]
+            feature: pd.DataFrame(raw_data[feature][ids[part]])
             for feature in ('x_num', 'x_cat', 'y')
         }
         for part in ids.keys()
     }
 
-    train_cat = raw_data['train']['x_cat']
-    cats = [pd.Series(train_cat[:, i]).value_counts() for i in range(train_cat.shape[1])]
-    # Convert categories to strings to match the astype(str) transformation
-    cats = [cat.index[cat > 10].astype(str).to_numpy() for cat in cats]
+    cats = [
+        raw_data['train']['x_cat'][i].value_counts()
+        for i in range(raw_data['train']['x_cat'].shape[1])
+    ]
+    cats = [cat.index[cat > 100].astype(str).to_numpy() for cat in cats]
 
     # warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
     # warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
@@ -93,19 +94,24 @@ def prepare_date(seed):
     #     0.0, 1e-5, raw_data['train']['x_num'].shape
     # ).astype(raw_data['train']['x_num'].dtype)
 
+    n_bins = [
+        max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 8))
+        for i in range(raw_data['train']['x_num'].shape[1])
+    ]
+
     data_transformers = dict(
         x_num=make_pipeline(
-            QuantileTransformer(
-                n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
-                output_distribution='normal',
-                random_state=seed
-            ),
-            FunctionTransformer(np.nan_to_num),
+            # QuantileTransformer(
+            #     n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
+            #     output_distribution='normal',
+            #     random_state=seed
+            # ),
+            # FunctionTransformer(np.nan_to_num),
             # FunctionTransformer(lambda x: torch.as_tensor(x, dtype=torch.float32)),
-            # FunctionTransformer(
-            #     lambda x: x.fillna(raw_data['train']['x_num'].min() - 100)
-            # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            # KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
+            FunctionTransformer(
+                lambda x: x.fillna(raw_data['train']['x_num'].min() - 100)
+            ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
             # FunctionTransformer(lambda x: x.astype(np.int64))
         ).fit(raw_data['train']['x_num']),
         x_cat=make_pipeline(
@@ -114,8 +120,8 @@ def prepare_date(seed):
             FunctionTransformer(lambda x: x + 1)
         ).fit(raw_data['train']['x_cat']),
         y=make_pipeline(
-            FunctionTransformer(lambda x: x.reshape(-1, 1)),
             StandardScaler(),
+            # FunctionTransformer(lambda x: x.reshape(-1, 1)),
             # FunctionTransformer(lambda x: x.astype(np.float32))
         ).fit(raw_data['train']['y'])
     )
@@ -125,7 +131,7 @@ def prepare_date(seed):
         x_num = data_transformers['x_num'].transform(raw_data[part]['x_num'])
         x_cat = data_transformers['x_cat'].transform(raw_data[part]['x_cat'])
         target = data_transformers['y'].transform(raw_data[part]['y'])
-        label = raw_data[part]['y']  # original labels for metric calculation
+        label = raw_data[part]['y'].to_numpy()  # original labels for metric calculation
         datasets_dict[part] = CustomDataset(x_num, x_cat, target, label)
     
     return datasets_dict, data_transformers
