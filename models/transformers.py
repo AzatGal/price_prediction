@@ -439,13 +439,15 @@ class TransformerEnsemble(nn.Module):
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
                                               k, dropout, add_cls_token, share_weights)
         self.seq_len = self.embed.seq_len
-        self.num_blocks = 4 # num_blocks
+        self.num_blocks = 6 # num_blocks
 
         hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
 
         self.blocks = nn.ModuleList([
             nn.Sequential(LinearEnsemble(embed_dim, 4 * embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
             nn.Sequential(LinearEnsemble(self.seq_len, hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(4 * embed_dim, 4 * embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
+            nn.Sequential(LinearEnsemble(hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
             nn.Sequential(LinearEnsemble(4 * embed_dim, embed_dim, k, share_weights, bias=mlp_bias), nn.ReLU()),
             nn.Sequential(LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias), nn.ReLU()),
         ])
