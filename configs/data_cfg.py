@@ -85,7 +85,7 @@ def prepare_date(seed):
         raw_data['train']['x_cat'][i].value_counts()
         for i in range(raw_data['train']['x_cat'].shape[1])
     ]
-    cats = [cat.index[cat > 5].astype(str).to_numpy() for cat in cats]
+    cats = [cat.index[cat > 10].astype(str).to_numpy() for cat in cats]
     n_cats = [len(cat) + 1 for cat in cats]
 
     # warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
@@ -108,7 +108,7 @@ def prepare_date(seed):
     data_transformers = dict(
         x_num=make_pipeline(
             QuantileTransformer(
-                # n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
+                n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
                 output_distribution='normal',
                 random_state=seed
             ),
