@@ -159,7 +159,7 @@ class AttentionEnsemble(nn.Module):
                  dropout: float,
                  k: int,
                  share_weights: bool,
-                 add_cls_token: bool,
+                 # add_cls_token: bool,
                  bias: bool
                  ) -> None:
         super().__init__()

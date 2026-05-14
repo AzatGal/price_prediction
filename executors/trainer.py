@@ -260,7 +260,7 @@ class Trainer:
             else:
                 self.logger.print(
                     f"Best | epoch: {self.best_epoch} | metric: "
-                    f"{self.best_metric:.5f} | loss: {self.best_loss:.5f}"
+                    f"{self.best_metric:.4f} | loss: {self.best_loss:.5f}"
                 )
             self.save_checkpoint(epoch)
             self.logger.save_plot('loss')

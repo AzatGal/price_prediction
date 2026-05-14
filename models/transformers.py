@@ -437,7 +437,7 @@ class TransformerEnsemble(nn.Module):
 
         self.add_cls_token = add_cls_token
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              k, dropout, add_cls_token, share_weights)
+                                              k, dropout, add_cls_token, False)
         self.seq_len = self.embed.seq_len
         self.num_blocks = num_blocks
 
@@ -467,7 +467,7 @@ class TransformerEnsemble(nn.Module):
                 dropout,
                 k,
                 share_weights,
-                add_cls_token
+                # add_cls_token
             )
             for _ in range(num_blocks)
         ])
