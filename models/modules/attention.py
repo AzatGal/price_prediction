@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.modules.mlp import LinearEnsemble
+from models.modules.norm import NormEnsemble
 
 
 # class Attention(nn.Module):
@@ -170,21 +171,26 @@ class AttentionEnsemble(nn.Module):
         # with torch.inference_mode():
         #     self.mask[:, int(add_cls_token):].bernoulli_(0.9)
 
-        self.qkv_proj = LinearEnsemble(embed_dim, 3*embed_dim, k, share_weights, bias)
         self.k_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
         self.v_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
+        self.k_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
+
     def forward(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
         # x = x * self.mask
-        q, k, v = self.qkv_proj(x).chunk(3, dim=-1)
-        k = self.k_compressor(k.transpose(2, 3)).transpose(2, 3)
-        v = self.v_compressor(v.transpose(2, 3)).transpose(2, 3)
+        k = self.k_norm(self.k_compressor(
+            x.transpose(2, 3)
+        ).transpose(2, 3))
+        v = self.v_norm(self.v_compressor(
+            x.transpose(2, 3)
+        ).transpose(2, 3))
 
         if cls_token_only_attn:
-            q = q[:, :, :1]
+            x = x[:, :, :1]
 
         a = F.scaled_dot_product_attention(
-            q, k, v,
+            x, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
         return a
