@@ -14,10 +14,10 @@ class CustomDataset(Dataset):
                  target: np.ndarray,
                  label: np.ndarray,
                  k: int,
-                 add_noise: bool,
+                 # add_noise: bool,
                  ) -> None:
         self.k = k
-        self.add_noise = add_noise
+        # self.add_noise = add_noise
         self.x_num = torch.as_tensor(x_num, dtype=torch.float32)
         self.x_cat = torch.as_tensor(x_cat, dtype=torch.long)
         self.target = torch.as_tensor(target, dtype=torch.float32)
@@ -89,11 +89,11 @@ class CustomDataset(Dataset):
         return len(self.label)
 
     def __getitem__(self, idx):
-        noise = torch.randn(self.k, 1) / 100 if self.add_noise else torch.zeros(self.k, 1)
+        # noise = torch.randn(self.k, 1) / 100 if self.add_noise else torch.zeros(self.k, 1)
         return {
             'x_num': self.x_num[idx],
             'x_cat': self.x_cat[idx],
-            'target': self.target[idx].unsqueeze(0).repeat(self.k, 1) + noise,
+            'target': self.target[idx].unsqueeze(0).repeat(self.k, 1), # + noise,
             'label': self.label[idx]
         }
 

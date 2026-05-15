@@ -105,6 +105,10 @@ def prepare_date(seed, k):
         x_cat=n_cats
     )
 
+    noise = np.random.RandomState(seed).normal(
+        0.0, 1e-5, raw_data['train']['x_num'].shape
+    ).astype(raw_data['train']['x_num'].dtypes)
+
     data_transformers = dict(
         x_num=make_pipeline(
             QuantileTransformer(
@@ -119,7 +123,7 @@ def prepare_date(seed, k):
             # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
             # KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
             # FunctionTransformer(lambda x: x.astype(np.int64))
-        ).fit(raw_data['train']['x_num']),
+        ).fit(raw_data['train']['x_num'] + noise),
         x_cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype(str)),
             OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
@@ -139,7 +143,7 @@ def prepare_date(seed, k):
         target = data_transformers['y'].transform(raw_data[part]['y'])
         label = raw_data[part]['y'].to_numpy()  # original labels for metric calculation
         datasets_dict[part] = CustomDataset(
-            x_num, x_cat, target, label, k, False # part == 'train'
+            x_num, x_cat, target, label, k,  # part == 'train'
         )
     
     return datasets_dict, data_transformers, n_embed
