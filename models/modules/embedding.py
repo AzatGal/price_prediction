@@ -110,7 +110,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = None
         else:
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = x_num * self.num_weight
+            x_num = F.relu(x_num * self.num_weight)
 
         if x_cat is None:
             x = x_num

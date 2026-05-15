@@ -79,7 +79,8 @@ class TransformerEnsembleBlock(nn.Module):
         self.attn_drop = nn.Dropout(dropout)
 
         self.mlp_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias)
+        self.mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k,
+                                    share_weights, mlp_bias)
         self.mlp_drop = nn.Dropout(dropout)
 
     def _attn_block(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
