@@ -139,8 +139,7 @@ def prepare_date(seed, k):
         target = data_transformers['y'].transform(raw_data[part]['y'])
         label = raw_data[part]['y'].to_numpy()  # original labels for metric calculation
         datasets_dict[part] = CustomDataset(
-            x_num, x_cat, target, label, k,
-            part in ('val', 'test')
+            x_num, x_cat, target, label, k, part == 'train'
         )
     
     return datasets_dict, data_transformers, n_embed
