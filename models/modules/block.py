@@ -75,7 +75,7 @@ class TransformerEnsembleBlock(nn.Module):
         super().__init__()
         self.attn_norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.attn = AttentionEnsemble(embed_dim, seq_len, kv_compression_dim, attn_dropout,
-                                      k, share_weights, attn_bias)
+                                      k, False, attn_bias)
         self.attn_drop = nn.Dropout(dropout)
 
         self.mlp_norm = NormEnsemble('RMSNorm', embed_dim, k)
@@ -109,7 +109,7 @@ class TransformerEnsembleBlock(nn.Module):
                                  y,
                                  # cls_token_only_attn
                                  )
-        # x = x + self._mlp_block(x)
+        x = x + self._mlp_block(x)
         return x
 
 
