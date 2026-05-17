@@ -100,20 +100,24 @@ class FeatureTokenizerEnsemble(nn.Module):
                 nn.init.normal_(self.embed_rank)
                 # self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
-        # self.num_embed = nn.ModuleList([
+        self.num_embed = rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
+        #     nn.ModuleList([
         #     rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
         #     for _ in range(k_)
-        # ])
+        # ]))
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         if self.n_num == 0:
             x_cat = x_num if x_cat is None else torch.cat([x_num, x_cat], dim=1)
             x_num = None
         else:
-            x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = F.relu(x_num * self.num_weight + self.num_bias)
+            # x_num = x_num.reshape(-1, 1, self.n_num, 1)
+            # x_num = F.relu(x_num * self.num_weight + self.num_bias)
             # x_num_1, x_num_2 = x_num.chunk(2, dim=-1)
             # x_num = F.relu(x_num_1) * x_num_2
+            x_num = self.num_embed(x_num)
+            # print(x_num.shape)
+            x_num = x_num.unsqueeze(1)
 
         if x_cat is None:
             x = x_num
