@@ -96,7 +96,7 @@ def prepare_date(seed, k):
     # ).astype(raw_data['train']['x_num'].dtypes)
 
     n_bins = [
-        max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 12))
+        max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 16))
         for i in range(raw_data['train']['x_num'].shape[1])
     ]
     n_embed = dict(

@@ -493,6 +493,7 @@ class TransformerEnsemble(nn.Module):
                 #     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 # else:
                 #     nn.init.normal_(p, std=0.02)
+        nn.init.normal_(self.embed.cat_weight)
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x = self.embed(x_num, x_cat)
