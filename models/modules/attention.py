@@ -181,8 +181,10 @@ class AttentionEnsemble(nn.Module):
         self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
 
     def forward(self,
-                # y: torch.Tensor,
-                x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
+                y: torch.Tensor,
+                x: torch.Tensor,
+                # cls_token_only_attn: bool
+                ) -> torch.Tensor:
         # x = x * self.mask
         # x = self.in_proj(x)
         k = self.k_norm(self.k_compressor(
@@ -192,11 +194,11 @@ class AttentionEnsemble(nn.Module):
             x.transpose(2, 3)
         ).transpose(2, 3))
 
-        if cls_token_only_attn:
-            x = x[:, :, :1]
+        # if cls_token_only_attn:
+        #     x = x[:, :, :1]
 
         a = F.scaled_dot_product_attention(
-            x, k, v,
+            y, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
         # a = self.out_proj(a)
