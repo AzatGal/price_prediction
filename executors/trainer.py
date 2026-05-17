@@ -125,9 +125,10 @@ class Trainer:
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
             return -metrics.roc_auc_score(label, pred)
         else:
+            pred = pred.mean(1)
             pred = self.data_transformers['y'].inverse_transform(
-                pred.flatten(0, 1).numpy()
-            ).reshape(pred.shape).mean(1)
+                pred # .flatten(0, 1).numpy()
+            ) # .reshape(pred.shape).mean(1)
             return metrics.root_mean_squared_error(label, pred)
 
     def save_model(self, save_path=None, **kwargs):
