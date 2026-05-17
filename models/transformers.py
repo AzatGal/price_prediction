@@ -502,8 +502,8 @@ class TransformerEnsemble(nn.Module):
         for i, block in enumerate(self.blocks):
             x = block(x,
                       # y,
-                      True,
-                      # self.add_cls_token and i == self.num_blocks - 1
+                      # True,
+                      self.add_cls_token and i == self.num_blocks - 1
                       )
             # if i % 2 == 0:
             #     x = x + block(x)
