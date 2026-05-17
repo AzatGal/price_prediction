@@ -171,24 +171,24 @@ class AttentionEnsemble(nn.Module):
         # with torch.inference_mode():
         #     self.mask[:, int(add_cls_token):].bernoulli_(0.9)
 
-        self.in_proj = LinearEnsemble(embed_dim, 2 * embed_dim, k, share_weights, bias)
-        self.out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k, share_weights, bias)
+        # self.in_proj = LinearEnsemble(embed_dim, 2 * embed_dim, k, share_weights, bias)
+        # self.out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k, share_weights, bias)
 
         self.k_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
         self.v_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
-        # self.k_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        # self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.k_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
 
     def forward(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
         # x = x * self.mask
-        x = self.in_proj(x)
-        k = self.k_compressor(
+        # x = self.in_proj(x)
+        k = self.k_norm(self.k_compressor(
             x.transpose(2, 3)
-        ).transpose(2, 3)
-        v = self.v_compressor(
+        ).transpose(2, 3))
+        v = self.v_norm(self.v_compressor(
             x.transpose(2, 3)
-        ).transpose(2, 3)
+        ).transpose(2, 3))
 
         if cls_token_only_attn:
             x = x[:, :, :1]
@@ -197,7 +197,7 @@ class AttentionEnsemble(nn.Module):
             x, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
-        a = self.out_proj(a)
+        # a = self.out_proj(a)
         return a
 
 
