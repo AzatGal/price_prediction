@@ -91,34 +91,34 @@ def prepare_date(seed, k):
     # warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
     # warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
-    # noise = np.random.RandomState(seed).normal(
-    #     0.0, 1e-5, raw_data['train']['x_num'].shape
-    # ).astype(raw_data['train']['x_num'].dtypes)
-    n_bins = [
-        max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 16))
-        for i in range(raw_data['train']['x_num'].shape[1])
-    ]
+    noise = np.random.RandomState(seed).normal(
+        0.0, 1e-5, raw_data['train']['x_num'].shape
+    ).astype(raw_data['train']['x_num'].dtypes)
+    # n_bins = [
+    #     max(2, min(100, np.unique(raw_data['train']['x_num'][i]).shape[0] // 16))
+    #     for i in range(raw_data['train']['x_num'].shape[1])
+    # ]
     n_embed = dict(
-        x_num=n_bins,
-        # x_num=raw_data['train']['x_num'].shape[1],
+        # x_num=n_bins,
+        x_num=raw_data['train']['x_num'].shape[1],
         x_cat=n_cats
     )
 
     data_transformers = dict(
         x_num=make_pipeline(
-            # QuantileTransformer(
-            #     n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
-            #     output_distribution='normal',
-            #     random_state=seed
-            # ),
-            # FunctionTransformer(np.nan_to_num),
+            QuantileTransformer(
+                n_quantiles=max(min(raw_data['train']['x_num'].shape[0] // 30, 1000), 10),
+                output_distribution='normal',
+                random_state=seed
+            ),
+            FunctionTransformer(np.nan_to_num),
             # FunctionTransformer(lambda x: torch.as_tensor(x, dtype=torch.float32)),
-            FunctionTransformer(
-                lambda x: x.fillna(raw_data['train']['x_num'].min() - 100)
-            ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
-            KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
+            # FunctionTransformer(
+            #     lambda x: x.fillna(raw_data['train']['x_num'].min() - 100)
+            # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
+            # KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
             # FunctionTransformer(lambda x: x.astype(np.int64))
-        ).fit(raw_data['train']['x_num']), #  + noise),
+        ).fit(raw_data['train']['x_num'] + noise),
         x_cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype(str)),
             OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),

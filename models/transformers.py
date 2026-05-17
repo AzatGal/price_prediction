@@ -473,7 +473,7 @@ class TransformerEnsemble(nn.Module):
         ])
 
         self.norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k, False, False)
+        self.pred_head = LinearEnsemble(embed_dim, pred_dim, k, False, True)
 
         if pool == 'w_avg':
             self.w_avg = nn.Parameter(torch.zeros(k, 1, self.seq_len))
