@@ -70,7 +70,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.n_num = n_embed_num
 
             self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
-            # self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
+            self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
         else:
             self.n_num = 0
             self.register_buffer(
@@ -110,7 +110,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = None
         else:
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = x_num * self.num_weight
+            x_num = F.relu(x_num * self.num_weight + self.num_bias)
 
         if x_cat is None:
             x = x_num
@@ -132,9 +132,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     print(i.shape)
             x = torch.cat(x, dim=2)
 
-        x = x + self.bias
         if self.share_weights:
             x = x * self.embed_rank
+        x = x + self.bias
         x = self.dropout(x)
         return x
 
