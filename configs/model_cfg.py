@@ -21,8 +21,8 @@ cfg.dropout = 0.1
 cfg.kv_compression_ratio = 0.1  # 2
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 
-cfg.attn_bias = False # True
-cfg.mlp_bias = False # True
+cfg.attn_bias = True
+cfg.mlp_bias = True
 
 cfg.share_weights = True
 
