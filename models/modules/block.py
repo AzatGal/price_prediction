@@ -109,7 +109,7 @@ class TransformerEnsembleBlock(nn.Module):
                                  y,
                                  # cls_token_only_attn
                                  )
-        x = x + self._mlp_block(x)
+        # x = x + self._mlp_block(x)
         return x
 
 

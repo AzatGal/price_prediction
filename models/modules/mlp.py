@@ -59,12 +59,12 @@ class LinearEnsemble(nn.Module):
             bias: bool
     ) -> None:
         super().__init__()
-        self.register_parameter(
-            'rank', nn.Parameter(torch.ones(k, 1, in_features)) if share_weights else None
-        )
-        self.register_parameter(
-            'scale', nn.Parameter(torch.ones(k, 1, out_features)) if share_weights else None
-        )
+        # self.register_parameter(
+        #     'rank', nn.Parameter(torch.ones(k, 1, in_features)) if share_weights else None
+        # )
+        # self.register_parameter(
+        #     'scale', nn.Parameter(torch.ones(k, 1, out_features)) if share_weights else None
+        # )
         self.weight = nn.Parameter(torch.empty(1 if share_weights else k,
                                                in_features, out_features))
         self.register_parameter(
@@ -72,11 +72,11 @@ class LinearEnsemble(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.rank is not None:
-            x = x * self.rank
+        # if self.rank is not None:
+        #     x = x * self.rank
         x = x @ self.weight
-        if self.scale is not None:
-            x = x * self.scale
+        # if self.scale is not None:
+        #     x = x * self.scale
         if self.bias is not None:
             x = x + self.bias
         return x
