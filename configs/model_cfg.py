@@ -24,7 +24,7 @@ cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 cfg.attn_bias = True
 cfg.mlp_bias = True
 
-cfg.share_weights = False # True
+cfg.share_weights = True
 
 # cfg.model = 'TransformerEnsemble'
 
