@@ -100,7 +100,7 @@ class FeatureTokenizerEnsemble(nn.Module):
                 nn.init.normal_(self.embed_rank)
                 # self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
 
-        self.num_embed = rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
+        # self.num_embed = rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
         #     nn.ModuleList([
         #     rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
         #     for _ in range(k_)

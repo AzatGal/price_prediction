@@ -78,16 +78,17 @@ class Trainer:
         # if model_cfg
         self.model = TransformerEnsemble(**model_cfg)
 
-        # self.model.embed.num_embed = nn.ModuleList([
-        #     rtdl_num_embeddings.PiecewiseLinearEmbeddings(
-        #         rtdl_num_embeddings.compute_bins(
-        #             torch.cat([x['x_num'].unsqueeze(0) for x in self.train_dataset]),
-        #             # n_bins=128 # 48
-        #         ),
-        #         d_embedding=model_cfg.embed_dim,
-        #         activation=True,  # False,
-        #         version='B',
-        #     )
+        self.model.embed.num_embed = rtdl_num_embeddings.PiecewiseLinearEmbeddings(
+                rtdl_num_embeddings.compute_bins(
+                    torch.cat([x['x_num'].unsqueeze(0) for x in self.datasets['train']]),
+                    # n_bins=128 # 48
+                ),
+                d_embedding=model_cfg.embed_dim,
+                activation=True,  # False,
+                version='B',
+            )
+
+        # nn.ModuleList([
         #     for _ in range(1)  # model_cfg.k)
         # ])
 
