@@ -83,9 +83,9 @@ class TransformerEnsembleBlock(nn.Module):
                                     share_weights, mlp_bias)
         self.mlp_drop = nn.Dropout(dropout)
 
-    def _attn_block(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
+    def _attn_block(self, x: torch.Tensor, y: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
         x = self.attn_norm(x)
-        x = self.attn(x, cls_token_only_attn)
+        x = self.attn(x, y, cls_token_only_attn)
         x = self.attn_drop(x)
         return x
 
@@ -95,8 +95,8 @@ class TransformerEnsembleBlock(nn.Module):
         x = self.mlp_drop(x)
         return x
 
-    def forward(self, x: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
-        x = x + self._attn_block(x, cls_token_only_attn)
+    def forward(self, x: torch.Tensor, y: torch.Tensor, cls_token_only_attn: bool) -> torch.Tensor:
+        x = x + self._attn_block(x, y, cls_token_only_attn)
         x = x + self._mlp_block(x)
         return x
 
