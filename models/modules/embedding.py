@@ -110,7 +110,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = None
         else:
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = F.sigmoid(x_num * self.num_weight + self.num_bias)
+            x_num = x_num * self.num_weight # + self.num_bias)
 
         if x_cat is None:
             x = x_num
@@ -131,10 +131,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             # for i in x:
             #     print(i.shape)
             x = torch.cat(x, dim=2)
-
+        x = x + self.bias
         if self.share_weights:
             x = x * self.embed_rank
-        x = x + self.bias
         x = self.dropout(x)
         return x
 
