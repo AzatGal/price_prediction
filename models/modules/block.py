@@ -84,13 +84,13 @@ class TransformerEnsembleBlock(nn.Module):
         self.mlp_drop = nn.Dropout(dropout)
 
     def _attn_block(self, x: torch.Tensor,
-                    # y: torch.Tensor,
-                    cls_token_only_attn: bool
+                    y: torch.Tensor,
+                    # cls_token_only_attn: bool
                     ) -> torch.Tensor:
         x = self.attn_norm(x)
         x = self.attn(x,
-                      # y,
-                      cls_token_only_attn
+                      y,
+                      # cls_token_only_attn
                       )
         x = self.attn_drop(x)
         return x
@@ -102,12 +102,12 @@ class TransformerEnsembleBlock(nn.Module):
         return x
 
     def forward(self, x: torch.Tensor,
-                # y: torch.Tensor,
-                cls_token_only_attn: bool
+                y: torch.Tensor,
+                # cls_token_only_attn: bool
                 ) -> torch.Tensor:
         x = x + self._attn_block(x,
-                                 # y,
-                                 cls_token_only_attn
+                                 y,
+                                 # cls_token_only_attn
                                  )
         x = x + self._mlp_block(x)
         return x
