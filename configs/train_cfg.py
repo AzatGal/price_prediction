@@ -14,18 +14,18 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 16 # 128  # 32
+cfg.batch_size = 128  # 16 # 128
 cfg.num_epoch = 100
 
 cfg.wu_ratio = 0.05
 cfg.decay_ratio = 0.85
-cfg.lr = 1e-4 * math.sqrt(cfg.batch_size / 256)
+cfg.lr = 6e-4 * math.sqrt(cfg.batch_size / 256)
 cfg.lr_decay_factor = 0.05
 cfg.lr_decay = 'cosine'  # cosine linear
 
 cfg.optim = 'AdamW'
 cfg.optim_args = {}
-cfg.weight_decay = 3e-4  # 0.1
+cfg.weight_decay = 0.1 # 3e-4  # 0.1
 
 cfg.loss = 'MSELoss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss CrossEntropyLoss
 cfg.loss_args = {}
