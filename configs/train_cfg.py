@@ -14,12 +14,12 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 32 # 128  # 32
+cfg.batch_size = 128 # 128  # 32
 cfg.num_epoch = 100
 
 cfg.wu_ratio = 0.05
 cfg.decay_ratio = 0.85
-cfg.lr = 6e-4 * math.sqrt(cfg.batch_size / 256)
+cfg.lr = 1e-4 * math.sqrt(cfg.batch_size / 256)
 cfg.lr_decay_factor = 0.05
 cfg.lr_decay = 'cosine'  # cosine linear
 

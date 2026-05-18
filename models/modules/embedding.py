@@ -72,8 +72,8 @@ class FeatureTokenizerEnsemble(nn.Module):
             # self.num_weight1 = nn.Parameter(torch.empty(k_, self.n_num, 1, embed_dim // 2))
             # self.num_weight2 = nn.Parameter(torch.empty(k_, self.n_num, embed_dim // 2, embed_dim))
             # self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, 1, embed_dim // 2))
-            self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, 2 * embed_dim))
-            self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, 2 * embed_dim))
+            self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
+            self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
 
         else:
             self.n_num = 0
@@ -118,8 +118,8 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
             x_num = F.relu(x_num * self.num_weight + self.num_bias)
             # x_num = x_num * self.num_weight + self.num_bias
-            x_num_1, x_num_2 = x_num.chunk(2, dim=-1)
-            x_num = x_num_1 - x_num_2
+            # x_num_1, x_num_2 = x_num.chunk(2, dim=-1)
+            # x_num = x_num_1 - x_num_2
 
             # x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
             # x_num = F.relu(x_num @ self.num_weight1 + self.num_bias) @ self.num_weight2
