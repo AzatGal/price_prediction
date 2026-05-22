@@ -121,6 +121,8 @@ class Trainer:
         #     self.logger.print('load_checkpoint')
 
     def metric(self, pred, label):
+        if pred.ndim < 3:
+            print(pred)
         label = label.cpu().numpy()
         if isinstance(self.criterion, nn.CrossEntropyLoss):
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
@@ -179,12 +181,10 @@ class Trainer:
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
             pred = self.model(batch['x_num'], batch['x_cat'])
-            # batch['target'] = batch['target'].repeat(1, pred.size(1))
             # print(pred.flatten(0, 1).shape)
-            # print(batch['target'].repeat_interleave(pred.size(1)).shape)
+            # print(batch['target'].flatten(0, 1).shape)
             loss = self.criterion(
-                pred.flatten(0, 1),
-                batch['target'].flatten(0, 1) # .repeat_interleave(pred.size(1))
+                pred.flatten(0, 1), batch['target'].flatten(0, 1)
             )
 
         if update_model:

@@ -166,42 +166,25 @@ class AttentionEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.dropout = dropout
-        # k_ = 1 if share_weights else k
-        # self.register_buffer('mask', torch.ones(k_, seq_len, 1))
-        # with torch.inference_mode():
-        #     self.mask[:, int(add_cls_token):].bernoulli_(0.9)
 
-        # self.in_proj = LinearEnsemble(embed_dim, 2 * embed_dim, k, share_weights, bias)
-        # self.out_proj = LinearEnsemble(2 * embed_dim, embed_dim, k, share_weights, bias)
-
-        self.k_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
-        self.v_compressor = LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
+        k_ = 1 if share_weights else k
+        self.k_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
+        self.v_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
         self.k_norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
 
     def forward(self,
-                y: torch.Tensor,
                 x: torch.Tensor,
-                # cls_token_only_attn: bool
+                x_: torch.Tensor,
                 ) -> torch.Tensor:
-        # x = x * self.mask
-        # x = self.in_proj(x)
-        k = self.k_norm(self.k_compressor(
-            x.transpose(2, 3)
-        ).transpose(2, 3))
-        v = self.v_norm(self.v_compressor(
-            x.transpose(2, 3)
-        ).transpose(2, 3))
-
-        # if cls_token_only_attn:
-        #     x = x[:, :, :1]
+        k = self.k_norm(self.k_weight @ x_)
+        v = self.v_norm(self.v_weight @ x_)
 
         a = F.scaled_dot_product_attention(
-            y, k, v,
+            x, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
-        # a = self.out_proj(a)
         return a
 
 

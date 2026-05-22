@@ -55,16 +55,16 @@ class FeatureTokenizerEnsemble(nn.Module):
                  n_embed_cat: list[int],
                  k: int,
                  dropout: float,
-                 add_cls_token: bool,
+                 # add_cls_token: bool,
                  share_weights: bool = True,
                  ) -> None:
         super().__init__()
         self.share_weights = share_weights
         k_ = 1 if share_weights else k
         self.embed_dim = embed_dim
-        self.register_parameter(
-            'cls_token', nn.Parameter(torch.empty(1, k_, 1, embed_dim)) if add_cls_token else None
-        )
+        # self.register_parameter(
+        #     'cls_token', nn.Parameter(torch.empty(1, k_, 1, embed_dim)) if add_cls_token else None
+        # )
 
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
@@ -87,7 +87,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.register_buffer(
             'n_embed_cat', torch.tensor(n_embed_cat)
         )
-        self.seq_len = self.n_num + self.n_cat + int(add_cls_token)
+        self.seq_len = self.n_num + self.n_cat # + int(add_cls_token)
 
         offsets = torch.tensor([0] + n_embed_cat[:-1]).cumsum(0).unsqueeze(0)
         self.register_buffer(
@@ -96,13 +96,12 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.cat_weight = nn.Parameter(torch.empty(k_ * sum(n_embed_cat), embed_dim))
 
         self.bias = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+        self.norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.dropout = nn.Dropout(dropout)
 
         if self.share_weights:
-            self.embed_rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-            with torch.inference_mode():
-                nn.init.normal_(self.embed_rank)
-                # self.embed_rank.bernoulli_(0.5).mul_(2).add_(-1)
+            self.rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
+            nn.init.normal_(self.rank)
 
         # self.num_embed = rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
         #     nn.ModuleList([
@@ -134,19 +133,26 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_cat = x_cat + self.offsets
             x_cat = F.embedding(x_cat, self.cat_weight)
 
-            if self.cls_token is None:
-                x = [x_cat] if x_num is None else [x_num, x_cat]
+            if x_num is None:
+                x = x_cat
             else:
-                if x_num is None:
-                    x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
-                else:
-                    x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
+                x = torch.cat([x_num, x_cat], dim=2)
+
+            # if self.cls_token is None:
+            #     x = [x_cat] if x_num is None else [x_num, x_cat]
+            # else:
+            #     if x_num is None:
+            #         x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_cat]
+            #     else:
+            #         x = [self.cls_token.repeat(x_cat.size(0), 1, 1, 1), x_num, x_cat]
             # for i in x:
             #     print(i.shape)
-            x = torch.cat(x, dim=2)
+            # x = torch.cat(x, dim=2)
+
         x = x + self.bias
         if self.share_weights:
-            x = x * self.embed_rank
+            x = x * self.rank
+        x = self.norm(x)
         x = self.dropout(x)
         return x
 

@@ -415,11 +415,11 @@ class TransformerEnsemble(nn.Module):
                  embed_dim: int,
                  n_embed_num: int | list[int],
                  n_embed_cat: list[int],
-                 add_cls_token: bool,
+                 # add_cls_token: bool,
                  dropout: float,
                  k: int,
                  num_blocks: int,
-                 pool: str,
+                 # pool: str,
                  pred_dim: int,
                  share_weights: bool,
 
@@ -435,28 +435,15 @@ class TransformerEnsemble(nn.Module):
         super().__init__()
         assert 0 < kv_compression_ratio < 1
 
-        self.add_cls_token = add_cls_token
+        self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
-                                              k, dropout, add_cls_token, share_weights)
-        self.seq_len = self.embed.seq_len - 1
-        self.num_blocks = num_blocks
-
-        # hidden_dim = max(2, round(kv_compression_ratio * self.seq_len))
-        # self.blocks = nn.ModuleList([
-        #     GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
-        #     LinearEnsemble(self.seq_len, 2 * hidden_dim, k, share_weights, bias=mlp_bias),
-        #
-        #     GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
-        #     LinearEnsemble(2 * hidden_dim, hidden_dim, k, share_weights, bias=mlp_bias),
-        #
-        #     GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k, share_weights, mlp_bias),
-        #     LinearEnsemble(hidden_dim, 1, k, share_weights, bias=mlp_bias),
-        # ])
+                                              k, dropout, share_weights)
+        seq_len = self.embed.seq_len
 
         self.blocks = nn.ModuleList([
             TransformerEnsembleBlock(
-                self.seq_len,
-                max(2, round(kv_compression_ratio * self.seq_len)),
+                seq_len,
+                max(2, round(kv_compression_ratio * seq_len)),
                 attn_bias,
                 attn_dropout,
                 mlp_dim_factor,
@@ -467,7 +454,6 @@ class TransformerEnsemble(nn.Module):
                 dropout,
                 k,
                 share_weights,
-                # add_cls_token
             )
             for _ in range(num_blocks)
         ])
@@ -475,9 +461,9 @@ class TransformerEnsemble(nn.Module):
         self.norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.pred_head = LinearEnsemble(embed_dim, pred_dim, k, False, True)
 
-        if pool == 'w_avg':
-            self.w_avg = nn.Parameter(torch.zeros(k, 1, self.seq_len))
-        self.pool = pool
+        # if pool == 'w_avg':
+        #     self.w_avg = nn.Parameter(torch.zeros(k, 1, seq_len))
+        # self.pool = pool
 
         self.reset_parameters()
 
@@ -493,36 +479,26 @@ class TransformerEnsemble(nn.Module):
                 #     nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 # else:
                 #     nn.init.normal_(p, std=0.02)
-        # nn.init.normal_(self.embed.cat_weight)
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
-        x = self.embed(x_num, x_cat)
-        x, y = x[:, :, :1], x[:, :, 1:]
+        x_ = self.embed(x_num, x_cat)
+        x = self.cls_token.repeat(x_.size(0), 1, 1, 1)
 
-        for i, block in enumerate(self.blocks):
-            x = block(x,
-                      y,
-                      # True,
-                      # self.add_cls_token and i == self.num_blocks - 1
-                      )
-            # if i % 2 == 0:
-            #     x = x + block(x)
-            # else:
-            #     x = block(x)
-            # x = x.transpose(2, 3)
+        for block in self.blocks:
+            x = block(x, x_)
 
-        if self.pool == 'cls':
-            x = x[:, :, :1]
-        elif self.pool == 'avg':
-            x = x.mean(2, keepdim=True)
-        elif self.pool == 'sum':
-            x = x.sum(2, keepdim=True)
-        elif self.pool == 'max':
-            x = x.max(2, keepdim=True).values
-        elif self.pool == 'w_avg':
-            x = self.w_avg.softmax(0) @ x
-        else:
-            raise NotImplementedError()
+        # if self.pool == 'cls':
+        #     x = x[:, :, :1]
+        # elif self.pool == 'avg':
+        #     x = x.mean(2, keepdim=True)
+        # elif self.pool == 'sum':
+        #     x = x.sum(2, keepdim=True)
+        # elif self.pool == 'max':
+        #     x = x.max(2, keepdim=True).values
+        # elif self.pool == 'w_avg':
+        #     x = self.w_avg.softmax(0) @ x
+        # else:
+        #     raise NotImplementedError()
 
         x = self.norm(x)
         x = self.pred_head(x) # .squeeze(2, 3)
