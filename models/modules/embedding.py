@@ -100,8 +100,8 @@ class FeatureTokenizerEnsemble(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         if self.share_weights:
-            self.rank = nn.Parameter(torch.empty(k, self.seq_len, embed_dim))
-            nn.init.normal_(self.rank)
+            self.rank = nn.Parameter(torch.randn(k, self.seq_len, embed_dim))
+            # nn.init.normal_(self.rank)
 
         # self.num_embed = rtdl_num_embeddings.PeriodicEmbeddings(self.n_num, embed_dim, lite=False)
         #     nn.ModuleList([
