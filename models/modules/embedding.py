@@ -149,9 +149,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             #     print(i.shape)
             # x = torch.cat(x, dim=2)
 
-        x = x + self.bias
         if self.share_weights:
             x = x * self.rank
+        x = x + self.bias
         x = self.norm(x)
         x = self.dropout(x)
         return x

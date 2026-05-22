@@ -166,7 +166,7 @@ class AttentionEnsemble(nn.Module):
                  ) -> None:
         super().__init__()
         self.dropout = dropout
-        self.rank = nn.Parameter(torch.randn(k, 1, embed_dim))
+        # self.rank = nn.Parameter(torch.randn(k, 1, embed_dim))
 
         k_ = 1 if share_weights else k
         self.k_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
@@ -179,7 +179,7 @@ class AttentionEnsemble(nn.Module):
                 x: torch.Tensor,
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
-        x = x * self.rank
+        # x = x * self.rank
         k = self.k_norm(self.k_weight @ x_)
         v = self.v_norm(self.v_weight @ x_)
 
