@@ -483,7 +483,7 @@ class TransformerEnsemble(nn.Module):
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
         x_ = self.embed(x_num, x_cat)
-        x = self.cls_token.repeat(x_.size(0), 1, 1, 1) * self.rank
+        x = self.cls_token.repeat(x_.size(0), 1, 1, 1) # * self.rank
 
         for block in self.blocks:
             x = block(x, x_)
