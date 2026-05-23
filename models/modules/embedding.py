@@ -122,7 +122,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             # x_num = F.relu(x_num * self.num_weight + self.num_bias)
             x_num = x_num * self.num_weight_1 + self.num_bias
             x_num = torch.cat([torch.sin(x_num), torch.cos(x_num)], dim=-1)
-            x_num = (x_num.unsqueeze(-2) @ self.num_weight_2).squeeze(-2)
+            x_num = F.relu(x_num.unsqueeze(-2) @ self.num_weight_2).squeeze(-2)
             # x_num_1, x_num_2 = x_num.chunk(2, dim=-1)
             # x_num = x_num_1 - x_num_2
 
