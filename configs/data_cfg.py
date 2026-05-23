@@ -20,8 +20,8 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(
     ROOT_DIR, 'data',
     # 'custom_dataset'
-    # 'sberbank_housing'
-    'homesite_insurance'
+    'sberbank_housing'
+    # 'homesite_insurance'
 )
 
 
@@ -125,8 +125,8 @@ def prepare_date(seed, k):
             FunctionTransformer(lambda x: (x + 1).astype(np.int64)),
         ).fit(raw_data['train']['x_cat']),
         y=make_pipeline(
-            # StandardScaler(),
-            FunctionTransformer(lambda x: x.to_numpy().astype(np.int64)),
+            StandardScaler(),
+            # FunctionTransformer(lambda x: x.to_numpy().astype(np.int64)),
             # FunctionTransformer(lambda x: x.astype(np.float32))
         ).fit(raw_data['train']['y'])
     )

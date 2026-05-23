@@ -128,7 +128,7 @@ class Trainer:
             return -metrics.roc_auc_score(label, pred)
         else:
             pred = self.data_transformers['y'].inverse_transform(
-                pred.flatten(0, 1).numpy()
+                pred.reshape(-1, 1).numpy()
             ).reshape(pred.shape).mean(1)
             # print(pred.shape, label.shape)
             # print(
@@ -213,7 +213,7 @@ class Trainer:
 
         total_pred = torch.empty(
             len(self.datasets['train']), self.cfg.model_cfg.k, self.cfg.model_cfg.pred_dim
-        )
+        ).squeeze()
         total_label = torch.empty(
             len(self.datasets['train']), 1
         )
@@ -265,7 +265,7 @@ class Trainer:
 
         total_pred = torch.empty(
             len(self.datasets['val']), self.cfg.model_cfg.k, self.cfg.model_cfg.pred_dim
-        )
+        ).squeeze()
         total_label = torch.empty(
             len(self.datasets['val']), 1
         )
