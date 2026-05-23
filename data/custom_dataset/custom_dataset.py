@@ -16,13 +16,13 @@ class CustomDataset(Dataset):
                  k: int,
                  # add_noise: bool,
                  ) -> None:
-        self.k = k
         # self.add_noise = add_noise
-        self.x_num = torch.as_tensor(x_num, dtype=torch.float32)
-        self.x_cat = torch.as_tensor(x_cat, dtype=torch.long)
-        self.target = torch.as_tensor(target, dtype=torch.float32)
+        self.x_num = torch.as_tensor(x_num) # , dtype=torch.float32)
+        self.x_cat = torch.as_tensor(x_cat) # , dtype=torch.long)
+        # print(target.shape)
+        self.target = torch.as_tensor(target).repeat(1, k)
         # print(label)
-        self.label = torch.as_tensor(label, dtype=torch.float32)
+        self.label = torch.as_tensor(label) # , dtype=torch.float32)
 
     #     features = torch.as_tensor(
     #         data_transformer.transform(df)
@@ -93,7 +93,7 @@ class CustomDataset(Dataset):
         return {
             'x_num': self.x_num[idx],
             'x_cat': self.x_cat[idx],
-            'target': self.target[idx].unsqueeze(0).repeat(self.k, 1), # + noise,
+            'target': self.target[idx], # + noise,
             'label': self.label[idx]
         }
 

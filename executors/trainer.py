@@ -2,6 +2,7 @@ import json
 import os
 import time
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -59,13 +60,11 @@ class Trainer:
         self.datasets, self.data_transformers, n_embeds = prepare_date(
             self.cfg.seed, self.cfg.model_cfg.k
         )
+        # print(self.datasets['train'][0]['target'])
+        # print(self.data_transformers)
 
-        # num_features = self.data_transformers['x_num'].steps[0][1].n_features_in_
         self.cfg.model_cfg.n_embed_num = n_embeds['x_num']
         self.cfg.model_cfg.n_embed_cat = n_embeds['x_cat']
-
-        # ordinal_encoder = self.data_transformers['x_cat'].steps[1][1]
-        # self.cfg.model_cfg.n_embed_cat = [len(cat) + 1 for cat in ordinal_encoder.categories_]
 
         kwargs = {'batch_size': self.cfg.batch_size}
         if torch.cuda.is_available():
@@ -75,7 +74,6 @@ class Trainer:
         self.val_dataloader = DataLoader(self.datasets['val'], shuffle=False, **kwargs)
 
     def _prepare_model(self, model_cfg):
-        # if model_cfg
         self.model = TransformerEnsemble(**model_cfg)
 
         # self.model.embed.num_embed = rtdl_num_embeddings.PiecewiseLinearEmbeddings(
@@ -87,10 +85,6 @@ class Trainer:
         #         activation=True,  # False,
         #         version='B',
         #     )
-
-        # nn.ModuleList([
-        #     for _ in range(1)  # model_cfg.k)
-        # ])
 
         self.criterion = getattr(nn, self.cfg.loss)(**self.cfg.loss_args)
         self.optimizer = getattr(torch.optim, self.cfg.optim)(
@@ -121,17 +115,31 @@ class Trainer:
         #     self.logger.print('load_checkpoint')
 
     def metric(self, pred, label):
-        if pred.ndim < 3:
-            print(pred)
-        label = label.cpu().numpy()
+        # print(
+        #     pred
+        #     [
+        #         torch.isnan(pred)
+        #     ]
+        # )
+        label = label.numpy()
         if isinstance(self.criterion, nn.CrossEntropyLoss):
             pred = F.softmax(pred, -1).mean(1)[:, 1:].numpy()
+            # print(label)
             return -metrics.roc_auc_score(label, pred)
         else:
-            # pred = pred.mean(1)
             pred = self.data_transformers['y'].inverse_transform(
                 pred.flatten(0, 1).numpy()
             ).reshape(pred.shape).mean(1)
+            # print(pred.shape, label.shape)
+            # print(
+            #     # np.expand_dims(np.arange(pred.shape[0]), 1)
+            #     pred
+            #     [
+            #         np.isnan(pred)
+            #     ]
+            # )
+
+            # , label[np.isnan(pred)])
             return metrics.root_mean_squared_error(label, pred)
 
     def save_model(self, save_path=None, **kwargs):
@@ -181,8 +189,8 @@ class Trainer:
     def make_step(self, batch, update_model=True):
         with self.accelerator.autocast():
             pred = self.model(batch['x_num'], batch['x_cat'])
-            # print(pred.flatten(0, 1).shape)
-            # print(batch['target'].flatten(0, 1).shape)
+            # print(pred.shape)
+            # print(batch['target'].shape)
             loss = self.criterion(
                 pred.flatten(0, 1), batch['target'].flatten(0, 1)
             )
@@ -195,29 +203,51 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
-        return loss.item(), pred.detach().cpu()
+        return loss.item(), pred.detach()
 
     def train_epoch(self):
         self.model.train()
         total_loss = 0
-        total_metric = 0
-        total_samples = 0
+        # total_metric = 0
+        # total_samples = 0
+
+        total_pred = torch.empty(
+            len(self.datasets['train']), self.cfg.model_cfg.k, self.cfg.model_cfg.pred_dim
+        )
+        total_label = torch.empty(
+            len(self.datasets['train']), 1
+        )
+        start_idx = 0
+        end_idx = None
 
         t = time.time()
         for batch in self.train_dataloader:
             loss, pred = self.make_step(batch)
-            batch_len = len(pred)
-            total_samples += batch_len
-            total_loss += loss * batch_len
-            total_metric += self.metric(pred, batch['label']) * batch_len
+
+            batch_size = pred.size(0)
+            end_idx = start_idx + batch_size
+
+            total_loss += loss * batch_size
+
+            # print(pred.shape)
+            # print(batch['label'].shape)
+            total_pred[start_idx:end_idx] = pred.cpu()
+            total_label[start_idx:end_idx] = batch['label'].cpu()
+
+            start_idx = end_idx
+
+            # batch_len = len(pred)
+            # total_samples += batch_len
+            # total_loss += loss * batch_len
+            # total_metric += self.metric(pred, batch['label']) * batch_len
 
             del pred, loss, batch
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
         t = time.time() - t
-        total_loss /= total_samples
-        total_metric /= total_samples
+        total_loss /= end_idx
+        total_metric = self.metric(total_pred, total_label)
         self.time_training += t
 
         return {
@@ -230,20 +260,40 @@ class Trainer:
     def evaluate(self):
         self.model.eval()
         total_loss = 0
-        total_metric = 0
-        total_samples = 0
+        # total_metric = 0
+        # total_samples =
+
+        total_pred = torch.empty(
+            len(self.datasets['val']), self.cfg.model_cfg.k, self.cfg.model_cfg.pred_dim
+        )
+        total_label = torch.empty(
+            len(self.datasets['val']), 1
+        )
+        start_idx = 0
+        end_idx = None
 
         t = time.time()
         for batch in self.val_dataloader:
             loss, pred = self.make_step(batch, False)
-            batch_len = len(pred)
-            total_samples += batch_len
-            total_loss += loss * batch_len
-            total_metric += self.metric(pred, batch['label']) * batch_len
+
+            batch_size = pred.size(0)
+            end_idx = start_idx + batch_size
+            # total_samples += batch_size
+
+            total_loss += loss * batch_size
+
+            total_pred[start_idx:end_idx] = pred.cpu()
+            total_label[start_idx:end_idx] = batch['label'].cpu()
+            start_idx = end_idx
+
+            # batch_len = len(pred)
+            # total_samples += batch_len
+            # total_loss += loss * batch_len
+            # total_metric += self.metric(pred, batch['label']) * batch_len
 
         t = time.time() - t
-        total_loss /= total_samples
-        total_metric /= total_samples
+        total_loss /= end_idx
+        total_metric = self.metric(total_pred, total_label)
         return {
             'loss': total_loss,
             'metric': total_metric,
@@ -273,7 +323,7 @@ class Trainer:
     def overfitting_on_batch(self, max_step=1000):
         batch = next(iter(self.train_dataloader))
         for step in range(max_step):
-            loss, output = self.make_step(batch, update_model=True)
+            loss, pred = self.make_step(batch, update_model=True)
             if step % 100 == 0:
                 self.logger.print(f'[{step}]: loss - {loss:.4f}')
 
@@ -330,5 +380,6 @@ if __name__ == "__main__":
     # print(trainer.test())
 
     trainer = Trainer(cfg)
+    # trainer.overfitting_on_batch()
     # trainer.save_model('./test.pt')
     trainer.fit()

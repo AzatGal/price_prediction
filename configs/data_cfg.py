@@ -20,8 +20,8 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(
     ROOT_DIR, 'data',
     # 'custom_dataset'
-    'sberbank_housing'
-    # 'homesite_insurance'
+    # 'sberbank_housing'
+    'homesite_insurance'
 )
 
 
@@ -112,7 +112,7 @@ def prepare_date(seed, k):
                 random_state=seed
             ),
             FunctionTransformer(np.nan_to_num),
-            # FunctionTransformer(lambda x: torch.as_tensor(x, dtype=torch.float32)),
+            FunctionTransformer(lambda x: x.astype(np.float32)),
             # FunctionTransformer(
             #     lambda x: x.fillna(raw_data['train']['x_num'].min() - 100)
             # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
@@ -122,11 +122,11 @@ def prepare_date(seed, k):
         x_cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype(str)),
             OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),
-            FunctionTransformer(lambda x: x + 1)
+            FunctionTransformer(lambda x: (x + 1).astype(np.int64)),
         ).fit(raw_data['train']['x_cat']),
         y=make_pipeline(
-            StandardScaler(),
-            # FunctionTransformer(lambda x: x.reshape(-1, 1)),
+            # StandardScaler(),
+            FunctionTransformer(lambda x: x.to_numpy().astype(np.int64)),
             # FunctionTransformer(lambda x: x.astype(np.float32))
         ).fit(raw_data['train']['y'])
     )

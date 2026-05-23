@@ -507,7 +507,7 @@ class TransformerEnsemble(nn.Module):
 
         x = self.norm(x)
         x = self.pred_head(x) # .squeeze(2, 3)
-        return x.squeeze(2)
+        return x.squeeze(2, 3)
 
 
 if __name__ == '__main__':

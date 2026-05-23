@@ -14,7 +14,7 @@ cfg = EasyDict()
 cfg.seed = 0
 cfg.exp_dir = os.path.join(ROOT_DIR, 'runs',
                            datetime.now().strftime("%d-%m_%H-%M"))
-cfg.batch_size = 32  # 16 # 128
+cfg.batch_size = 128 # 32 # 16 # 128
 cfg.num_epoch = 100
 
 cfg.wu_ratio = 0.05
@@ -27,7 +27,7 @@ cfg.optim = 'AdamW'
 cfg.optim_args = {}
 cfg.weight_decay = 3e-4  # 0.1
 
-cfg.loss = 'MSELoss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss CrossEntropyLoss
+cfg.loss = 'CrossEntropyLoss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss CrossEntropyLoss
 cfg.loss_args = {}
 
 cfg.accelerator_args = {}
