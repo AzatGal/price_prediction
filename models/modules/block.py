@@ -79,7 +79,7 @@ class TransformerEnsembleBlock(nn.Module):
         self.attn_norm = NormEnsemble('RMSNorm', embed_dim, k)
         # self.attn_norm1 = NormEnsemble('RMSNorm', embed_dim, k)
         self.attn = AttentionEnsemble(embed_dim, seq_len, kv_compression_dim,
-                                      attn_dropout, k, False, attn_bias)
+                                      attn_dropout, k, share_weights, attn_bias)
         self.attn_drop = nn.Dropout(dropout)
 
         self.mlp_norm = NormEnsemble('RMSNorm', embed_dim, k)
