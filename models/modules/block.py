@@ -77,13 +77,13 @@ class TransformerEnsembleBlock(nn.Module):
                  ) -> None:
         super().__init__()
         self.attn_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.attn_norm1 = NormEnsemble('RMSNorm', embed_dim, k)
+        # self.attn_norm1 = NormEnsemble('RMSNorm', embed_dim, k)
         self.attn = AttentionEnsemble(embed_dim, seq_len, kv_compression_dim,
-                                      attn_dropout, k, share_weights, attn_bias)
+                                      attn_dropout, k, False, attn_bias)
         self.attn_drop = nn.Dropout(dropout)
 
         self.mlp_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.mlp_norm1 = NormEnsemble('RMSNorm', embed_dim, k)
+        # self.mlp_norm1 = NormEnsemble('RMSNorm', embed_dim, k)
         self.mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout,
                                     k, share_weights, mlp_bias)
         self.mlp_drop = nn.Dropout(dropout)
@@ -95,14 +95,14 @@ class TransformerEnsembleBlock(nn.Module):
         x = self.attn_norm(x)
         x = self.attn(x, x_)
         x = self.attn_drop(x)
-        x = self.attn_norm1(x)
+        # x = self.attn_norm1(x)
         return x
 
     def _mlp_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.mlp_norm(x)
         x = self.mlp(x)
         x = self.mlp_drop(x)
-        x = self.mlp_norm1(x)
+        # x = self.mlp_norm1(x)
         return x
 
     def forward(self,
