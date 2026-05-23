@@ -59,12 +59,12 @@ class FeatureTokenizerEnsemble(nn.Module):
                  share_weights: bool = True,
                  ) -> None:
         super().__init__()
+
+        self.embed_dim = embed_dim
+        self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
+
         self.share_weights = share_weights
         k_ = 1 if share_weights else k
-        self.embed_dim = embed_dim
-        # self.register_parameter(
-        #     'cls_token', nn.Parameter(torch.empty(1, k_, 1, embed_dim)) if add_cls_token else None
-        # )
 
         if isinstance(n_embed_num, int):
             self.n_num = n_embed_num
@@ -109,7 +109,10 @@ class FeatureTokenizerEnsemble(nn.Module):
         #     for _ in range(k_)
         # ]))
 
-    def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
+    def forward(self,
+                x_num: torch.Tensor,
+                x_cat: torch.Tensor = None
+                ) -> (torch.Tensor, torch.Tensor):
         if self.n_num == 0:
             x_cat = x_num if x_cat is None else torch.cat([x_num, x_cat], dim=1)
             x_num = None
@@ -125,7 +128,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             # x_num = x_num.squeeze(-2)
 
         if x_cat is None:
-            x = x_num
+            x_ = x_num
         else:
             assert torch.all(x_cat < self.n_embed_cat)
 
@@ -134,9 +137,9 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_cat = F.embedding(x_cat, self.cat_weight)
 
             if x_num is None:
-                x = x_cat
+                x_ = x_cat
             else:
-                x = torch.cat([x_num, x_cat], dim=2)
+                x_ = torch.cat([x_num, x_cat], dim=2)
 
             # if self.cls_token is None:
             #     x = [x_cat] if x_num is None else [x_num, x_cat]
@@ -150,11 +153,13 @@ class FeatureTokenizerEnsemble(nn.Module):
             # x = torch.cat(x, dim=2)
 
         if self.share_weights:
-            x = x * self.rank
-        x = x + self.bias
-        x = self.norm(x)
-        x = self.dropout(x)
-        return x
+            x_ = x_ * self.rank
+        x_ = x_ + self.bias
+        x_ = self.norm(x_)
+        x_ = self.dropout(x_)
+
+        x = self.cls_token.repeat(x_.size(0), 1, 1, 1)  # * self.rank
+        return x, x_
 
 
 if __name__ == '__main__':

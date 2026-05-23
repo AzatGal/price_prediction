@@ -469,8 +469,12 @@ class TransformerEnsemble(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
+        skip_keywords = (
+            # 'cls_token',
+            'mask', 'num_embed', 'norm', 'w_avg', 'rank', 'scale'
+        )
         for pn, p in self.named_parameters():
-            if all(s not in pn for s in ['mask', 'num_embed', 'norm', 'w_avg', 'rank', 'scale']):
+            if all(s not in pn for s in skip_keywords):
                 nn.init.normal_(p, std=0.02)
                 # if 'bias' in pn:
                 #     nn.init.zeros_(p)
@@ -482,8 +486,8 @@ class TransformerEnsemble(nn.Module):
                 #     nn.init.normal_(p, std=0.02)
 
     def forward(self, x_num: torch.Tensor, x_cat: torch.Tensor = None) -> torch.Tensor:
-        x_ = self.embed(x_num, x_cat)
-        x = self.cls_token.repeat(x_.size(0), 1, 1, 1) # * self.rank
+        x, x_ = self.embed(x_num, x_cat)
+        # x = self.cls_token.repeat(x_.size(0), 1, 1, 1) # * self.rank
 
         for block in self.blocks:
             x = block(x, x_)

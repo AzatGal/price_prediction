@@ -56,6 +56,9 @@ from models.modules.norm import NormEnsemble
 #         return x
 
 
+
+
+
 class TransformerEnsembleBlock(nn.Module):
     def __init__(self,
                  seq_len: int,
@@ -74,13 +77,13 @@ class TransformerEnsembleBlock(nn.Module):
                  ) -> None:
         super().__init__()
         self.attn_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.attn = AttentionEnsemble(embed_dim, seq_len, kv_compression_dim, attn_dropout,
-                                      k, share_weights, attn_bias)
+        self.attn = AttentionEnsemble(embed_dim, seq_len, kv_compression_dim,
+                                      attn_dropout, k, share_weights, attn_bias)
         self.attn_drop = nn.Dropout(dropout)
 
         self.mlp_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout, k,
-                                    share_weights, mlp_bias)
+        self.mlp = GatedMLPEnsemble(embed_dim, mlp_dim_factor, act, mlp_dropout,
+                                    k, share_weights, mlp_bias)
         self.mlp_drop = nn.Dropout(dropout)
 
     def _attn_block(self,
@@ -102,8 +105,10 @@ class TransformerEnsembleBlock(nn.Module):
                 x: torch.Tensor,
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
-        x = x + self._attn_block(x, x_)
-        x = x + self._mlp_block(x)
+        x = self._attn_block(x, x_)
+        x = self._mlp_block(x)
+        # x +
+        # x +
         return x
 
 

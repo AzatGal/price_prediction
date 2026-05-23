@@ -176,15 +176,15 @@ class AttentionEnsemble(nn.Module):
         self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
 
     def forward(self,
+                cls_token: torch.Tensor,
                 x: torch.Tensor,
-                x_: torch.Tensor,
                 ) -> torch.Tensor:
         # x = x * self.rank
-        k = self.k_norm(self.k_weight @ x_)
-        v = self.v_norm(self.v_weight @ x_)
+        k = self.k_norm(self.k_weight @ x)
+        v = self.v_norm(self.v_weight @ x)
 
         a = F.scaled_dot_product_attention(
-            x, k, v,
+            cls_token, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
         return a
