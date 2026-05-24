@@ -14,7 +14,7 @@ cfg.pred_dim = 1  # 2  # 1
 # cfg.pool = 'cls'  # avg cls sum w_avg
 # cfg.add_cls_token = cfg.pool == 'cls'
 
-cfg.attn_dropout = 0.1  # 1
+cfg.attn_dropout = 0.0  # 1
 cfg.mlp_dropout = 0.1
 cfg.dropout = 0.1
 
