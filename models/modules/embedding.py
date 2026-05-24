@@ -75,7 +75,6 @@ class FeatureTokenizerEnsemble(nn.Module):
 
             self.num_weight = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
             self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
-
         else:
             self.n_num = 0
             self.register_buffer(

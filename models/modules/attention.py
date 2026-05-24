@@ -172,6 +172,13 @@ class AttentionEnsemble(nn.Module):
         self.k_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
         self.v_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
+        self.register_parameter(
+            'k_bias', nn.Parameter(torch.empty(k_, kv_compression_dim, embed_dim)) if bias else None
+        )
+        self.register_parameter(
+            'v_bias', nn.Parameter(torch.empty(k_, kv_compression_dim, embed_dim)) if bias else None
+        )
+
         self.k_norm = NormEnsemble('RMSNorm', embed_dim, k)
         self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
 
@@ -179,9 +186,16 @@ class AttentionEnsemble(nn.Module):
                 x: torch.Tensor,
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
-        # x = x * self.rank
-        k = self.k_norm(F.relu(self.k_weight @ x_))
-        v = self.v_norm(F.relu(self.v_weight @ x_))
+
+        k = self.k_weight @ x_
+        if self.k_bias is not None:
+            k = k + self.k_bias
+        k = self.k_norm(k)
+
+        v = self.v_weight @ x_
+        if self.v_bias is not None:
+            v = v + self.v_bias
+        v = self.v_norm(v)
 
         a = F.scaled_dot_product_attention(
             x, k, v,
