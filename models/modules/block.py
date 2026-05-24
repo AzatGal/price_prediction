@@ -109,8 +109,8 @@ class TransformerEnsembleBlock(nn.Module):
                 x: torch.Tensor,
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
-        x = x + self._attn_block(x, x_)
-        x = x + self._mlp_block(x)
+        x = x / 10 + self._attn_block(x, x_)
+        x = x / 10 + self._mlp_block(x)
         return x
 
 
