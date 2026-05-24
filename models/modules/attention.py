@@ -180,8 +180,8 @@ class AttentionEnsemble(nn.Module):
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
         # x = x * self.rank
-        k = self.k_norm(self.k_weight @ x_)
-        v = self.v_norm(self.v_weight @ x_)
+        k = self.k_norm(F.relu(self.k_weight @ x_))
+        v = self.v_norm(F.relu(self.v_weight @ x_))
 
         a = F.scaled_dot_product_attention(
             x, k, v,

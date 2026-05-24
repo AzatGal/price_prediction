@@ -119,7 +119,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = None
         else:
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = F.relu(x_num * self.num_weight + self.num_bias)
+            x_num = x_num * self.num_weight + self.num_bias
             # print(x_num.shape)
 
             # x_num = x_num * self.num_weight_1 + self.num_bias
