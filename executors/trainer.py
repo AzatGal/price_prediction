@@ -213,7 +213,7 @@ class Trainer:
 
         total_pred = torch.empty(
             len(self.datasets['train']), self.cfg.model_cfg.k, self.cfg.model_cfg.pred_dim
-        ).squeeze()
+        ).squeeze(2)
         total_label = torch.empty(
             len(self.datasets['train']), 1
         )
@@ -265,7 +265,7 @@ class Trainer:
 
         total_pred = torch.empty(
             len(self.datasets['val']), self.cfg.model_cfg.k, self.cfg.model_cfg.pred_dim
-        ).squeeze()
+        ).squeeze(2)
         total_label = torch.empty(
             len(self.datasets['val']), 1
         )
