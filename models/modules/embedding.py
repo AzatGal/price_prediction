@@ -160,7 +160,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_ = x_ * self.rank
         x_ = x_ + self.bias
         x_ = self.norm(x_)
-        # x_ = self.dropout(x_)
+        x_ = self.dropout(x_)
 
         x = self.cls_token.repeat(x_.size(0), 1, 1, 1)  # * self.rank
         return x, x_
