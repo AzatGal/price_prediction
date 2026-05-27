@@ -64,7 +64,7 @@ def get_param_groups(
         lr: float,
         weight_decay: float,
         no_weight_decay: tuple[str, ...] = (
-                'embed',
+                # 'embed',
                 'norm', 'bias'
         )
         # lr_decay_by_block: float = None,
