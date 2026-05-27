@@ -61,7 +61,7 @@ class FeatureTokenizerEnsemble(nn.Module):
         super().__init__()
 
         self.embed_dim = embed_dim
-        self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
+        self.cls_token = nn.Buffer(torch.empty(1, k, 1, embed_dim))
 
         self.share_weights = share_weights
         k_ = 1 if share_weights else k

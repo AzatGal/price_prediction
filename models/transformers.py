@@ -470,7 +470,7 @@ class TransformerEnsemble(nn.Module):
 
     def reset_parameters(self) -> None:
         skip_keywords = (
-            # 'cls_token',
+            'cls_token',
             'mask', 'num_embed', 'norm', 'w_avg', 'rank', 'scale'
         )
         for pn, p in self.named_parameters():
