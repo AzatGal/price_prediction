@@ -6,7 +6,7 @@ cfg = EasyDict()
 # cfg.k = 2
 # cfg.embed_dim = 4
 cfg.k = 32 # 8
-cfg.embed_dim = 64 # 128  # 32
+cfg.embed_dim = 32 # 128  # 32
 cfg.num_blocks = 2 # 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1  # 2  # 1
@@ -14,9 +14,9 @@ cfg.pred_dim = 1  # 2  # 1
 # cfg.pool = 'cls'  # avg cls sum w_avg
 # cfg.add_cls_token = cfg.pool == 'cls'
 
-cfg.attn_dropout = 0.0  # 1
-cfg.mlp_dropout = 0.1
-cfg.dropout = 0.1
+cfg.attn_dropout = 0.1  # 1
+cfg.mlp_dropout = 0.2
+cfg.dropout = 0.2
 
 cfg.kv_compression_ratio = 0.2  # 2
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
