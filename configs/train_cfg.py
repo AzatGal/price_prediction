@@ -25,7 +25,7 @@ cfg.lr_decay = 'cosine'  # cosine linear
 
 cfg.optim = 'AdamW'
 cfg.optim_args = {}
-cfg.weight_decay = 1 # 3e-4 #
+cfg.weight_decay = 0.1 # 3e-4 #
 
 cfg.loss = 'MSELoss'  # SmoothL1Loss L1Loss MSELoss LogCosh HuberLoss CrossEntropyLoss
 cfg.loss_args = {}
