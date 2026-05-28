@@ -63,10 +63,7 @@ def get_param_groups(
         model: nn.Module,
         lr: float,
         weight_decay: float,
-        no_weight_decay: tuple[str, ...] = (
-                # 'embed',
-                'norm', 'bias'
-        )
+        no_weight_decay: tuple[str, ...] = ('norm', 'bias')
         # lr_decay_by_block: float = None,
 ) -> list:
     # if lr_decay_by_block is None:

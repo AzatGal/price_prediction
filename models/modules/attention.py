@@ -168,7 +168,7 @@ class AttentionEnsemble(nn.Module):
         self.dropout = dropout
         # self.rank = nn.Parameter(torch.randn(k, 1, embed_dim))
 
-        self.q_proj = LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias)
+        # self.q_proj = LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias)
 
         k_ = 1 if share_weights else k
         self.k_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
@@ -188,7 +188,7 @@ class AttentionEnsemble(nn.Module):
                 x: torch.Tensor,
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
-        q = self.q_proj(x)
+        # q = self.q_proj(x)
 
         k = self.k_weight @ x_
         if self.k_bias is not None:
@@ -201,7 +201,7 @@ class AttentionEnsemble(nn.Module):
         v = self.v_norm(v)
 
         a = F.scaled_dot_product_attention(
-            q, k, v,
+            x, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
         return a
