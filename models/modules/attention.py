@@ -168,40 +168,41 @@ class AttentionEnsemble(nn.Module):
         self.dropout = dropout
         # self.rank = nn.Parameter(torch.randn(k, 1, embed_dim))
 
-        # self.q_proj = LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias)
+        self.q_proj = LinearEnsemble(embed_dim, embed_dim, k, share_weights, bias)
 
         k_ = 1 if share_weights else k
-        self.k_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
-        self.v_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
+        self.kv_weight = nn.Parameter(torch.empty(k_, 2 * kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
+        # self.v_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
         self.register_parameter(
-            'k_bias', nn.Parameter(torch.empty(k_, kv_compression_dim, embed_dim)) if bias else None
+            'kv_bias', nn.Parameter(torch.empty(k_, 2 * kv_compression_dim, embed_dim)) if bias else None
         )
-        self.register_parameter(
-            'v_bias', nn.Parameter(torch.empty(k_, kv_compression_dim, embed_dim)) if bias else None
-        )
+        # self.register_parameter(
+        #     'v_bias', nn.Parameter(torch.empty(k_, kv_compression_dim, embed_dim)) if bias else None
+        # )
 
-        self.k_norm = NormEnsemble('RMSNorm', embed_dim, k)
-        self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        self.kv_norm = NormEnsemble('RMSNorm', embed_dim, k)
+        # self.v_norm = NormEnsemble('RMSNorm', embed_dim, k)
 
     def forward(self,
                 x: torch.Tensor,
                 x_: torch.Tensor,
                 ) -> torch.Tensor:
-        # q = self.q_proj(x)
+        q = self.q_proj(x)
 
-        k = self.k_weight @ x_
-        if self.k_bias is not None:
-            k = k + self.k_bias
-        k = self.k_norm(k)
+        kv = self.kv_weight @ x_
+        if self.kv_bias is not None:
+            kv = kv + self.kv_bias
+        kv = self.kv_norm(kv)
+        k, v = kv.chunk(2, dim=-2)
 
-        v = self.v_weight @ x_
-        if self.v_bias is not None:
-            v = v + self.v_bias
-        v = self.v_norm(v)
+        # v = self.v_weight @ x_
+        # if self.v_bias is not None:
+        #     v = v + self.v_bias
+        # v = self.v_norm(v)
 
         a = F.scaled_dot_product_attention(
-            x, k, v,
+            q, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
         return a

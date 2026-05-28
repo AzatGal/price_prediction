@@ -118,7 +118,7 @@ def prepare_date(seed, k):
             # ),  # nan - как отдельный эмбеддинг  .min() - 100   .quantile(0.5)
             # KBinsDiscretizer(n_bins=n_bins, encode='ordinal', strategy='kmeans'), # , subsample=len(raw_data.train.num)),
             # FunctionTransformer(lambda x: x.astype(np.int64))
-        ).fit(raw_data['train']['x_num'] + noise),
+        ).fit(raw_data['train']['x_num']),
         x_cat=make_pipeline(
             FunctionTransformer(lambda x: x.astype(str)),
             OrdinalEncoder(categories=cats, handle_unknown='use_encoded_value', unknown_value=-1),

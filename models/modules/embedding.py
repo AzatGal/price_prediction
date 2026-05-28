@@ -77,10 +77,10 @@ class FeatureTokenizerEnsemble(nn.Module):
             self.num_bias = nn.Parameter(torch.empty(k_, self.n_num, embed_dim))
         else:
             self.n_num = 0
-            self.register_buffer(
-                'n_embed_num', torch.tensor(n_embed_num)
-            )
-            self.register_parameter('num_weight', None)
+            # self.register_buffer(
+            #     'n_embed_num', torch.tensor(n_embed_num)
+            # )
+            # self.register_parameter('num_weight', None)
             n_embed_cat = n_embed_num + n_embed_cat
 
         self.n_cat = len(n_embed_cat)
@@ -118,18 +118,7 @@ class FeatureTokenizerEnsemble(nn.Module):
             x_num = None
         else:
             x_num = x_num.reshape(-1, 1, self.n_num, 1)
-            x_num = x_num * self.num_weight + self.num_bias
-            # print(x_num.shape)
-
-            # x_num = x_num * self.num_weight_1 + self.num_bias
-            # x_num = torch.cat([torch.sin(x_num), torch.cos(x_num)], dim=-1)
-            # x_num = F.relu(x_num.unsqueeze(-2) @ self.num_weight_2).squeeze(-2)
-            # x_num_1, x_num_2 = x_num.chunk(2, dim=-1)
-            # x_num = x_num_1 - x_num_2
-
-            # x_num = x_num.reshape(-1, 1, self.n_num, 1, 1)
-            # x_num = F.relu(x_num @ self.num_weight1 + self.num_bias) @ self.num_weight2
-            # x_num = x_num.squeeze(-2)
+            x_num = F.relu(x_num * self.num_weight + self.num_bias)
 
         if x_cat is None:
             x_ = x_num
