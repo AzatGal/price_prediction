@@ -7,7 +7,7 @@ cfg = EasyDict()
 # cfg.embed_dim = 4
 cfg.k = 12 # 32 # 8
 cfg.embed_dim = 64 # 128  # 32
-cfg.num_blocks = 10 # 3
+cfg.num_blocks = 3 # 3
 cfg.act = 'ReLU'  # SiLU
 cfg.pred_dim = 1  # 2  # 1
 
@@ -21,7 +21,7 @@ cfg.dropout = 0.1
 cfg.kv_compression_ratio = 0.002  # 2
 cfg.mlp_dim_factor = 3 / 2  # 2 8 / 3
 
-cfg.attn_bias = False  # True
+cfg.attn_bias = True  # True
 cfg.mlp_bias = False  # True
 
 cfg.share_weights = True
