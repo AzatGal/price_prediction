@@ -205,7 +205,7 @@ class AttentionEnsemble(nn.Module):
         # v = self.v_norm(v)
 
         a = F.scaled_dot_product_attention(
-            q, k, v,
+            x, k, v,
             dropout_p=self.dropout if self.training else 0.0,
         )
         return a
