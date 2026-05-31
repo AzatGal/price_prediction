@@ -175,7 +175,10 @@ class AttentionEnsemble(nn.Module):
         # self.v_weight = nn.Parameter(torch.empty(k_, kv_compression_dim, seq_len)) # LinearEnsemble(seq_len, kv_compression_dim, k, share_weights, bias)
 
         self.register_parameter(
-            'kv_bias', nn.Parameter(torch.empty(k_, 2 * kv_compression_dim, embed_dim)) if bias else None
+            'kv_bias',
+            nn.Parameter(torch.empty(k_, 2 * kv_compression_dim, embed_dim))
+            if bias
+            else None
         )
         # self.register_parameter(
         #     'v_bias', nn.Parameter(torch.empty(k_, kv_compression_dim, embed_dim)) if bias else None
