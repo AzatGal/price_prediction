@@ -444,8 +444,11 @@ class TransformerEnsemble(nn.Module):
             nn.Parameter(torch.randn(k, seq_len, embed_dim))
             for _ in range(num_blocks)
         ])
+        self.scale = nn.ParameterList([
+            nn.Parameter(torch.randn(k, seq_len, embed_dim))
+        ])
 
-        self.blocks = nn.ModuleList([
+            self.blocks = nn.ModuleList([
             TransformerEnsembleBlock(
                 seq_len,
                 max(2, round(kv_compression_ratio * seq_len)),
@@ -499,7 +502,7 @@ class TransformerEnsemble(nn.Module):
                 x_
                 # x_ * self.rank[i]
             )
-            x_ = x_ + x # F.relu(x_ * self.rank[i])
+            x_ = x_ + F.relu(x_ * self.rank[i]) * self.scale[i]
 
         # if self.pool == 'cls':
         #     x = x[:, :, :1]
