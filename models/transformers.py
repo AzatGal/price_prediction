@@ -446,6 +446,7 @@ class TransformerEnsemble(nn.Module):
         ])
         self.scale = nn.ParameterList([
             nn.Parameter(torch.randn(k, seq_len, embed_dim))
+            for _ in range(num_blocks)
         ])
 
         self.blocks = nn.ModuleList([
