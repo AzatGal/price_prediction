@@ -441,13 +441,13 @@ class TransformerEnsemble(nn.Module):
                                               k, dropout, share_weights)
         seq_len = self.embed.seq_len
         self.rank = nn.ParameterList([
-            nn.Parameter(torch.randn(k, seq_len, embed_dim))
+            nn.Parameter(torch.ones(k, seq_len, embed_dim))
             for _ in range(num_blocks)
         ])
-        self.scale = nn.ParameterList([
-            nn.Parameter(torch.randn(k, seq_len, embed_dim))
-            for _ in range(num_blocks)
-        ])
+        # self.scale = nn.ParameterList([
+        #     nn.Parameter(torch.randn(k, seq_len, embed_dim))
+        #     for _ in range(num_blocks)
+        # ])
 
         self.blocks = nn.ModuleList([
             TransformerEnsembleBlock(
@@ -500,10 +500,10 @@ class TransformerEnsemble(nn.Module):
         for i, block in enumerate(self.blocks):
             x = block(
                 x,
-                x_
-                # x_ * self.rank[i]
+                # x_
+                x_ * self.rank[i]
             )
-            x_ = x_ + F.relu(x_ * self.rank[i]) * self.scale[i]
+            # x_ = x_ + F.relu(x_ * self.rank[i]) * self.scale[i]
 
         # if self.pool == 'cls':
         #     x = x[:, :, :1]
