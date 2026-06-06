@@ -494,8 +494,8 @@ class TransformerEnsemble(nn.Module):
         # x = self.cls_token.repeat(x_.size(0), 1, 1, 1) # * self.rank
 
         for i, block in enumerate(self.blocks):
-            x = block(x, x_)
-            x_ = x_ * self.rank[i]
+            x = block(x, x_ * self.rank[i])
+            # x_ = x_ * self.rank[i]
 
         # if self.pool == 'cls':
         #     x = x[:, :, :1]
