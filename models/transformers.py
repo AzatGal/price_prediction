@@ -436,10 +436,14 @@ class TransformerEnsemble(nn.Module):
         assert 0 < kv_compression_ratio < 1
 
         # self.cls_token = nn.Parameter(torch.empty(1, k, 1, embed_dim))
-        # self.rank = nn.Parameter(torch.randn(k, 1, embed_dim))
+
         self.embed = FeatureTokenizerEnsemble(embed_dim, n_embed_num, n_embed_cat,
                                               k, dropout, share_weights)
         seq_len = self.embed.seq_len
+        self.rank = nn.ParameterList([
+            nn.Parameter(torch.randn(k, seq_len, embed_dim))
+            for _ in range(num_blocks)
+        ])
 
         self.blocks = nn.ModuleList([
             TransformerEnsembleBlock(
@@ -489,8 +493,9 @@ class TransformerEnsemble(nn.Module):
         x, x_ = self.embed(x_num, x_cat)
         # x = self.cls_token.repeat(x_.size(0), 1, 1, 1) # * self.rank
 
-        for block in self.blocks:
+        for i, block in enumerate(self.blocks):
             x = block(x, x_)
+            x_ = x_ * self.rank[i]
 
         # if self.pool == 'cls':
         #     x = x[:, :, :1]
