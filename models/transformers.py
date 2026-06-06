@@ -448,7 +448,7 @@ class TransformerEnsemble(nn.Module):
             nn.Parameter(torch.randn(k, seq_len, embed_dim))
         ])
 
-            self.blocks = nn.ModuleList([
+        self.blocks = nn.ModuleList([
             TransformerEnsembleBlock(
                 seq_len,
                 max(2, round(kv_compression_ratio * seq_len)),
