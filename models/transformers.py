@@ -499,7 +499,7 @@ class TransformerEnsemble(nn.Module):
                 x_
                 # x_ * self.rank[i]
             )
-            x_ = x_ + F.relu(x_ * self.rank[i])
+            x_ = x_ + x # F.relu(x_ * self.rank[i])
 
         # if self.pool == 'cls':
         #     x = x[:, :, :1]
