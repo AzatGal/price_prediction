@@ -500,8 +500,8 @@ class TransformerEnsemble(nn.Module):
         for i, block in enumerate(self.blocks):
             x = block(
                 x,
-                # x_
-                F.relu(x_) * self.rank[i]
+                x_
+                # F.relu(x_) * self.rank[i]
             )
             # x_ = x_ + F.relu(x_ * self.rank[i]) * self.scale[i]
 
